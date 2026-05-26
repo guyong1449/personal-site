@@ -62,11 +62,11 @@ Treat this directory as generated output. Do not hand-edit exported documents as
 
 Current state:
 
-- Astro preview app
+- Next.js 15 App Router shell with a typed content adapter over `content/public`
 
 Target state:
 
-- Next.js 15 App Router app
+- Next.js 15 App Router app with migrated domain routes and markdown presentation
 
 Its job is to consume the generated snapshot only:
 
