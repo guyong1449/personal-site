@@ -1,0 +1,144 @@
+---
+import { marked } from "marked";
+import { loadNoteDocument, loadNoteIndex } from "../../lib/content.js";
+
+export async function getStaticPaths() {
+  const notes = await loadNoteIndex();
+  return notes.map((note) => ({
+    params: { slug: note.slug },
+    props: { note }
+  }));
+}
+
+const { note } = Astro.props;
+const document = await loadNoteDocument(note.slug);
+const html = marked.parse(document.body);
+const pageTitle = document.frontmatter.title || note.title;
+---
+
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <style>
+      :root {
+        --bg: #f7f2ea;
+        --panel: rgba(255, 252, 246, 0.95);
+        --ink: #221b16;
+        --muted: #6a5748;
+        --line: #deceb9;
+        --accent: #8c4d1f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top right, rgba(190, 140, 82, 0.14), transparent 24%),
+          linear-gradient(180deg, #fbf8f2 0%, var(--bg) 100%);
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 28px 20px 72px;
+      }
+      .back {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      article {
+        margin-top: 18px;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: 0 16px 40px rgba(69, 47, 25, 0.08);
+        overflow-x: clip;
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+      .summary {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 22px;
+      }
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 0.82rem;
+      }
+      .content {
+        line-height: 1.82;
+        font-size: 1.02rem;
+        overflow-x: clip;
+      }
+      .content img {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-inline-size: 100%;
+        height: auto;
+        margin: 20px auto;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+      }
+      .content p,
+      .content li {
+        overflow-wrap: anywhere;
+      }
+      .content pre {
+        max-width: 100%;
+      }
+      .content a {
+        color: var(--accent);
+      }
+      .content blockquote {
+        margin: 20px 0;
+        padding: 8px 16px;
+        border-left: 4px solid #c0894c;
+        background: rgba(192, 137, 76, 0.08);
+      }
+      .content code {
+        background: #efe3d4;
+        border-radius: 6px;
+        padding: 0.12rem 0.3rem;
+      }
+      .content pre {
+        overflow-x: auto;
+        padding: 14px;
+        border-radius: 16px;
+        background: #f0e7db;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">返回首页</a>
+      <article>
+        <h1>{pageTitle}</h1>
+        {note.summary && <p class="summary">{note.summary}</p>}
+        {note.tags?.length > 0 && (
+          <div class="tags">
+            {note.tags.map((tag) => (
+              <span class="tag">{tag}</span>
+            ))}
+          </div>
+        )}
+        <div class="content" set:html={html} />
+      </article>
+    </main>
+  </body>
+</html>

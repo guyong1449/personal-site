@@ -1,0 +1,6 @@
+vault_root: "E:/Mywork/Obsidian Vault"
+public_scope:
+  include: []
+  exclude: []
+output_root: "../../content/public"
+default_channel: "site"
