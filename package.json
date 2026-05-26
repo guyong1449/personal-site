@@ -8,6 +8,9 @@
     "build:web": "pnpm --dir apps/web build",
     "lint:web": "pnpm --dir apps/web lint",
     "test:web": "pnpm --dir apps/web test",
-    "export:content": "pnpm --dir tools/publisher export"
+    "export:content": "pnpm --dir tools/publisher export",
+    "sync:assets": "node apps/web/scripts/sync-public-assets.mjs",
+    "generate:rss": "node apps/web/scripts/generate-rss.js",
+    "prebuild:web": "pnpm sync:assets && pnpm generate:rss"
   }
 }
