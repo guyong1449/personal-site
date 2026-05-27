@@ -1,12 +1,28 @@
 [
   {
-    "title": "DKU Duo Push 设备换绑流程",
-    "slug": "dku-duo-push",
-    "summary": "DKU Duo Push 设备换绑、跨系统迁移、以及无法登录 MFA 时的恢复流程整理。",
+    "title": "如何与 ML 图像处理方向朋友交流",
+    "slug": "ml",
+    "summary": "跨方向科研交流的心态、话术和价值提供指南",
     "tags": [
-      "area/research",
-      "focus/pace",
-      "type/reference"
+      "area/method",
+      "focus/research-methods",
+      "type/method"
+    ],
+    "cover": null,
+    "updated": null,
+    "course": null,
+    "week": null,
+    "art_category": null,
+    "series": null
+  },
+  {
+    "title": "Obsidian + AI 科研知识管理工作流",
+    "slug": "obsidian-ai",
+    "summary": "使用 Obsidian 和 AI 助手进行文献管理、代码分析、实验记录和写作润色的完整工作流",
+    "tags": [
+      "area/method",
+      "focus/research-methods",
+      "type/method"
     ],
     "cover": null,
     "updated": null,

@@ -34,19 +34,22 @@ function parseScalar(rawValue) {
 }
 
 export function parseFrontmatterDocument(source) {
-  if (!source.startsWith("---\n")) {
-    return { frontmatter: {}, body: source };
+  // Normalize line endings to LF
+  const normalizedSource = source.replace(/\r\n/g, "\n");
+
+  if (!normalizedSource.startsWith("---\n")) {
+    return { frontmatter: {}, body: normalizedSource };
   }
 
   const endMarker = "\n---\n";
-  const endIndex = source.indexOf(endMarker, 4);
+  const endIndex = normalizedSource.indexOf(endMarker, 4);
 
   if (endIndex === -1) {
-    return { frontmatter: {}, body: source };
+    return { frontmatter: {}, body: normalizedSource };
   }
 
-  const rawFrontmatter = source.slice(4, endIndex);
-  const body = source.slice(endIndex + endMarker.length);
+  const rawFrontmatter = normalizedSource.slice(4, endIndex);
+  const body = normalizedSource.slice(endIndex + endMarker.length);
   const frontmatter = {};
   let activeObjectKey = null;
   let activeListKey = null;
