@@ -1,0 +1,10 @@
+{
+  "id": "frontmatter-helper",
+  "name": "Frontmatter Helper",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "一键添加 frontmatter 到 Obsidian 笔记",
+  "author": "Personal Site",
+  "authorUrl": "https://github.com/yourusername",
+  "isDesktopOnly": false
+}
