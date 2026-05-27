@@ -1,5 +1,21 @@
 [
   {
+    "title": "DKU Duo Push 设备换绑流程",
+    "slug": "dku-duo-push",
+    "summary": "DKU Duo Push 设备换绑、跨系统迁移、以及无法登录 MFA 时的恢复流程整理。",
+    "tags": [
+      "area/research",
+      "focus/pace",
+      "type/reference"
+    ],
+    "cover": null,
+    "updated": null,
+    "course": null,
+    "week": null,
+    "art_category": null,
+    "series": null
+  },
+  {
     "title": "如何与 ML 图像处理方向朋友交流",
     "slug": "ml",
     "summary": "跨方向科研交流的心态、话术和价值提供指南",
@@ -23,6 +39,54 @@
       "area/method",
       "focus/research-methods",
       "type/method"
+    ],
+    "cover": null,
+    "updated": null,
+    "course": null,
+    "week": null,
+    "art_category": null,
+    "series": null
+  },
+  {
+    "title": "Git 教程",
+    "slug": "git",
+    "summary": "Git 核心概念、推送流程和常用操作详解",
+    "tags": [
+      "area/research",
+      "focus/pace",
+      "type/reference"
+    ],
+    "cover": null,
+    "updated": null,
+    "course": null,
+    "week": null,
+    "art_category": null,
+    "series": null
+  },
+  {
+    "title": "VS Code + WSL + Codex 配置排障教程",
+    "slug": "vs-code-wsl-codex",
+    "summary": "Windows 环境下 VS Code、WSL 和 Codex 的配置和排障指南",
+    "tags": [
+      "area/research",
+      "focus/pace",
+      "type/reference"
+    ],
+    "cover": null,
+    "updated": null,
+    "course": null,
+    "week": null,
+    "art_category": null,
+    "series": null
+  },
+  {
+    "title": "Mobile GUI Agent & Skill Abstraction",
+    "slug": "mobile-gui-agent-skill-abstraction",
+    "summary": "Mobile GUI Agent 的 skill 抽象技术演进综述",
+    "tags": [
+      "area/research",
+      "focus/gui-agent",
+      "type/project"
     ],
     "cover": null,
     "updated": null,
