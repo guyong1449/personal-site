@@ -11,6 +11,7 @@
     "export:content": "pnpm --dir tools/publisher export",
     "sync:assets": "node apps/web/scripts/sync-public-assets.mjs",
     "generate:rss": "node apps/web/scripts/generate-rss.js",
-    "prebuild:web": "pnpm sync:assets && pnpm generate:rss"
+    "prebuild:web": "pnpm sync:assets && pnpm generate:rss",
+    "publish-server": "node tools/publish-server.js"
   }
 }

@@ -413,6 +413,7 @@ async function loadConfigFromFile(configPath) {
   const parsed = {};
   let activeObject = null;
   let activeTopLevelListKey = null;
+  let activeNestedListKey = null;
 
   for (const rawLine of raw.split("\n")) {
     if (!rawLine.trim() || rawLine.trim().startsWith("#")) continue;
@@ -422,6 +423,10 @@ async function loadConfigFromFile(configPath) {
     if (trimmed.startsWith("- ")) {
       if (indent === 2 && activeTopLevelListKey) {
         parsed[activeTopLevelListKey].push(parseScalar(trimmed.slice(2)));
+        continue;
+      }
+      if (indent === 4 && activeObject && activeNestedListKey) {
+        parsed[activeObject][activeNestedListKey].push(parseScalar(trimmed.slice(2)));
         continue;
       }
       continue;
@@ -442,15 +447,22 @@ async function loadConfigFromFile(configPath) {
         activeObject = null;
         activeTopLevelListKey = null;
       }
+      activeNestedListKey = null;
       continue;
     }
 
     if (indent === 2 && activeObject) {
+      activeNestedListKey = null;
       const colonIndex = trimmed.indexOf(":");
       if (colonIndex === -1) continue;
       const key = trimmed.slice(0, colonIndex).trim();
       const rawValue = trimmed.slice(colonIndex + 1).trim();
-      parsed[activeObject][key] = parseScalar(rawValue);
+      if (!rawValue) {
+        parsed[activeObject][key] = [];
+        activeNestedListKey = key;
+      } else {
+        parsed[activeObject][key] = parseScalar(rawValue);
+      }
       continue;
     }
 
@@ -460,12 +472,14 @@ async function loadConfigFromFile(configPath) {
       }
       activeObject = activeTopLevelListKey;
       activeTopLevelListKey = null;
+      activeNestedListKey = null;
       const colonIndex = trimmed.indexOf(":");
       if (colonIndex === -1) continue;
       const key = trimmed.slice(0, colonIndex).trim();
       const rawValue = trimmed.slice(colonIndex + 1).trim();
       if (!rawValue) {
         parsed[activeObject][key] = [];
+        activeNestedListKey = key;
       } else {
         parsed[activeObject][key] = parseScalar(rawValue);
       }
@@ -508,6 +522,32 @@ function shouldExclude(relativePath, excludeList) {
     const normalized = excludedPath.replaceAll("\\", "/");
     return relativePath === normalized || relativePath.startsWith(`${normalized}/`);
   });
+}
+
+const ALL_CHANNELS = ["site", ...SUPPORTED_SOCIAL_CHANNELS];
+
+function resolveTagPublish(frontmatter) {
+  const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
+  const tagChannels = [];
+
+  for (const tag of tags) {
+    if (typeof tag !== "string") continue;
+    const match = tag.match(/^publish\/(.+)$/);
+    if (match && ALL_CHANNELS.includes(match[1])) {
+      tagChannels.push(match[1]);
+    }
+  }
+
+  if (tagChannels.length === 0) return frontmatter;
+
+  const next = { ...frontmatter };
+  if (next.publish !== true) next.publish = true;
+  if (!Array.isArray(next.channels)) next.channels = [];
+  for (const ch of tagChannels) {
+    if (!next.channels.includes(ch)) next.channels.push(ch);
+  }
+  next.tags = tags.filter((t) => !t.startsWith("publish/"));
+  return next;
 }
 
 export async function runPublisher(inputConfig) {
@@ -568,7 +608,8 @@ export async function runPublisher(inputConfig) {
       }
 
       const source = await fs.readFile(filePath, "utf8");
-      const { frontmatter, body } = parseFrontmatterDocument(source);
+      const { frontmatter: rawFrontmatter, body } = parseFrontmatterDocument(source);
+      const frontmatter = resolveTagPublish(rawFrontmatter);
 
       if (frontmatter.publish !== true) continue;
       if (!Array.isArray(frontmatter.channels) || !frontmatter.channels.includes("site")) continue;

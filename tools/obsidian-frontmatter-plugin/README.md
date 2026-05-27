@@ -49,6 +49,17 @@
 - **添加 Frontmatter**：快速添加默认 frontmatter
 - **添加 Frontmatter (自定义)**：打开自定义对话框
 - **切换发布状态**：切换 `publish` 字段的 true/false
+- **导出内容到网站**：运行 publisher 导出到 content/public
+- **启动本地预览**：启动 Next.js 开发服务器
+- **部署到 Vercel**：一键部署到 Vercel
+
+### 发布工作流
+
+1. 启动发布服务器：
+   ```bash
+   node tools/publish-server.js
+   ```
+2. 在 Obsidian 中使用命令面板执行：导出 → 预览 → 部署
 
 ### 快捷键
 

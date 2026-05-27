@@ -251,3 +251,61 @@ test("rewrites obsidian internal links into front-end friendly routes", async ()
   assert.match(exportedNote, /\[Lecture 11\]\(\/courses\/lecture-11\)/);
   assert.match(exportedNote, /\[gallery item\]\(\/gallery\/spring-study\)/);
 });
+
+test("exports notes driven by publish/ tags without frontmatter publish or channels", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "publisher-tag-test-"));
+  const vaultRoot = path.join(root, "vault");
+  const outputRoot = path.join(root, "public");
+
+  await writeFile(
+    path.join(vaultRoot, "notes", "tag-note.md"),
+    `---
+title: "Tag Driven Note"
+content_type: note
+summary: "Published via tag"
+tags:
+  - area/research
+  - publish/site
+  - publish/wechat
+---
+
+Tag-driven content.
+`
+  );
+
+  await writeFile(
+    path.join(vaultRoot, "notes", "untagged-draft.md"),
+    `---
+title: "Untagged Draft"
+content_type: note
+summary: "No publish tag"
+tags:
+  - area/personal
+---
+
+Should stay private.
+`
+  );
+
+  const result = await runPublisher({
+    vaultRoot,
+    outputRoot,
+    publicScope: {
+      include: ["notes"],
+      exclude: []
+    }
+  });
+
+  assert.equal(result.exported.site, 1);
+  assert.equal(result.exported.social.wechat, 1);
+
+  const exportedNote = await readText(path.join(outputRoot, "notes", "tag-driven-note.md"));
+  assert.match(exportedNote, /title: "Tag Driven Note"/);
+  // publish/ tags should be stripped from exported tags
+  assert.doesNotMatch(exportedNote, /publish\/site/);
+  assert.doesNotMatch(exportedNote, /publish\/wechat/);
+  assert.match(exportedNote, /area\/research/);
+
+  await assert.doesNotReject(() => fs.access(path.join(outputRoot, "notes", "tag-driven-note.md")));
+  await assert.rejects(() => fs.access(path.join(outputRoot, "notes", "untagged-draft.md")));
+});

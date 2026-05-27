@@ -1,4 +1,4 @@
-const { Plugin, PluginSettingTab, Setting, Modal, Notice } = require("obsidian");
+const { Plugin, PluginSettingTab, Setting, Modal, Notice, requestUrl } = require("obsidian");
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -7,7 +7,8 @@ const DEFAULT_SETTINGS = {
   defaultContentType: "note",
   autoInferTags: true,
   autoInferSummary: true,
-  summaryMaxLength: 100
+  summaryMaxLength: 100,
+  publishServerUrl: "http://localhost:3001"
 };
 
 // Content type options
@@ -61,6 +62,27 @@ class FrontmatterHelperPlugin extends Plugin {
       callback: () => this.togglePublish()
     });
 
+    // Add command to export content
+    this.addCommand({
+      id: "export-content",
+      name: "导出内容到网站",
+      callback: () => this.exportContent()
+    });
+
+    // Add command to preview site
+    this.addCommand({
+      id: "preview-site",
+      name: "启动本地预览",
+      callback: () => this.previewSite()
+    });
+
+    // Add command to deploy
+    this.addCommand({
+      id: "deploy-site",
+      name: "部署到 Vercel",
+      callback: () => this.deploySite()
+    });
+
     // Add settings tab
     this.addSettingTab(new FrontmatterHelperSettingTab(this.app, this));
 
@@ -82,6 +104,65 @@ class FrontmatterHelperPlugin extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  // Call publish server API
+  async callPublishApi(endpoint, body = {}) {
+    const url = `${this.settings.publishServerUrl}${endpoint}`;
+    try {
+      const response = await requestUrl({
+        url,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        throw: false
+      });
+      return response.json;
+    } catch (err) {
+      new Notice(`无法连接到发布服务器: ${err.message}\n请先运行: node tools/publish-server.js`);
+      return null;
+    }
+  }
+
+  // Export content
+  async exportContent() {
+    new Notice("正在导出内容...");
+    const result = await this.callPublishApi("/api/export");
+    if (!result) return;
+
+    if (result.ok) {
+      const count = result.exported?.site ?? 0;
+      new Notice(`导出完成: ${count} 篇文章`);
+    } else {
+      new Notice(`导出失败: ${result.error || "未知错误"}`);
+    }
+  }
+
+  // Preview site
+  async previewSite() {
+    new Notice("正在启动预览服务器...");
+    const result = await this.callPublishApi("/api/preview", { action: "start" });
+    if (!result) return;
+
+    if (result.ok) {
+      new Notice(`${result.message}\n地址: http://localhost:${result.port}`);
+    } else {
+      new Notice(`启动失败: ${result.error || "未知错误"}`);
+    }
+  }
+
+  // Deploy site
+  async deploySite() {
+    new Notice("正在部署到 Vercel...");
+    const result = await this.callPublishApi("/api/deploy");
+    if (!result) return;
+
+    if (result.ok) {
+      new Notice("部署完成!");
+      console.log("Deploy output:", result.stdout);
+    } else {
+      new Notice(`部署失败: ${result.stderr || result.error || "未知错误"}`);
+    }
   }
 
   // Get current file
@@ -612,6 +693,21 @@ class FrontmatterHelperSettingTab extends PluginSettingTab {
               this.plugin.settings.summaryMaxLength = num;
               await this.plugin.saveSettings();
             }
+          })
+      );
+
+    // Publish server URL
+    containerEl.createEl("h3", { text: "发布服务器" });
+
+    new Setting(containerEl)
+      .setName("服务器地址")
+      .setDesc("Publish Server 的地址（需要先运行: node tools/publish-server.js）")
+      .addText((text) =>
+        text
+          .setValue(this.plugin.settings.publishServerUrl)
+          .onChange(async (value) => {
+            this.plugin.settings.publishServerUrl = value;
+            await this.plugin.saveSettings();
           })
       );
   }
