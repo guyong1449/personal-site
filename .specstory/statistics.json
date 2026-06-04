@@ -1,0 +1,58 @@
+{
+  "sessions": {
+    "077da623-7b5f-4b47-aef9-2dd4c89cb4ab": {
+      "user_message_count": 11,
+      "agent_message_count": 91,
+      "start_timestamp": "2026-06-03T08:55:51+08:00",
+      "end_timestamp": "2026-06-03T08:55:51+08:00",
+      "markdown_size_bytes": 166055,
+      "provider": "cursoride",
+      "last_updated": "2026-06-04T01:16:13Z"
+    },
+    "2bc2df3c-04ed-4d47-b63d-aba2e33a8c3e": {
+      "user_message_count": 22,
+      "agent_message_count": 845,
+      "start_timestamp": "2026-05-27T03:10:00.447Z",
+      "end_timestamp": "2026-05-29T06:53:44.992Z",
+      "markdown_size_bytes": 1160852,
+      "provider": "claude-code",
+      "last_updated": "2026-06-03T00:56:38Z"
+    },
+    "5d51d187-2c37-41cd-9654-3b83ab740dd3": {
+      "user_message_count": 0,
+      "agent_message_count": 9,
+      "start_timestamp": "2026-06-04T09:14:19+08:00",
+      "end_timestamp": "2026-06-04T09:14:19+08:00",
+      "markdown_size_bytes": 10894,
+      "provider": "cursoride",
+      "last_updated": "2026-06-04T08:00:42Z"
+    },
+    "5d7dee72-a2bd-4df3-bd08-e770945872dd": {
+      "user_message_count": 6,
+      "agent_message_count": 111,
+      "start_timestamp": "2026-05-27T04:58:41.554Z",
+      "end_timestamp": "2026-05-29T06:39:34.142Z",
+      "markdown_size_bytes": 174405,
+      "provider": "claude-code",
+      "last_updated": "2026-06-03T00:56:38Z"
+    },
+    "b25be2ef-c11e-4935-9de2-83cb8124c604": {
+      "user_message_count": 2,
+      "agent_message_count": 59,
+      "start_timestamp": "2026-05-26T06:16:30.385Z",
+      "end_timestamp": "2026-05-26T08:17:29.980Z",
+      "markdown_size_bytes": 118562,
+      "provider": "claude-code",
+      "last_updated": "2026-06-03T00:56:38Z"
+    },
+    "cbb4bfea-a876-42b2-a1ae-cf42fa1ff751": {
+      "user_message_count": 8,
+      "agent_message_count": 364,
+      "start_timestamp": "2026-05-26T15:35:28.181Z",
+      "end_timestamp": "2026-05-26T20:17:31.576Z",
+      "markdown_size_bytes": 303336,
+      "provider": "claude-code",
+      "last_updated": "2026-06-03T00:56:38Z"
+    }
+  }
+}
