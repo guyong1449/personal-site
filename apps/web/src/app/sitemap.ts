@@ -1,8 +1,11 @@
 import type { MetadataRoute } from "next";
 import { loadIndex } from "@/lib/content";
+import { siteConfig } from "@/lib/config";
+
+export const dynamic = "force-static";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://personal-site.vercel.app";
+  const baseUrl = siteConfig.url;
 
   const [notes, courses, gallery] = await Promise.all([
     loadIndex("notes"),

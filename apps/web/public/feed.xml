@@ -2,18 +2,11 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Personal Site</title>
-    <link>https://personal-site.vercel.app</link>
+    <link>https://guyong.site</link>
     <description>Public publishing pipeline preview site.</description>
     <language>zh-CN</language>
-    <lastBuildDate>Tue, 26 May 2026 19:38:05 GMT</lastBuildDate>
-    <atom:link href="https://personal-site.vercel.app/feed.xml" rel="self" type="application/rss+xml"/>
-    <item>
-      <title>DKU Duo Push 设备换绑流程</title>
-      <link>https://personal-site.vercel.app/notes/dku-duo-push</link>
-      <guid isPermaLink="true">https://personal-site.vercel.app/notes/dku-duo-push</guid>
-      <description>DKU Duo Push 设备换绑、跨系统迁移、以及无法登录 MFA 时的恢复流程整理。</description>
-      <pubDate>Tue, 26 May 2026 19:38:05 GMT</pubDate>
-      <category>notes</category>
-    </item>
+    <lastBuildDate>Fri, 28 Aug 2026 05:08:32 GMT</lastBuildDate>
+    <atom:link href="https://guyong.site/feed.xml" rel="self" type="application/rss+xml"/>
+
   </channel>
 </rss>

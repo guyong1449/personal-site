@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { GoToTop } from "@/components/go-to-top";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: siteConfig.name,
   description: siteConfig.description,
 };

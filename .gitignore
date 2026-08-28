@@ -25,3 +25,6 @@ content/public/social/xiaohongshu/*
 !content/public/social/xiaohongshu/.gitkeep
 
 .claude/settings.local.json
+
+.vercel
+.env*

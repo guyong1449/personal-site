@@ -2,77 +2,76 @@ import fs from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadEntry } from "../load-entry";
 
+const metadata = JSON.stringify([
+  {
+    title: "Fixture Note",
+    slug: "fixture-note",
+    summary: "Fixture summary",
+    tags: ["fixture/test"]
+  }
+]);
+
+const document = `---
+title: "Frontmatter Title"
+slug: "frontmatter-slug"
+summary: "Frontmatter summary"
+tags:
+  - frontmatter/tag
+content_type: "note"
+---
+Fixture body.`;
+
+function mockContentFiles(documentResult: string | NodeJS.ErrnoException = document) {
+  vi.spyOn(fs, "readFile").mockImplementation(async (filePath) => {
+    const target = String(filePath).replace(/\\/g, "/");
+    if (target.endsWith("/metadata/notes.json")) return metadata;
+    if (target.endsWith("/notes/fixture-note.md")) {
+      if (documentResult instanceof Error) throw documentResult;
+      return documentResult;
+    }
+    throw new Error(`Unexpected test path: ${target}`);
+  });
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("loadEntry", () => {
   it("loads a known note document", async () => {
-    const note = await loadEntry("notes", "dku-duo-push");
+    mockContentFiles();
+
+    const note = await loadEntry("notes", "fixture-note");
 
     expect(note).not.toBeNull();
-    expect(note?.slug).toBe("dku-duo-push");
+    expect(note?.slug).toBe("fixture-note");
     expect(note?.contentType).toBe("note");
-    expect(note?.body.length).toBeGreaterThan(0);
+    expect(note?.body).toContain("Fixture body");
   });
 
   it("returns null for an unknown slug", async () => {
-    const note = await loadEntry("notes", "missing-slug");
+    mockContentFiles();
 
-    expect(note).toBeNull();
+    await expect(loadEntry("notes", "missing-slug")).resolves.toBeNull();
   });
 
   it("prefers metadata fields over markdown frontmatter duplicates", async () => {
-    const readFileSpy = vi.spyOn(fs, "readFile");
+    mockContentFiles();
 
-    readFileSpy.mockImplementation(async (path, options) => {
-      const target = String(path).replace(/\\/g, "/");
-      if (target.endsWith("/notes/dku-duo-push.md")) {
-        return `---
-title: "Conflicting Frontmatter Title"
-slug: "conflicting-frontmatter-slug"
-summary: "Conflicting frontmatter summary"
-tags:
-  - conflicting/tag
-content_type: "note"
----
-Body from mocked markdown.` as never;
-      }
-
-      return (await vi.importActual<typeof fs>("node:fs/promises")).readFile(
-        path,
-        options as never,
-      );
-    });
-
-    const note = await loadEntry("notes", "dku-duo-push");
+    const note = await loadEntry("notes", "fixture-note");
 
     expect(note).not.toBeNull();
-    expect(note?.title).toBe("DKU Duo Push 设备换绑流程");
-    expect(note?.summary).toBe(
-      "DKU Duo Push 设备换绑、跨系统迁移、以及无法登录 MFA 时的恢复流程整理。",
-    );
-    expect(note?.tags).toEqual(["area/research", "focus/pace", "type/reference"]);
-    expect(note?.slug).toBe("dku-duo-push");
+    expect(note?.title).toBe("Fixture Note");
+    expect(note?.summary).toBe("Fixture summary");
+    expect(note?.tags).toEqual(["fixture/test"]);
+    expect(note?.slug).toBe("fixture-note");
   });
 
   it("returns null when metadata exists but the markdown file is missing", async () => {
-    const readFileSpy = vi.spyOn(fs, "readFile");
+    const error = new Error("missing document") as NodeJS.ErrnoException;
+    error.code = "ENOENT";
+    mockContentFiles(error);
 
-    readFileSpy.mockImplementation(async (path, options) => {
-      const target = String(path).replace(/\\/g, "/");
-      if (target.endsWith("/notes/dku-duo-push.md")) {
-        const error = new Error("missing document") as NodeJS.ErrnoException;
-        error.code = "ENOENT";
-        throw error;
-      }
-
-      return (await vi.importActual<typeof fs>("node:fs/promises")).readFile(
-        path,
-        options as never,
-      );
-    });
-
-    await expect(loadEntry("notes", "dku-duo-push")).resolves.toBeNull();
+    await expect(loadEntry("notes", "fixture-note")).resolves.toBeNull();
   });
 });

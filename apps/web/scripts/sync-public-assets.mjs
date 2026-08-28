@@ -18,6 +18,13 @@ function syncAssets() {
     fs.mkdirSync(TARGET_DIR, { recursive: true });
   }
 
+  for (const file of fs.readdirSync(TARGET_DIR)) {
+    const targetPath = path.join(TARGET_DIR, file);
+    if (fs.statSync(targetPath).isFile()) {
+      fs.unlinkSync(targetPath);
+    }
+  }
+
   const files = fs.readdirSync(SOURCE_DIR);
   let syncedCount = 0;
 

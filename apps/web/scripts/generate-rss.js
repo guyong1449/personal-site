@@ -5,7 +5,9 @@ const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const PUBLIC_ROOT = path.join(REPO_ROOT, "content", "public");
 const OUTPUT_PATH = path.join(__dirname, "..", "public", "feed.xml");
 
-const SITE_URL = "https://personal-site.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://guyong.site";
 const SITE_NAME = "Personal Site";
 const SITE_DESCRIPTION = "Public publishing pipeline preview site.";
 
