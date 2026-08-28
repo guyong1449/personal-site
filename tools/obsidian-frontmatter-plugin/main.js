@@ -1,4 +1,14 @@
-const { Plugin, PluginSettingTab, Setting, Modal, Notice, requestUrl } = require("obsidian");
+const {
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  Modal,
+  Notice,
+  requestUrl,
+  MarkdownView
+} = require("obsidian");
+const { spawn } = require("node:child_process");
+const path = require("node:path");
 
 // Default settings
 const DEFAULT_SETTINGS = {
@@ -8,7 +18,9 @@ const DEFAULT_SETTINGS = {
   autoInferTags: true,
   autoInferSummary: true,
   summaryMaxLength: 100,
-  publishServerUrl: "http://localhost:3001"
+  projectRoot: "E:/Mywork/algorithm/personal-site",
+  nodeExecutable: "C:/Program Files/nodejs/node.exe",
+  publishServerUrl: "http://127.0.0.1:4318"
 };
 
 // Content type options
@@ -29,6 +41,8 @@ const CHANNELS = [
 const CATEGORY_MAP = {
   "01-研究项目": { area: "research", type: "reference" },
   "02-课程学习": { area: "course", type: "course" },
+  "03-课程学习": { area: "course", type: "course" },
+  "02-知识库": { area: "knowledge", type: "reference" },
   "03-知识库": { area: "knowledge", type: "reference" },
   "04-方法论": { area: "method", type: "method" },
   "05-社团活动": { area: "activity", type: "activity" },
@@ -69,6 +83,18 @@ class FrontmatterHelperPlugin extends Plugin {
       callback: () => this.exportContent()
     });
 
+    this.addCommand({
+      id: "publish-current-file",
+      name: "发布当前文件到网站",
+      callback: () => this.publishCurrentFile()
+    });
+
+    this.addCommand({
+      id: "edit-and-publish-current-file",
+      name: "编辑发布设置并发布当前文件",
+      callback: () => this.publishCurrentFile(true)
+    });
+
     // Add command to preview site
     this.addCommand({
       id: "preview-site",
@@ -95,6 +121,9 @@ class FrontmatterHelperPlugin extends Plugin {
   }
 
   onunload() {
+    if (this.publishServerProcess && !this.publishServerProcess.killed) {
+      this.publishServerProcess.kill();
+    }
     console.log("Frontmatter Helper plugin unloaded");
   }
 
@@ -106,8 +135,36 @@ class FrontmatterHelperPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  // Call publish server API
-  async callPublishApi(endpoint, body = {}) {
+  async startPublishServer() {
+    if (this.publishServerProcess && !this.publishServerProcess.killed) return true;
+
+    try {
+      const serverPath = path.join(this.settings.projectRoot, "tools", "publish-server.js");
+      const child = spawn(this.settings.nodeExecutable, [serverPath], {
+        cwd: this.settings.projectRoot,
+        stdio: "ignore",
+        windowsHide: true
+      });
+
+      await new Promise((resolve, reject) => {
+        child.once("spawn", resolve);
+        child.once("error", reject);
+      });
+
+      this.publishServerProcess = child;
+      child.once("exit", () => {
+        if (this.publishServerProcess === child) this.publishServerProcess = null;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return true;
+    } catch (err) {
+      console.error("Unable to start publish server:", err);
+      return false;
+    }
+  }
+
+  // Call publish server API, starting the local service on first use when needed.
+  async callPublishApi(endpoint, body = {}, allowServerStart = true) {
     const url = `${this.settings.publishServerUrl}${endpoint}`;
     try {
       const response = await requestUrl({
@@ -119,7 +176,10 @@ class FrontmatterHelperPlugin extends Plugin {
       });
       return response.json;
     } catch (err) {
-      new Notice(`无法连接到发布服务器: ${err.message}\n请先运行: node tools/publish-server.js`);
+      if (allowServerStart && (await this.startPublishServer())) {
+        return this.callPublishApi(endpoint, body, false);
+      }
+      new Notice(`无法连接到发布服务器: ${err.message}\n请检查插件中的网站项目目录和 Node 程序位置`);
       return null;
     }
   }
@@ -136,6 +196,45 @@ class FrontmatterHelperPlugin extends Plugin {
     } else {
       new Notice(`导出失败: ${result.error || "未知错误"}`);
     }
+  }
+
+  async publishFile(file) {
+    new Notice("正在发布当前文件...");
+    const result = await this.callPublishApi("/api/publish-file", { filePath: file.path });
+    if (!result) return;
+
+    if (result.ok) {
+      await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+        if (!frontmatter.slug) frontmatter.slug = result.slug;
+      });
+      new Notice(`发布完成: ${result.route}`);
+    } else {
+      new Notice(`发布失败: ${result.error || "未知错误"}`);
+    }
+  }
+
+  async publishCurrentFile(editSettings = false) {
+    const file = this.getCurrentFile();
+    if (!file) return;
+
+    const content = await this.app.vault.read(file);
+    const existing = this.app.metadataCache.getFileCache(file)?.frontmatter ?? {};
+    const isReady =
+      existing.publish === true &&
+      existing.title &&
+      existing.content_type &&
+      Array.isArray(existing.channels) &&
+      existing.channels.includes("site");
+
+    if (editSettings || !isReady) {
+      new FrontmatterModal(this.app, this, file, content, {
+        publishAfterSave: true,
+        existing
+      }).open();
+      return;
+    }
+
+    await this.publishFile(file);
   }
 
   // Preview site
@@ -167,7 +266,7 @@ class FrontmatterHelperPlugin extends Plugin {
 
   // Get current file
   getCurrentFile() {
-    const activeView = this.app.workspace.getActiveViewOfType("markdown");
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!activeView) {
       new Notice("请先打开一个 Markdown 文件");
       return null;
@@ -426,25 +525,37 @@ class FrontmatterHelperPlugin extends Plugin {
 
 // Custom modal for frontmatter settings
 class FrontmatterModal extends Modal {
-  constructor(app, plugin, file, content) {
+  constructor(app, plugin, file, content, options = {}) {
     super(app);
     this.plugin = plugin;
     this.file = file;
     this.content = content;
+    this.publishAfterSave = options.publishAfterSave ?? false;
+    const existing = options.existing ?? app.metadataCache.getFileCache(file)?.frontmatter ?? {};
 
     // Default values
-    this.title = plugin.inferTitle(content, file.name);
-    this.publish = plugin.settings.defaultPublish;
-    this.contentType = plugin.inferContentType(file.path);
-    this.channels = [...plugin.settings.defaultChannels];
-    this.summary = plugin.settings.autoInferSummary ? plugin.inferSummary(content) : "";
-    this.tags = plugin.settings.autoInferTags ? plugin.inferTags(file.path) : [];
+    this.title = existing.title ?? plugin.inferTitle(content, file.name);
+    this.slug = existing.slug ?? "";
+    this.publish = existing.publish ?? plugin.settings.defaultPublish;
+    this.contentType = existing.content_type ?? plugin.inferContentType(file.path);
+    this.channels = Array.isArray(existing.channels)
+      ? [...existing.channels]
+      : [...plugin.settings.defaultChannels];
+    this.summary =
+      existing.summary ?? (plugin.settings.autoInferSummary ? plugin.inferSummary(content) : "");
+    this.tags = Array.isArray(existing.tags)
+      ? [...existing.tags]
+      : plugin.settings.autoInferTags
+        ? plugin.inferTags(file.path)
+        : [];
   }
 
   onOpen() {
     const { contentEl } = this;
 
-    contentEl.createEl("h2", { text: "添加 Frontmatter" });
+    contentEl.createEl("h2", {
+      text: this.publishAfterSave ? "编辑发布设置并发布" : "添加 Frontmatter"
+    });
 
     // Title
     new Setting(contentEl)
@@ -455,6 +566,18 @@ class FrontmatterModal extends Modal {
           .setValue(this.title)
           .onChange((value) => {
             this.title = value;
+          })
+      );
+
+    new Setting(contentEl)
+      .setName("网址标识 (slug)")
+      .setDesc("可选；留空时自动生成稳定网址，建议使用英文、数字和连字符")
+      .addText((text) =>
+        text
+          .setPlaceholder("例如: my-first-note")
+          .setValue(this.slug)
+          .onChange((value) => {
+            this.slug = value.trim();
           })
       );
 
@@ -549,7 +672,9 @@ class FrontmatterModal extends Modal {
       this.close();
     });
 
-    const submitButton = buttonDiv.createEl("button", { text: "添加" });
+    const submitButton = buttonDiv.createEl("button", {
+      text: this.publishAfterSave ? "保存并发布" : "保存"
+    });
     submitButton.classList.add("mod-cta");
     submitButton.addEventListener("click", async () => {
       await this.submit();
@@ -557,24 +682,26 @@ class FrontmatterModal extends Modal {
   }
 
   async submit() {
-    // Build frontmatter
-    const frontmatter = this.plugin.buildFrontmatter({
-      title: this.title,
-      publish: this.publish,
-      contentType: this.contentType,
-      channels: this.channels,
-      summary: this.summary,
-      tags: this.tags
+    await this.app.fileManager.processFrontMatter(this.file, (frontmatter) => {
+      frontmatter.title = this.title;
+      if (this.slug) {
+        frontmatter.slug = this.slug;
+      } else {
+        delete frontmatter.slug;
+      }
+      frontmatter.publish = this.publish;
+      frontmatter.content_type = this.contentType;
+      frontmatter.channels = this.channels;
+      frontmatter.summary = this.summary;
+      frontmatter.tags = this.tags;
     });
 
-    // Add frontmatter to content
-    const newContent = frontmatter + this.content;
-
-    // Save file
-    await this.app.vault.modify(this.file, newContent);
-
-    new Notice("Frontmatter 已添加");
+    new Notice("发布设置已保存");
     this.close();
+
+    if (this.publishAfterSave) {
+      await this.plugin.publishFile(this.file);
+    }
   }
 
   onClose() {
@@ -700,8 +827,32 @@ class FrontmatterHelperSettingTab extends PluginSettingTab {
     containerEl.createEl("h3", { text: "发布服务器" });
 
     new Setting(containerEl)
+      .setName("网站项目目录")
+      .setDesc("插件会从这里自动启动发布服务")
+      .addText((text) =>
+        text
+          .setValue(this.plugin.settings.projectRoot)
+          .onChange(async (value) => {
+            this.plugin.settings.projectRoot = value.trim();
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Node 程序位置")
+      .setDesc("用于自动启动发布服务的 node.exe")
+      .addText((text) =>
+        text
+          .setValue(this.plugin.settings.nodeExecutable)
+          .onChange(async (value) => {
+            this.plugin.settings.nodeExecutable = value.trim();
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
       .setName("服务器地址")
-      .setDesc("Publish Server 的地址（需要先运行: node tools/publish-server.js）")
+      .setDesc("本机发布服务地址；插件会在首次使用时自动启动")
       .addText((text) =>
         text
           .setValue(this.plugin.settings.publishServerUrl)

@@ -49,17 +49,21 @@
 - **添加 Frontmatter**：快速添加默认 frontmatter
 - **添加 Frontmatter (自定义)**：打开自定义对话框
 - **切换发布状态**：切换 `publish` 字段的 true/false
-- **导出内容到网站**：运行 publisher 导出到 content/public
-- **启动本地预览**：启动 Next.js 开发服务器
+- **发布当前文件到网站**：从任意目录增量发布当前 Markdown；字段缺失时打开表单
+- **编辑发布设置并发布当前文件**：在可视化表单中修改字段后发布
+- **导出内容到网站**：按配置目录全量重建（高级用法）
+- **启动本地预览**：在 http://localhost:4317 启动 Next.js 开发服务器
 - **部署到 Vercel**：一键部署到 Vercel
+
+发布表单包含可选的 `slug` 字段。留空时会自动生成稳定的 ASCII 网址；需要更易读的网址时可填写英文、数字和连字符。
 
 ### 发布工作流
 
-1. 启动发布服务器：
-   ```bash
-   node tools/publish-server.js
-   ```
-2. 在 Obsidian 中使用命令面板执行：导出 → 预览 → 部署
+1. 打开任意 Markdown 文件
+2. 在 Obsidian 命令面板运行 **发布当前文件到网站**
+3. 首次发布时在表单中确认标题、类型、摘要和标签；以后可直接一键发布
+
+插件会自动启动本机发布服务，不需要预先运行命令，也不要求文章位于固定目录。
 
 ### 快捷键
 
@@ -114,24 +118,16 @@ tags:
 - **自动推断标签**：是否根据路径自动推断 tags
 - **自动推断摘要**：是否根据内容自动推断 summary
 - **摘要最大长度**：自动推断摘要的最大字符数
+- **网站项目目录**：本网站仓库所在位置，默认 `E:/Mywork/algorithm/personal-site`
+- **Node 程序位置**：用于自动启动本机发布服务，默认 `C:/Program Files/nodejs/node.exe`
+- **服务器地址**：默认 `http://127.0.0.1:4318`
 
 ## 发布流程
 
 1. 在 Obsidian 中编写文章
-2. 使用插件添加 frontmatter（或手动添加）
-3. 设置 `publish: true`
-4. 运行导出命令：
-   ```bash
-   cd tools/publisher && npm run export -- --config config.yaml
-   ```
-5. 本地预览：
-   ```bash
-   cd apps/web && npm run dev
-   ```
-6. 部署到 Vercel：
-   ```bash
-   vercel --prod
-   ```
+2. 运行 **发布当前文件到网站**，在可视化表单中确认发布信息
+3. 运行 **启动本地预览** 查看网站
+4. 内容确认后运行 **部署到 Vercel**
 
 ## 常见问题
 

@@ -1,11 +1,6 @@
 vault_root: "E:/Mywork/Obsidian Vault"
 public_scope:
-  include:
-    - "08-个人/DKU相关"
-    - "04-方法论/科研交流与方法论"
-    - "01-研究项目/git"
-    - "01-研究项目/linux"
-    - "01-研究项目/gui agent"
+  include: []
   exclude: []
 output_root: "../../content/public"
 default_channel: "site"

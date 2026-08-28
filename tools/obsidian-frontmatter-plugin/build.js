@@ -8,7 +8,8 @@ async function build() {
   const context = await esbuild.context({
     entryPoints: ["main.js"],
     bundle: true,
-    external: ["obsidian"],
+    external: ["obsidian", "node:child_process", "node:path"],
+    platform: "node",
     format: "cjs",
     target: "es2018",
     logLevel: "info",

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { runPublisher } from "../src/index.js";
+import { runPublisher, runPublisherFile } from "../src/index.js";
 
 async function writeFile(targetPath, content) {
   await fs.mkdir(path.dirname(targetPath), { recursive: true });
@@ -308,4 +308,114 @@ Should stay private.
 
   await assert.doesNotReject(() => fs.access(path.join(outputRoot, "notes", "tag-driven-note.md")));
   await assert.rejects(() => fs.access(path.join(outputRoot, "notes", "untagged-draft.md")));
+});
+
+test("publishes one Markdown file outside configured include scopes without clearing existing content", async () => {
+  const { vaultRoot, outputRoot } = await setupFixture();
+
+  await runPublisher({
+    vaultRoot,
+    outputRoot,
+    publicScope: {
+      include: ["notes"],
+      exclude: []
+    }
+  });
+
+  const movedFile = path.join(vaultRoot, "frequently-moved", "任意目录文章.md");
+  await writeFile(
+    movedFile,
+    `---
+title: "任意目录文章"
+publish: true
+content_type: course
+channels:
+  - site
+summary: "Published directly"
+---
+
+Single-file content.
+`
+  );
+
+  const result = await runPublisherFile({ vaultRoot, outputRoot }, movedFile);
+
+  assert.match(result.route, /^\/courses\/article-[a-z0-9]+$/);
+  await assert.doesNotReject(() =>
+    fs.access(path.join(outputRoot, "notes", "public-note.md"))
+  );
+  await assert.doesNotReject(() =>
+    fs.access(path.join(outputRoot, "courses", `${result.slug}.md`))
+  );
+
+  const notes = await readJson(path.join(outputRoot, "metadata", "notes.json"));
+  const courses = await readJson(path.join(outputRoot, "metadata", "courses.json"));
+  assert.equal(notes.length, 1);
+  assert.equal(courses.length, 1);
+  assert.equal(courses[0].slug, result.slug);
+});
+
+test("publishing the same file again updates metadata without duplicates", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "publisher-single-update-test-"));
+  const vaultRoot = path.join(root, "vault");
+  const outputRoot = path.join(root, "public");
+  const filePath = path.join(vaultRoot, "anywhere", "article.md");
+
+  await writeFile(
+    filePath,
+    `---
+title: "Moving Article"
+publish: true
+content_type: note
+channels:
+  - site
+summary: "First summary"
+---
+
+First body.
+`
+  );
+  await runPublisherFile({ vaultRoot, outputRoot }, filePath);
+
+  await writeFile(
+    filePath,
+    `---
+title: "Moving Article"
+publish: true
+content_type: note
+channels:
+  - site
+summary: "Updated summary"
+---
+
+Updated body.
+`
+  );
+  await runPublisherFile({ vaultRoot, outputRoot }, filePath);
+
+  const notes = await readJson(path.join(outputRoot, "metadata", "notes.json"));
+  const exported = await readText(path.join(outputRoot, "notes", "moving-article.md"));
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0].summary, "Updated summary");
+  assert.match(exported, /Updated body\./);
+});
+
+test("full export with no include directories exits before clearing existing output", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "publisher-empty-scope-test-"));
+  const vaultRoot = path.join(root, "vault");
+  const outputRoot = path.join(root, "public");
+  const existingFile = path.join(outputRoot, "notes", "existing.md");
+
+  await writeFile(existingFile, "existing content");
+
+  await assert.rejects(
+    () =>
+      runPublisher({
+        vaultRoot,
+        outputRoot,
+        publicScope: { include: [], exclude: [] }
+      }),
+    /requires at least one/
+  );
+  assert.equal(await readText(existingFile), "existing content");
 });

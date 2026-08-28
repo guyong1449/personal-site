@@ -11,12 +11,22 @@ const TYPE_TO_DIRECTORY = {
 };
 
 function slugify(value) {
-  return String(value)
-    .trim()
-    .toLowerCase()
+  const normalized = String(value).normalize("NFKC").trim().toLowerCase();
+  const asciiSlug = normalized
     .replace(/["']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+  if (/^[\x00-\x7F]+$/.test(normalized)) return asciiSlug;
+
+  let hash = 2166136261;
+  for (const character of normalized) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  const hashSuffix = (hash >>> 0).toString(36);
+  return `${asciiSlug || "article"}-${hashSuffix}`;
 }
 
 function parseScalar(rawValue) {
@@ -408,8 +418,9 @@ function normalizeConfig(config) {
   };
 }
 
-async function loadConfigFromFile(configPath) {
-  const raw = await fs.readFile(configPath, "utf8");
+export async function loadConfigFromFile(configPath) {
+  const resolvedConfigPath = path.resolve(configPath);
+  const raw = await fs.readFile(resolvedConfigPath, "utf8");
   const parsed = {};
   let activeObject = null;
   let activeTopLevelListKey = null;
@@ -486,7 +497,14 @@ async function loadConfigFromFile(configPath) {
     }
   }
 
-  return normalizeConfig(parsed);
+  const config = normalizeConfig(parsed);
+  const configDirectory = path.dirname(resolvedConfigPath);
+
+  return {
+    ...config,
+    vaultRoot: path.resolve(configDirectory, config.vaultRoot),
+    outputRoot: path.resolve(configDirectory, config.outputRoot)
+  };
 }
 
 function buildExportFrontmatter(frontmatter, slug) {
@@ -550,11 +568,199 @@ function resolveTagPublish(frontmatter) {
   return next;
 }
 
+async function readMetadataIndex(outputRoot, directoryName) {
+  const metadataPath = path.join(outputRoot, "metadata", `${directoryName}.json`);
+
+  try {
+    return JSON.parse(await fs.readFile(metadataPath, "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+async function writeMetadataIndex(outputRoot, directoryName, items) {
+  const metadataPath = path.join(outputRoot, "metadata", `${directoryName}.json`);
+  await fs.writeFile(metadataPath, JSON.stringify(items, null, 2), "utf8");
+}
+
+async function removeFileIfPresent(targetPath) {
+  try {
+    await fs.unlink(targetPath);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
+function addEntryToLinkLookup(linkLookup, entry, vaultRoot) {
+  const route = routeForDirectory(entry.exportDirectoryName, entry.slug);
+  const relativePath = path
+    .relative(vaultRoot, entry.filePath)
+    .replaceAll("\\", "/")
+    .replace(/\.md$/i, "");
+  const baseName = path.basename(entry.filePath, path.extname(entry.filePath));
+  const keys = new Set([entry.slug, entry.frontmatter.title, relativePath, baseName]);
+
+  for (const key of keys) {
+    if (!key) continue;
+    linkLookup.set(normalizeInternalLinkKey(key), route);
+  }
+}
+
+async function buildPublishedLinkLookup(outputRoot) {
+  const linkLookup = new Map();
+
+  for (const directoryName of ["notes", "courses", "gallery"]) {
+    const items = await readMetadataIndex(outputRoot, directoryName);
+    for (const item of items) {
+      const route = routeForDirectory(directoryName, item.slug);
+      for (const key of [item.slug, item.title]) {
+        if (key) linkLookup.set(normalizeInternalLinkKey(key), route);
+      }
+    }
+  }
+
+  return linkLookup;
+}
+
+function validateSingleFilePath(vaultRoot, filePath) {
+  const resolvedVaultRoot = path.resolve(vaultRoot);
+  const resolvedFilePath = path.resolve(filePath);
+  const relativePath = path.relative(resolvedVaultRoot, resolvedFilePath);
+
+  if (
+    !relativePath ||
+    relativePath.startsWith("..") ||
+    path.isAbsolute(relativePath) ||
+    path.extname(resolvedFilePath).toLowerCase() !== ".md"
+  ) {
+    throw new Error("The published file must be a Markdown file inside the configured Vault.");
+  }
+
+  return resolvedFilePath;
+}
+
+export async function runPublisherFile(inputConfig, inputFilePath) {
+  const config = normalizeConfig(inputConfig);
+
+  if (!config.vaultRoot || !config.outputRoot || !inputFilePath) {
+    throw new Error("runPublisherFile requires vaultRoot, outputRoot, and filePath.");
+  }
+
+  const outputRoot = path.resolve(config.outputRoot);
+  const filePath = validateSingleFilePath(config.vaultRoot, inputFilePath);
+  const source = await fs.readFile(filePath, "utf8");
+  const { frontmatter: rawFrontmatter, body } = parseFrontmatterDocument(source);
+  const frontmatter = resolveTagPublish(rawFrontmatter);
+
+  if (frontmatter.publish !== true) {
+    throw new Error("The file is not marked publish: true.");
+  }
+  if (!Array.isArray(frontmatter.channels) || !frontmatter.channels.includes("site")) {
+    throw new Error('The file channels must include "site".');
+  }
+  if (!frontmatter.title || !frontmatter.content_type) {
+    throw new Error("The file requires title and content_type frontmatter fields.");
+  }
+
+  const exportDirectoryName = TYPE_TO_DIRECTORY[frontmatter.content_type];
+  if (!exportDirectoryName) {
+    throw new Error(`Unsupported content_type: ${frontmatter.content_type}`);
+  }
+
+  const slug = frontmatter.slug ? slugify(frontmatter.slug) : slugify(frontmatter.title);
+  if (!slug) {
+    throw new Error("The file title or slug must contain letters or numbers.");
+  }
+
+  for (const directoryName of [
+    "assets",
+    "notes",
+    "courses",
+    "gallery",
+    path.join("social", "wechat"),
+    path.join("social", "xiaohongshu"),
+    "metadata"
+  ]) {
+    await ensureDir(path.join(outputRoot, directoryName));
+  }
+
+  const metadataByDirectory = {};
+  for (const directoryName of ["notes", "courses", "gallery"]) {
+    metadataByDirectory[directoryName] = await readMetadataIndex(outputRoot, directoryName);
+    const collision = metadataByDirectory[directoryName].find(
+      (item) => item.slug === slug && item.title !== frontmatter.title
+    );
+    if (collision) {
+      throw new Error(
+        `Slug collision: "${slug}" is already used by "${collision.title}".`
+      );
+    }
+  }
+
+  const entry = {
+    filePath,
+    frontmatter,
+    body,
+    exportDirectoryName,
+    slug
+  };
+  const linkLookup = await buildPublishedLinkLookup(outputRoot);
+  addEntryToLinkLookup(linkLookup, entry, config.vaultRoot);
+  const rewrittenDocument = await rewriteAssetsInDocument({
+    frontmatter,
+    body,
+    filePath,
+    outputRoot,
+    slug,
+    vaultRoot: config.vaultRoot,
+    linkLookup
+  });
+  const exportFrontmatter = buildExportFrontmatter(rewrittenDocument.frontmatter, slug);
+  const outputMarkdown = `${serializeFrontmatter(exportFrontmatter)}${rewrittenDocument.body.trim()}\n`;
+  const targetFile = path.join(outputRoot, exportDirectoryName, `${slug}.md`);
+
+  await fs.writeFile(targetFile, outputMarkdown, "utf8");
+
+  for (const directoryName of ["notes", "courses", "gallery"]) {
+    const nextItems = metadataByDirectory[directoryName].filter((item) => item.slug !== slug);
+    if (directoryName === exportDirectoryName) {
+      nextItems.push(buildMetadataItem(rewrittenDocument.frontmatter, slug));
+    } else {
+      await removeFileIfPresent(path.join(outputRoot, directoryName, `${slug}.md`));
+    }
+    await writeMetadataIndex(outputRoot, directoryName, nextItems);
+  }
+
+  const socialCounts = { wechat: 0, xiaohongshu: 0 };
+  for (const channel of SUPPORTED_SOCIAL_CHANNELS) {
+    const socialTarget = path.join(outputRoot, "social", channel, `${slug}.md`);
+    if (frontmatter.channels.includes(channel)) {
+      await fs.writeFile(socialTarget, outputMarkdown, "utf8");
+      socialCounts[channel] = 1;
+    } else {
+      await removeFileIfPresent(socialTarget);
+    }
+  }
+
+  return {
+    exported: {
+      site: 1,
+      social: socialCounts
+    },
+    slug,
+    route: routeForDirectory(exportDirectoryName, slug)
+  };
+}
+
 export async function runPublisher(inputConfig) {
   const config = normalizeConfig(inputConfig);
 
   if (!config.vaultRoot || !config.outputRoot) {
     throw new Error("runPublisher requires vaultRoot and outputRoot.");
+  }
+  if (config.publicScope.include.length === 0) {
+    throw new Error("Full export requires at least one public_scope.include directory.");
   }
 
   const metadata = {
@@ -620,6 +826,10 @@ export async function runPublisher(inputConfig) {
 
       const slug = frontmatter.slug ? slugify(frontmatter.slug) : slugify(frontmatter.title);
       if (!slug) continue;
+
+      if (publishedEntries.some((entry) => entry.slug === slug)) {
+        throw new Error(`Duplicate published slug: "${slug}".`);
+      }
 
       publishedEntries.push({
         filePath,
@@ -688,13 +898,17 @@ export async function runPublisher(inputConfig) {
 
 async function main() {
   const configArgIndex = process.argv.findIndex((value) => value === "--config");
+  const fileArgIndex = process.argv.findIndex((value) => value === "--file");
   const configPath =
     configArgIndex >= 0 && process.argv[configArgIndex + 1]
       ? process.argv[configArgIndex + 1]
-      : path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "config.example.yaml");
+      : path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "config.yaml");
 
   const config = await loadConfigFromFile(configPath);
-  const result = await runPublisher(config);
+  const result =
+    fileArgIndex >= 0 && process.argv[fileArgIndex + 1]
+      ? await runPublisherFile(config, process.argv[fileArgIndex + 1])
+      : await runPublisher(config);
   console.log(JSON.stringify(result, null, 2));
 }
 

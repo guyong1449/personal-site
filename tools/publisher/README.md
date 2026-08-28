@@ -14,12 +14,14 @@ Content export pipeline for converting Obsidian vault content into public-safe f
 ## Usage
 
 ```bash
-# Run with default config
-pnpm --dir tools/publisher export
+# Publish one Markdown file from anywhere inside the Vault
+pnpm --dir tools/publisher export -- --config config.yaml --file "E:/path/to/article.md"
 
-# Run with custom config
+# Optional: rebuild all configured directories
 pnpm --dir tools/publisher export -- --config config.yaml
 ```
+
+Single-file publishing updates the matching document and metadata entry without clearing other published content. It does not use `public_scope.include`.
 
 ## Configuration
 
