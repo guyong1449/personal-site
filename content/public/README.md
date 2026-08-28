@@ -1,5 +1,6 @@
 # Public Content
 
-Generated content only.
+Generated content only, produced by tools/site-builder from content/site.
 
-This directory should be filled by the publisher, not edited by hand.
+Do not edit by hand; do not commit generated markdown or assets
+(metadata JSONs are tracked, notes/gallery/assets contents are gitignored).

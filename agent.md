@@ -2,298 +2,100 @@
 
 ## Purpose
 
-This repository is the public publishing path for a personal site.
-
-The system is not a generic blog starter. It is a contract-driven pipeline:
+This repository publishes the personal site `GUYONG` (`guyong.site`). It is a
+contract-driven pipeline, not a generic blog starter:
 
 ```text
-Obsidian Vault
-  -> tools/publisher
-  -> content/public
+.local-content (drafts, gitignored)
+  -> Studio publish flow
+content/site (canonical, git-tracked)
+  -> tools/site-builder
+content/public (generated snapshot)
   -> apps/web
   -> Vercel
 ```
 
-Any implementation work in this repo must preserve that boundary.
+Legacy path: Obsidian Vault -> tools/publisher -> content/public. The Studio is
+now the primary authoring surface; `tools/publisher` is kept for reference and
+must not be treated as the source of truth.
 
 ---
 
 ## Canonical Architecture
 
-### 1. Authoring Layer
+### 1. Draft Layer
 
-Source content lives in an Obsidian Vault outside this repository.
+`.local-content/notes|gallery|assets` holds machine-local drafts. Gitignored.
+Original files outside the repo (e.g. Obsidian notes) are never modified by
+any tool in this repository; import copies content in and re-importing the
+same slug requires explicit confirmation.
 
-This repo must not make the frontend read the Vault directly.
+### 2. Canonical Layer
 
-### 2. Publisher Layer
+`content/site/notes|gallery|assets` is the single maintenance source for
+published content and is git-tracked. Edits happen through the Studio publish
+flow (or by hand followed by `pnpm build:content`).
 
-`tools/publisher` is the only adaptation layer between private authoring content and public site content.
+### 3. Generated Snapshot Layer
 
-It is responsible for:
+`content/public` is produced only by `tools/site-builder`:
 
-- scanning configured Vault scopes
-- parsing frontmatter
-- filtering publishable entries
-- resolving and copying assets
-- rewriting Obsidian internal links to site routes
-- exporting public markdown, metadata, and social drafts
+- validated frontmatter, stable slugs, recency-ordered metadata
+- `metadata/notes.json`, `metadata/gallery.json`, `metadata/search.json`
+- markdown normalized under `notes/` and `gallery/`, assets copied
 
-Do not move these responsibilities into `apps/web`.
-
-### 3. Public Snapshot Layer
-
-`content/public` is the frontend-facing content boundary.
-
-It contains:
-
-- `notes/`
-- `courses/`
-- `gallery/`
-- `assets/`
-- `metadata/`
-- `social/`
-
-Treat this directory as generated output. Do not hand-edit exported documents as a normal workflow.
+Treat this directory as generated output. The web app reads nothing else.
 
 ### 4. Frontend Layer
 
-`apps/web` is the deployable site app.
+`apps/web` is the deployable Next.js 15 App Router app.
 
-Current state:
+- lists read `content/public/metadata/*.json` via `src/lib/content`
+- detail pages read the exported markdown
+- content model: text content is `content_type: note` (course context lives in
+  tags such as `course/CS308`); gallery stays a separate kind
+- public routes: `/`, `/notes`, `/gallery`, `/account`, `/search`, detail
+  routes, sitemap/RSS/robots
+- `/studio` exists only in dev (rewrite to the local Studio); production
+  returns 404
 
-- Next.js 15 App Router shell with a typed content adapter over `content/public`
+### 5. Studio Layer
 
-Target state:
+`tools/studio` runs standalone on `127.0.0.1:4319` only. Write APIs reject
+non-local origins. It owns drafts, import, publish, unpublish, and permanent
+deletion (title-confirmed, draft-only, exclusive assets reclaimed).
 
-- Next.js 15 App Router app with migrated domain routes and markdown presentation
+### 6. Deployment Layer
 
-Its job is to consume the generated snapshot only:
-
-- list pages read `content/public/metadata/*.json`
-- detail pages read `content/public/{notes|courses|gallery}/*.md`
-- assets are served from exported `/assets/*`
-
-### 5. Deployment Layer
-
-Vercel deploys the frontend app after content has already been exported into `content/public`.
-
-The deployment target should not need direct Vault access or a database for the current scope.
-
----
-
-## Migration Target
-
-The current migration target is:
-
-- replace Astro with Next.js 15 App Router
-- preserve publisher contract
-- preserve route families:
-  - `/notes/[slug]`
-  - `/courses/[slug]`
-  - `/gallery/[slug]`
-- keep metadata JSON as list-page source of truth
-- keep exported markdown as detail-page source of truth
-
-The reference repo `guangzhengli/nextjs-blog-template` is a UI and App Router reference only.
-
-Do not blindly copy its blog-only information architecture.
+Vercel deploys `apps/web` after content is exported into `content/public`
+(rebuilt during `prebuild`). Publishing commits only content pathspecs
+(`content/site`, `content/public/metadata`, `apps/web/public/feed.xml`) with
+`content: publish|unpublish <slug>` messages; never `git add .` / `-A`.
 
 ---
 
-## Target Next.js Runtime Split
+## Visual Contract (lead-snow-cyan, 2026-08)
 
-### A. Site Shell
-
-Purpose:
-
-- global layout
-- global metadata
-- typography, theme, navigation, footer
-
-Expected files:
-
-- `apps/web/src/app/layout.tsx`
-- `apps/web/src/app/globals.css`
-- `apps/web/src/components/header/*`
-- `apps/web/src/lib/config.ts`
-
-### B. Content Adapter
-
-Purpose:
-
-- provide the only frontend read interface to `content/public`
-- normalize metadata and markdown into typed runtime models
-- expose list and detail loaders
-
-Expected files:
-
-- `apps/web/src/lib/content/types.ts`
-- `apps/web/src/lib/content/paths.ts`
-- `apps/web/src/lib/content/index.ts`
-- `apps/web/src/lib/content/load-index.ts`
-- `apps/web/src/lib/content/load-entry.ts`
-- `apps/web/src/lib/content/normalize.ts`
-
-### C. Markdown Rendering
-
-Purpose:
-
-- render exported markdown consistently
-- support GFM, code blocks, math, heading ids, TOC
-- handle exporter-produced inline HTML safely
-
-Expected files:
-
-- `apps/web/src/components/markdown/*`
-- `apps/web/src/lib/markdown/pipeline.ts`
-- `apps/web/src/lib/toc.ts`
-
-### D. Route Pages
-
-Purpose:
-
-- home aggregation page
-- domain list pages
-- domain detail pages
-- 404 handling
-
-Expected files:
-
-- `apps/web/src/app/page.tsx`
-- `apps/web/src/app/notes/*`
-- `apps/web/src/app/courses/*`
-- `apps/web/src/app/gallery/*`
-- `apps/web/src/app/not-found.tsx`
-
-### E. Secondary Outputs
-
-Purpose:
-
-- sitemap
-- robots
-- feeds
-- comments
-
-Expected files:
-
-- `apps/web/src/app/sitemap.ts`
-- `apps/web/src/app/robots.ts`
-- `apps/web/scripts/generate-rss.js`
-- `apps/web/src/components/giscus-comments.tsx`
+- Palette ratio 主:辅:重 = 7:2:1 — pale cyan-white surfaces, slate/steel text
+  and structure, bright teal accents only
+- Square corners, no soft shadows, compact vertical rhythm
+- Quicksand for Latin, system CJK stack for Chinese
+- Selected-page state lives in the thin footer nav, not the header
+- Previous flat style preserved on `backup/style-v1-flat`
 
 ---
 
 ## Rules For Implementation
 
-### Scope Rules
-
-- keep changes small and reviewable
-- do not change publisher output shape unless a contract update is explicitly requested
-- do not invent a second source of truth for content indexing
-- do not collapse all content into a single `/blog` route family
-
-### Frontend Rules
-
-- prefer a markdown-first rendering pipeline over MDX-first assumptions
-- keep route prefixes aligned with publisher rewriting logic
-- if static assets must be copied into `apps/web/public`, treat that as packaging only
-
-### Testing Rules
-
-- publisher tests validate export behavior
-- web tests should validate consumption behavior only
-- each migration phase should end with the fastest relevant build or test check
-
-### Git Rules
-
-- ignore local build and dev artifacts such as `.astro/` and dev logs
-- do not commit secrets or machine-local config
-
----
-
-## Phase Purposes
-
-### Phase 0: Contract Freeze
-
-Purpose:
-
-- lock in what the frontend is allowed to consume
-- prevent migration work from leaking into publisher redesign
-
-### Phase 1: Next.js Shell Bootstrap
-
-Purpose:
-
-- replace the Astro runtime shell with a minimal Next.js 15 app
-- establish TypeScript, linting, styling, and app router entry points
-- prove the new app can boot and build before content integration starts
-
-Primary output:
-
-- a static Next app with layout, globals, and placeholder home page
-
-### Phase 2: Typed Content Adapter
-
-Purpose:
-
-- rebuild current Astro content-loading behavior in a typed, reusable Next-compatible layer
-- make lists and detail pages consume generated content through one internal API
-
-Primary output:
-
-- typed loaders for metadata indexes and markdown documents across notes, courses, and gallery
-
-### Phase 3: Route Migration
-
-Purpose:
-
-- replace Astro pages with Next route pages using the adapter
-
-### Phase 4: Markdown Presentation
-
-Purpose:
-
-- improve rendering quality and add TOC-capable markdown processing
-
-### Phase 5: Template UI Port
-
-Purpose:
-
-- port the reference template's layout and interaction strengths without importing its blog assumptions
-
-### Phase 6: SEO And Feeds
-
-Purpose:
-
-- add sitemap, robots, metadata, RSS/feed generation, and comments
-
-### Phase 7: Packaging And Cleanup
-
-Purpose:
-
-- remove Astro leftovers and make deployment deterministic
-
----
+- keep changes small and reviewable; one batch per commit
+- every batch ends with lint, `tsc --noEmit`, vitest, and `next build`
+- do not stage unrelated user changes with content commits
+- do not edit `content/public` by hand
+- do not deploy to production without an explicit user request
 
 ## Working Commands
 
-- Export content: `pnpm --dir tools/publisher export -- --config <config-path>`
-- Test publisher: `pnpm --dir tools/publisher test`
-- Run web app: `pnpm --dir apps/web dev`
-- Build web app: `pnpm --dir apps/web build`
-
-If `pnpm` is unavailable on the current machine, validate the local package manager before continuing and switch to a working equivalent rather than blocking on tooling preference.
-
----
-
-## Documents To Read Before Editing
-
-- `docs/plan-nextjs-migration.md`
-- `docs/architecture/runtime-overview.md`
-- `docs/architecture/publisher-flow.md`
-- `docs/contracts/export-schema.md`
-- `docs/contracts/content-frontmatter.md`
-- `tools/publisher/src/index.js`
-
-For the current migration, `docs/plan-nextjs-migration.md` is the implementation-level north star and this `agent.md` is the repo entry summary.
+- `pnpm dev:web` / `pnpm build:web` / `pnpm lint:web` / `pnpm test:web`
+- `pnpm studio` (local only)
+- `pnpm build:content` / `pnpm test:content`
+- `corepack pnpm` if the global pnpm shim is broken (Windows/conda PATH issue)
