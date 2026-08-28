@@ -14,6 +14,7 @@ type GiscusCommentsProps = {
   inputPosition?: "top" | "bottom";
   lang?: string;
   loading?: "lazy" | "eager";
+  theme?: string;
 };
 
 export function GiscusComments({
@@ -28,6 +29,7 @@ export function GiscusComments({
   inputPosition = "top",
   lang = "zh-CN",
   loading = "lazy",
+  theme = "light",
 }: GiscusCommentsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +50,7 @@ export function GiscusComments({
     script.setAttribute("data-reactions-enabled", reactionsEnabled ? "1" : "0");
     script.setAttribute("data-emit-metadata", emitMetadata ? "1" : "0");
     script.setAttribute("data-input-position", inputPosition);
-    script.setAttribute("data-theme", "light");
+    script.setAttribute("data-theme", theme);
     script.setAttribute("data-lang", lang);
     script.setAttribute("data-loading", loading);
     script.crossOrigin = "anonymous";
@@ -60,7 +62,7 @@ export function GiscusComments({
     return () => {
       container.innerHTML = "";
     };
-  }, [repo, repoId, category, categoryId, mapping, term, reactionsEnabled, emitMetadata, inputPosition, lang, loading]);
+  }, [repo, repoId, category, categoryId, mapping, term, reactionsEnabled, emitMetadata, inputPosition, lang, loading, theme]);
 
   return <div ref={containerRef} className="mt-8" />;
 }

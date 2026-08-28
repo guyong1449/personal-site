@@ -9,5 +9,6 @@ export const siteConfig = {
     { title: "Notes", href: "/notes" },
     { title: "Gallery", href: "/gallery" },
     { title: "Account", href: "/account" },
+    { title: "Search", href: "/search" },
   ],
 };

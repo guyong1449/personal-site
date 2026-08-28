@@ -1,5 +1,8 @@
 import { loadEntry } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
+import { NoteComments } from "@/components/note-comments";
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -26,29 +29,46 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
     notFound();
   }
 
+  const coverSrc = note.cover
+    ? note.cover.startsWith("assets/")
+      ? note.cover
+      : `assets/${note.cover}`
+    : null;
+
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
+    <main id="main-content" className="site-shell archive-page article-page">
       <article>
-        <header className="mb-8">
-          <h1 className="mb-4 text-4xl font-bold">{note.title}</h1>
-          {note.summary && (
-            <p className="text-lg text-[rgba(34,27,22,0.72)]">{note.summary}</p>
-          )}
+        <header className="article-header">
+          <p className="eyebrow">NOTE{note.updated ? ` / ${note.updated}` : ""}</p>
+          <h1>{note.title}</h1>
+          {note.summary && <p className="article-header__summary">{note.summary}</p>}
           {note.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="tag-list" aria-label="标签">
               {note.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-[var(--accent)]/10 px-3 py-1 text-xs text-[var(--accent)]"
-                >
-                  {tag}
-                </span>
+                <span key={tag}>#{tag}</span>
               ))}
             </div>
           )}
         </header>
 
+        {coverSrc && (
+          <div className="article-cover">
+            <Image
+              src={`/${coverSrc}`}
+              alt={`${note.title} 封面`}
+              fill
+              sizes="(max-width: 900px) 100vw, 1180px"
+              priority
+            />
+          </div>
+        )}
+
         <MarkdownBody content={note.body} />
+
+        <div className="article-footer">
+          <NoteComments />
+          <Link href="/notes" className="back-link">← BACK TO NOTES</Link>
+        </div>
       </article>
     </main>
   );

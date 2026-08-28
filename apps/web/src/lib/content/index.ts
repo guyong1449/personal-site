@@ -4,3 +4,4 @@ export * from "./frontmatter";
 export * from "./normalize";
 export * from "./load-index";
 export * from "./load-entry";
+export * from "./search";

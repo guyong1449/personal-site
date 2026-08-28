@@ -21,7 +21,7 @@ export function getPublicRoot() {
   return resolvePublicRoot();
 }
 
-export function getMetadataPath(kind: ContentKind) {
+export function getMetadataPath(kind: ContentKind | "search") {
   return path.join(getPublicRoot(), "metadata", `${kind}.json`);
 }
 

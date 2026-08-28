@@ -1,5 +1,7 @@
 import { loadEntry } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -26,35 +28,49 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  const coverSrc = item.cover
+    ? item.cover.startsWith("assets/")
+      ? item.cover
+      : `assets/${item.cover}`
+    : null;
+
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-12">
+    <main id="main-content" className="site-shell archive-page article-page">
       <article>
-        <header className="mb-8">
-          <h1 className="mb-4 text-4xl font-bold">{item.title}</h1>
-          {item.summary && (
-            <p className="text-lg text-[rgba(34,27,22,0.72)]">{item.summary}</p>
-          )}
-          {item.artCategory && (
-            <p className="mt-2 text-[var(--accent)]">分类: {item.artCategory}</p>
-          )}
-          {item.series && (
-            <p className="mt-1 text-[rgba(34,27,22,0.6)]">系列: {item.series}</p>
-          )}
+        <header className="article-header">
+          <p className="eyebrow">
+            GALLERY
+            {[item.artCategory, item.series].filter(Boolean).length > 0 &&
+              ` / ${[item.artCategory, item.series].filter(Boolean).join(" · ")}`}
+          </p>
+          <h1>{item.title}</h1>
+          {item.summary && <p className="article-header__summary">{item.summary}</p>}
           {item.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="tag-list" aria-label="标签">
               {item.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-[var(--accent)]/10 px-3 py-1 text-xs text-[var(--accent)]"
-                >
-                  {tag}
-                </span>
+                <span key={tag}>#{tag}</span>
               ))}
             </div>
           )}
         </header>
 
+        {coverSrc && (
+          <div className="article-cover">
+            <Image
+              src={`/${coverSrc}`}
+              alt={`${item.title} 封面`}
+              fill
+              sizes="(max-width: 900px) 100vw, 1180px"
+              priority
+            />
+          </div>
+        )}
+
         <MarkdownBody content={item.body} />
+
+        <div className="article-footer">
+          <Link href="/gallery" className="back-link">← BACK TO GALLERY</Link>
+        </div>
       </article>
     </main>
   );

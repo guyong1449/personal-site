@@ -13,11 +13,16 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 };
 
+const themeInitScript = `(function(){try{var t=localStorage.getItem("guyong-theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang={siteConfig.locale} data-scroll-behavior="smooth">
+    <html lang={siteConfig.locale} data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <a href="#main-content" className="skip-link">跳到正文</a>
         <Header />

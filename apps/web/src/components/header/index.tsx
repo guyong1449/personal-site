@@ -2,6 +2,7 @@ import Link from "next/link";
 import { siteConfig } from "@/lib/config";
 import { NavDesktopMenu } from "./nav-desktop-menu";
 import { NavMobileMenu } from "./nav-mobile-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Header() {
   return (
@@ -12,8 +13,11 @@ export function Header() {
           <span>{siteConfig.name}</span>
         </Link>
 
-        <NavDesktopMenu />
-        <NavMobileMenu />
+        <div className="site-header__end">
+          <NavDesktopMenu />
+          <ThemeToggle />
+          <NavMobileMenu />
+        </div>
       </div>
     </header>
   );

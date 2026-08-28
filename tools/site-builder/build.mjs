@@ -219,13 +219,46 @@ function copyAssets(errors) {
   return count;
 }
 
+function stripMarkdown(body) {
+  return String(body ?? "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~>|#+=-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 12000);
+}
+
+function buildSearchIndex(entriesByKind) {
+  const docs = [];
+  for (const [kindId, entries] of entriesByKind) {
+    for (const entry of entries) {
+      docs.push({
+        kind: kindId,
+        slug: entry.slug,
+        title: entry.title,
+        summary: entry.summary,
+        tags: entry.tags,
+        text: stripMarkdown(entry.body),
+      });
+    }
+  }
+  return docs;
+}
+
 function build() {
   const errors = [];
   const summary = [];
+  const entriesByKind = [];
 
   for (const kind of KINDS) {
     const entries = sortByRecency(readEntries(kind, errors));
     assertUniqueSlugs(entries, kind.id, errors);
+    entriesByKind.push([kind.id, entries]);
 
     const outputDir = path.join(publicRoot, kind.id);
     resetDir(outputDir);
@@ -245,8 +278,15 @@ function build() {
     summary.push(`${kind.id}: ${entries.length} document(s)`);
   }
 
+  const searchIndex = buildSearchIndex(entriesByKind);
+  fs.writeFileSync(
+    path.join(publicRoot, "metadata", "search.json"),
+    `${JSON.stringify(searchIndex)}\n`,
+    "utf8",
+  );
+
   const assetCount = copyAssets(errors);
-  summary.push(`assets: ${assetCount} file(s)`);
+  summary.push(`assets: ${assetCount} file(s)`, `search: ${searchIndex.length} doc(s)`);
 
   if (errors.length > 0) {
     console.error("site-builder failed:");
