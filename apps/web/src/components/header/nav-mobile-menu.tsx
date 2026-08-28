@@ -10,11 +10,12 @@ export function NavMobileMenu() {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden">
+    <div className="mobile-nav">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-[var(--foreground)]"
-        aria-label="Toggle menu"
+        className="mobile-nav__toggle"
+        aria-label={isOpen ? "关闭菜单" : "打开菜单"}
+        aria-expanded={isOpen}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -43,9 +44,9 @@ export function NavMobileMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-16 z-50 bg-[var(--panel)] border-b border-[var(--line)] shadow-lg">
-          <nav className="flex flex-col p-4">
-            {mainNavItems.map((item) => {
+        <div className="mobile-nav__panel">
+          <nav className="site-shell" aria-label="移动端主导航">
+            {mainNavItems.map((item, index) => {
               const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
               return (
@@ -53,32 +54,21 @@ export function NavMobileMenu() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsOpen(false)}
-                  className={`py-3 text-sm font-medium transition-colors hover:text-[var(--accent)] ${
-                    isActive ? "text-[var(--accent)]" : "text-[rgba(34,27,22,0.72)]"
-                  }`}
+                  className={isActive ? "is-active" : undefined}
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  {item.title}
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  {item.title.toUpperCase()}
                 </Link>
               );
             })}
 
-            <div className="mt-4 border-t border-[var(--line)] pt-4">
-              <p className="mb-2 text-xs uppercase tracking-wider text-[rgba(34,27,22,0.6)]">
-                Social
-              </p>
-              <div className="flex gap-4">
-                {socialLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[rgba(34,27,22,0.72)] hover:text-[var(--accent)]"
-                  >
-                    {link.title}
-                  </a>
-                ))}
-              </div>
+            <div className="mobile-nav__social">
+              {socialLinks.map((link) => (
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.title}
+                </a>
+              ))}
             </div>
           </nav>
         </div>

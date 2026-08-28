@@ -6,7 +6,10 @@ import { GoToTop } from "@/components/go-to-top";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: siteConfig.name,
+  title: {
+    default: siteConfig.name,
+    template: `%s / ${siteConfig.name}`,
+  },
   description: siteConfig.description,
 };
 
@@ -14,28 +17,28 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang={siteConfig.locale}>
-      <body className="min-h-screen">
+    <html lang={siteConfig.locale} data-scroll-behavior="smooth">
+      <body>
+        <a href="#main-content" className="skip-link">跳到正文</a>
         <Header />
         {children}
-        <footer className="border-t border-[var(--line)] bg-[var(--panel)]">
-          <div className="mx-auto max-w-6xl px-6 py-8">
-            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-              <p className="text-sm text-[rgba(34,27,22,0.6)]">
-                © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
-              </p>
-              <div className="flex gap-4">
+        <footer className="site-footer">
+          <div className="site-shell site-footer__inner">
+            <div>
+              <p className="site-footer__brand">GUYONG / INDEX</p>
+              <p className="site-footer__note">TEXT FIRST · IMAGE SECOND</p>
+            </div>
+            <div className="site-footer__links">
                 {siteConfig.sections.map((section) => (
                   <a
                     key={section.href}
                     href={section.href}
-                    className="text-sm text-[rgba(34,27,22,0.6)] hover:text-[var(--accent)] transition-colors"
                   >
                     {section.title}
                   </a>
                 ))}
-              </div>
             </div>
+            <p className="site-footer__copyright">© {new Date().getFullYear()} GUYONG</p>
           </div>
         </footer>
         <GoToTop />

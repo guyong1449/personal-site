@@ -1,5 +1,5 @@
 import { loadIndex } from "@/lib/content";
-import Link from "next/link";
+import { ContentIndex } from "@/components/content/content-index";
 
 export const dynamic = "force-static";
 
@@ -7,45 +7,15 @@ export default async function NotesPage() {
   const notes = await loadIndex("notes");
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-6 py-12">
-      <section className="mb-12">
-        <h1 className="mb-4 text-4xl font-bold">Notes</h1>
-        <p className="text-lg text-[rgba(34,27,22,0.72)]">
-          学习笔记和技术文档
-        </p>
-      </section>
-
-      <section>
-        {notes.length === 0 ? (
-          <p className="text-[rgba(34,27,22,0.6)]">暂无笔记内容</p>
-        ) : (
-          <div className="grid gap-6">
-            {notes.map((note) => (
-              <Link
-                key={note.slug}
-                href={`/notes/${note.slug}`}
-                className="block rounded-[20px] border border-[var(--line)] bg-[var(--panel)] p-6 shadow-[0_8px_24px_rgba(69,47,25,0.06)] transition-all hover:shadow-[0_12px_32px_rgba(69,47,25,0.1)]"
-              >
-                <h2 className="mb-2 text-xl font-semibold">{note.title}</h2>
-                {note.summary && (
-                  <p className="mb-3 text-[rgba(34,27,22,0.72)]">{note.summary}</p>
-                )}
-                {note.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {note.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full bg-[var(--accent)]/10 px-3 py-1 text-xs text-[var(--accent)]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </Link>
-            ))}
-          </div>
-        )}
+    <main id="main-content" className="site-shell archive-page">
+      <header className="archive-header">
+        <p className="eyebrow">SECTION / 01</p>
+        <h1>NOTES</h1>
+        <p>学习笔记、技术文档与持续形成的思考。</p>
+        <span>{String(notes.length).padStart(3, "0")} ENTRIES</span>
+      </header>
+      <section aria-label="笔记索引">
+        <ContentIndex items={notes} emptyMessage="暂无笔记。发布后的文字会按索引排列在这里。" />
       </section>
     </main>
   );
