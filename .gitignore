@@ -28,3 +28,5 @@ content/public/social/xiaohongshu/*
 
 .vercel
 .env*
+
+*.tsbuildinfo
