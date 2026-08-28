@@ -9,10 +9,9 @@ export default async function GalleryPage() {
   return (
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
-        <p className="eyebrow">SECTION / 02</p>
         <h1>GALLERY</h1>
         <p>少量图像、作品与视觉实验，保持克制。</p>
-        <span>{String(gallery.length).padStart(3, "0")} ENTRIES</span>
+        <span>{gallery.length} 件</span>
       </header>
       <section aria-label="作品索引">
         <ContentIndex items={gallery} emptyMessage="暂无图像作品。这里会保持小规模、选择性更新。" />

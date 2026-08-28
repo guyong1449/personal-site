@@ -8,18 +8,6 @@ type ContentIndexProps = {
   limit?: number;
 };
 
-function isString(value: string | null): value is string {
-  return Boolean(value);
-}
-
-function getMeta(item: ContentListItem) {
-  if (item.kind === "gallery") {
-    return [item.artCategory, item.series].filter(isString);
-  }
-
-  return item.updated ? [`UPDATED ${item.updated}`] : [];
-}
-
 export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) {
   const visibleItems = typeof limit === "number" ? items.slice(0, limit) : items;
 
@@ -27,18 +15,19 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
     return (
       <div className="empty-index">
         <span className="empty-index__mark" aria-hidden="true">+</span>
-        <div>
-          <p className="eyebrow">QUEUE / 000</p>
-          <p>{emptyMessage}</p>
-        </div>
+        <p>{emptyMessage}</p>
       </div>
     );
   }
 
   return (
     <div className="content-index">
-      {visibleItems.map((item, index) => {
-        const meta = getMeta(item);
+      {visibleItems.map((item) => {
+        const coverSrc = item.cover
+          ? item.cover.startsWith("assets/")
+            ? item.cover
+            : `assets/${item.cover}`
+          : null;
 
         return (
           <Link
@@ -46,36 +35,21 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
             href={`/${item.kind}/${item.slug}`}
             className="index-entry"
           >
-            <span className="index-entry__number" aria-hidden="true">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-
             <div className="index-entry__body">
-              <div className="index-entry__meta">
-                <span>{item.kind.toUpperCase()}</span>
-                {meta.map((value) => <span key={value}>{value}</span>)}
-              </div>
               <h2>{item.title}</h2>
               {item.summary && <p>{item.summary}</p>}
-              {item.tags.length > 0 && (
-                <div className="tag-list" aria-label="标签">
-                  {item.tags.map((tag) => <span key={tag}>#{tag}</span>)}
-                </div>
-              )}
             </div>
 
-            {item.cover && (
+            {coverSrc && (
               <div className="index-entry__cover">
                 <Image
-                  src={item.cover}
+                  src={`/${coverSrc}`}
                   alt={`${item.title} 封面`}
                   fill
-                  sizes="(max-width: 640px) 28vw, 176px"
+                  sizes="96px"
                 />
               </div>
             )}
-
-            <span className="index-entry__arrow" aria-hidden="true">↗</span>
           </Link>
         );
       })}

@@ -46,22 +46,15 @@ export function NavMobileMenu() {
       {isOpen && (
         <div className="mobile-nav__panel">
           <nav className="site-shell" aria-label="移动端主导航">
-            {mainNavItems.map((item, index) => {
-              const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={isActive ? "is-active" : undefined}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  {item.title.toUpperCase()}
-                </Link>
-              );
-            })}
+            {mainNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+              >
+                {item.title}
+              </Link>
+            ))}
           </nav>
         </div>
       )}

@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import "@fontsource/quicksand/400.css";
+import "@fontsource/quicksand/500.css";
+import "@fontsource/quicksand/600.css";
+import "@fontsource/quicksand/700.css";
 import "./globals.css";
 import { siteConfig } from "@/lib/config";
 import { Header } from "@/components/header";
+import { SiteFooter } from "@/components/site-footer";
 import { GoToTop } from "@/components/go-to-top";
 
 export const metadata: Metadata = {
@@ -27,25 +32,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">跳到正文</a>
         <Header />
         {children}
-        <footer className="site-footer">
-          <div className="site-shell site-footer__inner">
-            <div>
-              <p className="site-footer__brand">GUYONG</p>
-              <p className="site-footer__note">TEXT FIRST · IMAGE SECOND</p>
-            </div>
-            <div className="site-footer__links">
-                {siteConfig.sections.map((section) => (
-                  <a
-                    key={section.href}
-                    href={section.href}
-                  >
-                    {section.title}
-                  </a>
-                ))}
-            </div>
-            <p className="site-footer__copyright">© {new Date().getFullYear()} GUYONG</p>
-          </div>
-        </footer>
+        <SiteFooter />
         <GoToTop />
       </body>
     </html>

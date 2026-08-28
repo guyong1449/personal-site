@@ -39,7 +39,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
     <main id="main-content" className="site-shell archive-page article-page">
       <article>
         <header className="article-header">
-          <p className="eyebrow">NOTE{note.updated ? ` / ${note.updated}` : ""}</p>
+          {note.updated && <p className="article-meta">{note.updated}</p>}
           <h1>{note.title}</h1>
           {note.summary && <p className="article-header__summary">{note.summary}</p>}
           {note.tags.length > 0 && (

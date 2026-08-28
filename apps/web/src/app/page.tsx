@@ -24,57 +24,42 @@ export default async function HomePage() {
     <main id="main-content">
       <section className="site-shell hero">
         <div className="hero__copy">
-          <p className="eyebrow">PERSONAL ARCHIVE / CN</p>
-          <h1>
-            <span>GUYONG</span>
-          </h1>
+          <h1>GUYONG</h1>
           <p className="hero__intro">
-            记录技术学习、课程笔记与长期思考，少量画作。文字优先。
+            你好，我是 GUYONG。这里记录我的技术学习、课程笔记与长期的思考，偶尔也放一些小画。
           </p>
-          <div className="hero__actions">
-            <Link href="/notes" className="primary-link">开始阅读 <span>→</span></Link>
-            <span className="hero__status">ARCHIVE / ONLINE</span>
-          </div>
         </div>
 
-        <div className="hero-visual" aria-label="原创抽象几何视觉">
+        <div className="hero-visual" aria-hidden="true">
           <div className="hero-visual__grid" />
           <div className="hero-visual__cyan" />
           <div className="hero-visual__black" />
           <div className="hero-visual__pink" />
           <div className="hero-visual__cross">+</div>
-          <p>GI / 00</p>
-          <span>TEXTUAL<br />ARCHIVE</span>
         </div>
       </section>
 
       <section className="site-shell home-gallery" aria-label="画作展示">
         <header className="section-heading">
-          <div>
-            <p className="eyebrow">GALLERY / FEATURED</p>
-            <h2>主画与局部</h2>
-          </div>
-          <Link href="/gallery" className="text-link">GALLERY <span>↗</span></Link>
+          <h2>主画与局部</h2>
+          <Link href="/gallery" className="text-link">全部作品 ↗</Link>
         </header>
 
         <figure className="showpiece">
           <ArtCanvas variant="wide" />
-          <figcaption>WORK / 00 — 几何占位（非正式作品）</figcaption>
+          <figcaption>几何占位 · 非正式作品</figcaption>
         </figure>
 
         <figure className="showpiece showpiece--detail">
           <ArtCanvas variant="detail" />
-          <figcaption>DETAIL / 00 — 局部裁切</figcaption>
+          <figcaption>局部裁切</figcaption>
         </figure>
       </section>
 
       <section className="site-shell home-feed">
         <header className="section-heading">
-          <div>
-            <p className="eyebrow">LATEST / TEXT</p>
-            <h2>最近更新</h2>
-          </div>
-          <Link href="/notes" className="text-link">ALL NOTES <span>↗</span></Link>
+          <h2>最近更新</h2>
+          <Link href="/notes" className="text-link">全部文章 ↗</Link>
         </header>
         <ContentIndex
           items={notes}

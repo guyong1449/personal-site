@@ -11,6 +11,7 @@
     "prebuild": "node scripts/sync-public-assets.mjs && node scripts/generate-rss.js"
   },
   "dependencies": {
+    "@fontsource/quicksand": "^5.3.0",
     "clsx": "^2.1.1",
     "js-yaml": "^4.1.1",
     "next": "^15.0.0",

@@ -38,11 +38,11 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
     <main id="main-content" className="site-shell archive-page article-page">
       <article>
         <header className="article-header">
-          <p className="eyebrow">
-            GALLERY
-            {[item.artCategory, item.series].filter(Boolean).length > 0 &&
-              ` / ${[item.artCategory, item.series].filter(Boolean).join(" · ")}`}
-          </p>
+          {[item.artCategory, item.series].some(Boolean) && (
+            <p className="article-meta">
+              {[item.artCategory, item.series].filter(Boolean).join(" · ")}
+            </p>
+          )}
           <h1>{item.title}</h1>
           {item.summary && <p className="article-header__summary">{item.summary}</p>}
           {item.tags.length > 0 && (
