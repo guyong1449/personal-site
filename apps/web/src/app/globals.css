@@ -208,7 +208,7 @@ button, a { touch-action: manipulation; }
 .prose [id] { scroll-margin-top: 96px; }
 
 .site-footer { border-top: 1px solid var(--foreground); background: var(--foreground); color: white; }
-.site-footer__inner { display: grid; min-height: 176px; grid-template-columns: 1fr auto; align-items: center; gap: 24px; padding-block: 32px; }
+.site-footer__inner { display: grid; min-height: 88px; grid-template-columns: 1fr auto; align-items: center; gap: 24px; padding-block: 16px; }
 .site-footer__brand { margin: 0; font-weight: 900; letter-spacing: .08em; }
 .site-footer__note, .site-footer__copyright { color: #aeb4ba; font-family: ui-monospace,monospace; font-size: .65rem; letter-spacing: .1em; }
 .site-footer__note { margin: 8px 0 0; }
