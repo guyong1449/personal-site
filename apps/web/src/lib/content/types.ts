@@ -1,4 +1,4 @@
-export const contentKinds = ["notes", "courses", "gallery"] as const;
+export const contentKinds = ["notes", "gallery"] as const;
 
 export type ContentKind = (typeof contentKinds)[number];
 
@@ -10,8 +10,6 @@ export type ContentListItem = {
   tags: string[];
   cover: string | null;
   updated: string | null;
-  course: string | null;
-  week: string | null;
   artCategory: string | null;
   series: string | null;
 };

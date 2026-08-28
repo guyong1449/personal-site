@@ -13,10 +13,6 @@ function isString(value: string | null): value is string {
 }
 
 function getMeta(item: ContentListItem) {
-  if (item.kind === "courses") {
-    return [item.course, item.week ? `WEEK ${item.week}` : null].filter(isString);
-  }
-
   if (item.kind === "gallery") {
     return [item.artCategory, item.series].filter(isString);
   }

@@ -8,8 +8,8 @@ const OUTPUT_PATH = path.join(__dirname, "..", "public", "feed.xml");
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   "https://guyong.site";
-const SITE_NAME = "Personal Site";
-const SITE_DESCRIPTION = "Public publishing pipeline preview site.";
+const SITE_NAME = "GUYONG";
+const SITE_DESCRIPTION = "Guyong 的个人网站：技术笔记、课程学习记录与少量画作。";
 
 function loadMetadata(kind) {
   const filePath = path.join(PUBLIC_ROOT, "metadata", `${kind}.json`);
@@ -43,12 +43,10 @@ function generateItem(item, kind) {
 
 function generateFeed() {
   const notes = loadMetadata("notes");
-  const courses = loadMetadata("courses");
   const gallery = loadMetadata("gallery");
 
   const allItems = [
     ...notes.map((item) => ({ ...item, kind: "notes" })),
-    ...courses.map((item) => ({ ...item, kind: "courses" })),
     ...gallery.map((item) => ({ ...item, kind: "gallery" })),
   ].sort((a, b) => {
     const dateA = a.updated ? new Date(a.updated) : new Date(0);

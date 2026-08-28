@@ -20,8 +20,6 @@ export function normalizeListItem(kind: ContentKind, raw: RawMetadata): ContentL
     tags: asStringArray(raw.tags),
     cover: asString(raw.cover),
     updated: asString(raw.updated),
-    course: asString(raw.course),
-    week: asString(raw.week),
     artCategory: asString(raw.art_category),
     series: asString(raw.series),
   };

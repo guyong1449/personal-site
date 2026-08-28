@@ -32,7 +32,7 @@ describe("loadIndex", () => {
   it("returns an empty array for empty metadata exports", async () => {
     vi.spyOn(fs, "readFile").mockResolvedValue("[]");
 
-    await expect(loadIndex("courses")).resolves.toEqual([]);
+    await expect(loadIndex("notes")).resolves.toEqual([]);
     await expect(loadIndex("gallery")).resolves.toEqual([]);
   });
 });
