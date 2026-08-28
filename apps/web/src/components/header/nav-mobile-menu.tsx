@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { mainNavItems, socialLinks } from "./nav-data";
+import { mainNavItems } from "./nav-data";
 
 export function NavMobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,14 +62,6 @@ export function NavMobileMenu() {
                 </Link>
               );
             })}
-
-            <div className="mobile-nav__social">
-              {socialLinks.map((link) => (
-                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
-                  {link.title}
-                </a>
-              ))}
-            </div>
           </nav>
         </div>
       )}

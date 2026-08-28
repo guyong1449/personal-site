@@ -25,7 +25,7 @@ export default function RootLayout({
         <footer className="site-footer">
           <div className="site-shell site-footer__inner">
             <div>
-              <p className="site-footer__brand">GUYONG / INDEX</p>
+              <p className="site-footer__brand">GUYONG</p>
               <p className="site-footer__note">TEXT FIRST · IMAGE SECOND</p>
             </div>
             <div className="site-footer__links">

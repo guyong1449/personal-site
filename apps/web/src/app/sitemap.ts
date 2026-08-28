@@ -7,9 +7,8 @@ export const dynamic = "force-static";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
 
-  const [notes, courses, gallery] = await Promise.all([
+  const [notes, gallery] = await Promise.all([
     loadIndex("notes"),
-    loadIndex("courses"),
     loadIndex("gallery"),
   ]);
 
@@ -18,13 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: note.updated ? new Date(note.updated) : new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.8,
-  }));
-
-  const courseRoutes = courses.map((course) => ({
-    url: `${baseUrl}/courses/${course.slug}`,
-    lastModified: course.updated ? new Date(course.updated) : new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
   }));
 
   const galleryRoutes = gallery.map((item) => ({
@@ -48,19 +40,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/courses`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
       url: `${baseUrl}/gallery`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: `${baseUrl}/account`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
     ...noteRoutes,
-    ...courseRoutes,
     ...galleryRoutes,
   ];
 }

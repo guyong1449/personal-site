@@ -1,28 +1,35 @@
 import { loadIndex } from "@/lib/content";
-import { siteConfig } from "@/lib/config";
 import { ContentIndex } from "@/components/content/content-index";
 import Link from "next/link";
 
 export const dynamic = "force-static";
 
+function ArtCanvas({ variant }: { variant: "wide" | "detail" }) {
+  return (
+    <div className={`art-canvas art-canvas--${variant}`} aria-hidden="true">
+      <div className="art-canvas__grid" />
+      <div className="art-canvas__cyan" />
+      <div className="art-canvas__black" />
+      <div className="art-canvas__pink" />
+      <div className="art-canvas__yellow" />
+      <div className="art-canvas__cross">+</div>
+    </div>
+  );
+}
+
 export default async function HomePage() {
-  const [notes, courses, gallery] = await Promise.all([
-    loadIndex("notes"),
-    loadIndex("courses"),
-    loadIndex("gallery"),
-  ]);
+  const notes = await loadIndex("notes");
 
   return (
     <main id="main-content">
       <section className="site-shell hero">
         <div className="hero__copy">
-          <p className="eyebrow">PERSONAL PUBLISHING SYSTEM / CN</p>
+          <p className="eyebrow">PERSONAL ARCHIVE / CN</p>
           <h1>
             <span>GUYONG</span>
-            <span>/ INDEX</span>
           </h1>
           <p className="hero__intro">
-            一个以文字为主的个人内容索引。记录学习、课程与思考，偶尔收纳少量图像创作。
+            记录技术学习、课程笔记与长期思考，少量画作。文字优先。
           </p>
           <div className="hero__actions">
             <Link href="/notes" className="primary-link">开始阅读 <span>→</span></Link>
@@ -41,21 +48,24 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="site-shell index-overview" aria-label="内容分类">
-        {[
-          { number: "01", title: "NOTES", label: "笔记与思考", href: "/notes", count: notes.length },
-          { number: "02", title: "COURSES", label: "课程与资料", href: "/courses", count: courses.length },
-          { number: "03", title: "GALLERY", label: "少量图像创作", href: "/gallery", count: gallery.length },
-        ].map((item) => (
-          <Link key={item.href} href={item.href} className="overview-item">
-            <span>{item.number}</span>
-            <div>
-              <h2>{item.title}</h2>
-              <p>{item.label}</p>
-            </div>
-            <strong>{String(item.count).padStart(3, "0")}</strong>
-          </Link>
-        ))}
+      <section className="site-shell home-gallery" aria-label="画作展示">
+        <header className="section-heading">
+          <div>
+            <p className="eyebrow">GALLERY / FEATURED</p>
+            <h2>主画与局部</h2>
+          </div>
+          <Link href="/gallery" className="text-link">GALLERY <span>↗</span></Link>
+        </header>
+
+        <figure className="showpiece">
+          <ArtCanvas variant="wide" />
+          <figcaption>WORK / 00 — 几何占位（非正式作品）</figcaption>
+        </figure>
+
+        <figure className="showpiece showpiece--detail">
+          <ArtCanvas variant="detail" />
+          <figcaption>DETAIL / 00 — 局部裁切</figcaption>
+        </figure>
       </section>
 
       <section className="site-shell home-feed">

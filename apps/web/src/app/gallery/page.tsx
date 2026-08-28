@@ -9,7 +9,7 @@ export default async function GalleryPage() {
   return (
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
-        <p className="eyebrow">SECTION / 03</p>
+        <p className="eyebrow">SECTION / 02</p>
         <h1>GALLERY</h1>
         <p>少量图像、作品与视觉实验，保持克制。</p>
         <span>{String(gallery.length).padStart(3, "0")} ENTRIES</span>
