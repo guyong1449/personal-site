@@ -29,3 +29,4 @@ content/public/social/xiaohongshu/*
 
 *.tsbuildinfo
 .local-content/
+apps/web/public/assets/

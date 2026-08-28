@@ -13,6 +13,7 @@ import {
   slugify,
 } from "./lib.js";
 import { isBusy, publishDraft } from "./publish.js";
+import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(toolDir, "..", "..");
@@ -591,7 +592,13 @@ async function handleApi(req, res, url) {
 
   const unpublishMatch = pathname.match(/^\/api\/unpublish\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
   if (unpublishMatch && method === "POST") {
-    sendError(res, 501, "下线流程在批次 7 接入");
+    if (isUnpublishBusy()) {
+      sendError(res, 409, "已有下线任务在进行中，请稍后再试");
+      return;
+    }
+    const [, kind, slug] = unpublishMatch;
+    const result = unpublishToDraft(kind, slug);
+    sendJson(res, result.ok ? 200 : 422, result);
     return;
   }
 
