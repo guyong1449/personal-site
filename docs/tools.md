@@ -33,8 +33,11 @@ default_channel: "site"
 ### 使用
 
 ```bash
-cd tools/publisher
-npm run export -- --config config.yaml
+# 推荐：发布单个文件，不依赖目录配置
+pnpm publish:file "E:/Mywork/Obsidian Vault/任意目录/文章.md"
+
+# 可选：按 include 目录全量重建
+pnpm export:content
 ```
 
 ### 运行测试
@@ -54,7 +57,8 @@ npm test
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/api/export` | 运行 publisher 导出 |
+| POST | `/api/export` | 按配置目录全量导出 |
+| POST | `/api/publish-file` | 增量发布一个 Vault Markdown 文件 |
 | POST | `/api/preview` | 管理 dev server（body: `{action: "start"/"stop"/"status"}`）|
 | POST | `/api/deploy` | 运行 `vercel --prod` |
 | GET  | `/api/status` | 查询服务器状态 |
@@ -67,19 +71,19 @@ node tools/publish-server.js
 pnpm publish-server
 ```
 
-默认端口 3001，可通过 `--port` 修改。
+默认端口 4318，可通过 `--port` 修改。网站预览端口为 4317。
 
 ### 测试
 
 ```bash
 # 检查状态
-curl http://localhost:3001/api/status
+curl http://localhost:4318/api/status
 
 # 触发导出
-curl -X POST http://localhost:3001/api/export
+curl -X POST http://localhost:4318/api/export
 
 # 启动预览
-curl -X POST http://localhost:3001/api/preview \
+curl -X POST http://localhost:4318/api/preview \
   -H "Content-Type: application/json" \
   -d '{"action":"start"}'
 ```

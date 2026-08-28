@@ -6,8 +6,8 @@
 1. Obsidian 写作
    └─ 使用插件添加 frontmatter
 
-2. 导出内容
-   └─ node tools/publisher 或插件命令
+2. 发布当前文件
+   └─ Obsidian 命令“发布当前文件到网站”
 
 3. 本地预览
    └─ pnpm dev:web
@@ -35,13 +35,16 @@
 | 07-归档 | area/archive | type/reference | note |
 | 08-个人 | area/personal | type/reference | note |
 
-### Step 2: 添加 Frontmatter
+### Step 2: 设置并发布当前文件
 
 **方式 A：使用 Obsidian 插件（推荐）**
 
 1. 打开命令面板 `Ctrl+P`
-2. 输入 "添加 Frontmatter"
-3. 插件自动推断标题、标签、摘要
+2. 输入“发布当前文件到网站”
+3. 如果发布字段不完整，插件会打开表单，选择标题、内容类型、渠道、摘要和标签
+4. 点击“保存并发布”
+
+文件可以位于 Vault 的任意目录，不需要加入 `config.yaml` 的 `include` 列表。
 
 **方式 B：批量脚本**
 
@@ -68,11 +71,10 @@ tags:
 ---
 ```
 
-### Step 3: 导出内容
+### Step 3: 命令行发布（可选）
 
 ```bash
-cd tools/publisher
-npm run export -- --config config.yaml
+pnpm publish:file "E:/Mywork/Obsidian Vault/任意目录/文章.md"
 ```
 
 导出结果在 `content/public/`：
@@ -86,7 +88,7 @@ npm run export -- --config config.yaml
 
 ```bash
 pnpm dev:web
-# 访问 http://localhost:3000
+# 访问 http://localhost:4317
 ```
 
 ### Step 5: 部署
@@ -97,19 +99,16 @@ vercel --prod
 
 ## Obsidian 插件一键流程
 
-启动发布服务器后，可在 Obsidian 中完成全部操作：
-
-```bash
-# 终端中启动服务器
-node tools/publish-server.js
-```
-
-然后在 Obsidian 命令面板中：
-1. **导出内容到网站** — 触发 publisher
+插件会在首次使用时自动启动发布服务器。在 Obsidian 命令面板中：
+1. **发布当前文件到网站** — 增量发布当前 Markdown 文件
 2. **启动本地预览** — 启动 dev server
 3. **部署到 Vercel** — 一键部署
 
-## 添加新文章到发布范围
+## 可选：按目录全量导出
+
+只有需要批量重建整个网站时，才编辑 `tools/publisher/config.yaml` 的 `include` 列表并运行 `pnpm export:content`。全量导出会重建公开快照；`include` 为空时命令会安全退出，不会清空现有内容。
+
+## 添加批量导出范围
 
 编辑 `tools/publisher/config.yaml`，在 `include` 列表中添加目录：
 

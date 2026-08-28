@@ -39,7 +39,7 @@ Generated content consumed by the frontend:
 - **Frontend**: Next.js 15, React, TypeScript
 - **Styling**: Tailwind CSS
 - **Content**: Markdown with frontmatter
-- **Deployment**: Vercel (planned)
+- **Deployment**: Vercel production
 
 ## Development
 
@@ -47,25 +47,29 @@ Generated content consumed by the frontend:
 # Install dependencies
 pnpm install
 
-# Run development server
-pnpm dev
+# Run development server at http://127.0.0.1:4317
+pnpm dev:web
 
 # Build for production
-pnpm build
+pnpm build:web
 ```
 
 ## Current Status
 
-- Next.js frontend with full page structure
-- Content loading system with typed adapters
-- Publisher tool with basic export capabilities
-- RSS feed generation
-- Placeholder content in content/public
+- Next.js frontend with notes, courses, gallery, search metadata, RSS and sitemap
+- Single-file publishing from any Obsidian Vault folder
+- Visual frontmatter editor with automatic slug generation
+- Local preview on port 4317 and publish API on port 4318
+- Vercel production deployment is live; custom domain `guyong.site` is attached and awaiting the Cloudflare DNS switch
+- Fallback production URL: `https://personal-site-pearl-eta-55.vercel.app`
+- Public content snapshot currently empty and ready for real articles
 
 ## Intended Workflow
 
 1. Author content in Obsidian
-2. Run publisher to export
+2. Run the Obsidian command **发布当前文件到网站** (the local service starts automatically)
 3. Generated content appears in content/public
 4. Next.js site reads and displays content
 5. Vercel deploys the website
+
+The current-file command works from any folder in the configured Vault. Directory-based full export remains available as an optional batch workflow.

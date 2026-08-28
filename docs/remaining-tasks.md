@@ -2,14 +2,16 @@
 
 ## 必须完成
 
-- [ ] **Vercel 登录与部署** — 需要手动执行 `vercel login` 完成认证，然后 `vercel --prod` 首次部署
-- [ ] **Obsidian 插件启用** — 手动在 Obsidian 中启用 Frontmatter Helper 插件
+- [x] **Vercel 登录与项目绑定** — CLI 已登录，已创建并绑定 `personal-site` 项目
+- [x] **Vercel 正式部署** — 生产部署已为 `READY`，回退地址可公开访问
+- [ ] **自定义域名** — `guyong.site` 与 `www.guyong.site` 已绑定 Vercel，等待 Cloudflare DNS 最终授权与传播验证
+- [x] **Obsidian 插件启用** — Frontmatter Helper 1.1.1 已安装并加入启用列表，发布服务可自动启动
 
 ## 内容扩充
 
-- [ ] **更多文章** — 在 `config.yaml` 中添加更多 Vault 目录，为文章添加 frontmatter
-- [ ] **课程内容** — 目前 `courses/` 为空，可从 `02-课程学习` 导出
-- [ ] **作品集** — 目前 `gallery/` 为空，可从 `06-创作` 导出
+- [ ] **更多文章** — 在 Obsidian 打开任意 Markdown，运行“发布当前文件到网站”
+- [ ] **课程内容** — 目前 `courses/` 为空，可在发布表单中把内容类型设为“课程”
+- [ ] **作品集** — 目前 `gallery/` 为空，可在发布表单中把内容类型设为“作品”
 - [ ] **社交渠道** — 微信/小红书渠道草稿功能已实现但未使用
 
 ## 功能完善
@@ -19,11 +21,11 @@
 - [ ] **深色模式** — 当前只有浅色主题
 - [ ] **封面图** — 多数文章缺少 `cover` 字段
 - [ ] **日期字段** — metadata 中 `created`/`updated` 大多为 null
-- [ ] **RSS 订阅** — 脚本已就绪，需在 build 流程中验证
+- [x] **RSS 订阅** — 已在空内容和单文件发布流程中验证
 
 ## 工具优化
 
-- [ ] **publisher 增量导出** — 当前每次全量清除重导出，可改为增量
+- [x] **publisher 单文件增量发布** — 可发布任意目录中的当前文件，不会清空其他公开内容
 - [ ] **publisher 标签过滤** — 支持按 tags 过滤导出范围
 - [ ] **Obsidian 插件热重载** — 开发时自动重构建
 

@@ -22,7 +22,9 @@ cp dist/main.js dist/manifest.json \
 | 添加 Frontmatter | `Ctrl+Shift+F` | 自动推断并添加 |
 | 添加 Frontmatter (自定义) | — | 打开自定义对话框 |
 | 切换发布状态 | `Ctrl+Shift+P` | 切换 publish true/false |
-| 导出内容到网站 | — | 调用 publisher |
+| 发布当前文件到网站 | `Ctrl+Shift+S` | 从任意目录增量发布当前 Markdown；字段缺失时打开表单 |
+| 编辑发布设置并发布当前文件 | — | 始终打开表单，保存后发布 |
+| 导出内容到网站 | — | 按配置目录全量重建（高级用法） |
 | 启动本地预览 | — | 启动 Next.js dev server |
 | 部署到 Vercel | — | 一键部署 |
 
@@ -66,24 +68,20 @@ cp dist/main.js dist/manifest.json \
 | 自动推断标签 | 根据路径推断 tags | true |
 | 自动推断摘要 | 根据内容推断 summary | true |
 | 摘要最大长度 | 自动摘要字符上限 | 100 |
-| 服务器地址 | Publish Server URL | http://localhost:3001 |
+| 网站项目目录 | 本网站仓库位置 | E:/Mywork/algorithm/personal-site |
+| Node 程序位置 | 自动启动服务使用的 node.exe | C:/Program Files/nodejs/node.exe |
+| 服务器地址 | Publish Server URL | http://127.0.0.1:4318 |
 
 ## 发布命令说明
 
-导出、预览、部署三个命令需要 **Publish Server** 运行中：
-
-```bash
-# 先启动服务器
-node tools/publish-server.js
-
-# 然后在 Obsidian 命令面板中使用发布命令
-```
+首次运行发布、预览或部署命令时，插件会自动启动 **Publish Server**。如果仓库或 Node 的位置发生变化，在插件设置中更新对应路径即可。
 
 ## 自定义 Frontmatter 对话框
 
 使用 "添加 Frontmatter (自定义)" 命令时，弹出对话框可编辑：
 
 - 标题
+- 网址标识 slug（可选；中文标题留空时会自动生成稳定网址）
 - 发布状态（开关）
 - 内容类型（下拉）
 - 发布渠道（复选框）
