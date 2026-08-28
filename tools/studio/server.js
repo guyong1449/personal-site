@@ -12,6 +12,7 @@ import {
   serializeFrontmatter,
   slugify,
 } from "./lib.js";
+import { isBusy, publishDraft } from "./publish.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(toolDir, "..", "..");
@@ -573,14 +574,24 @@ async function handleApi(req, res, url) {
     }
   }
 
-  const actionMatch = pathname.match(/^\/api\/(publish|unpublish)\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
-  if (actionMatch && method === "POST") {
-    const action = actionMatch[1];
-    sendError(
-      res,
-      501,
-      action === "publish" ? "发布流程在批次 6 接入" : "下线流程在批次 7 接入",
-    );
+  const publishMatch = pathname.match(/^\/api\/publish\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
+  if (publishMatch && method === "POST") {
+    if (isBusy()) {
+      sendError(res, 409, "已有发布任务在进行中，请稍后再试");
+      return;
+    }
+    const [, kind, slug] = publishMatch;
+    // Runs the full validate → write → generate → check → commit → push
+    // pipeline; the long blocking call is acceptable for a local single-user
+    // tool and the client shows the spinner until the JSON verdict arrives.
+    const result = publishDraft(kind, slug);
+    sendJson(res, result.ok ? 200 : 422, result);
+    return;
+  }
+
+  const unpublishMatch = pathname.match(/^\/api\/unpublish\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
+  if (unpublishMatch && method === "POST") {
+    sendError(res, 501, "下线流程在批次 7 接入");
     return;
   }
 
