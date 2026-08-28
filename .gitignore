@@ -28,3 +28,4 @@ content/public/social/xiaohongshu/*
 .env*
 
 *.tsbuildinfo
+.local-content/

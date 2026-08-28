@@ -98,6 +98,12 @@ importers:
 
   tools/publisher: {}
 
+  tools/site-builder:
+    dependencies:
+      js-yaml:
+        specifier: ^4.1.1
+        version: 4.1.1
+
 packages:
 
   '@alloc/quick-lru@5.2.0':
