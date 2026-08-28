@@ -75,7 +75,7 @@ vercel env add VARIABLE_NAME
 - `www`：DNS-only CNAME 指向同一个 Vercel CNAME
 - 网站 canonical、RSS、Sitemap、robots 均使用 `https://guyong.site`
 
-Cloudflare DNS 生效后，用以下命令检查：
+Cloudflare DNS 已生效，两个域名均可通过 HTTPS 访问。需要复查域名状态时可运行：
 
 ```bash
 vercel domains verify guyong.site

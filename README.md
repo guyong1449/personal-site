@@ -60,7 +60,7 @@ pnpm build:web
 - Single-file publishing from any Obsidian Vault folder
 - Visual frontmatter editor with automatic slug generation
 - Local preview on port 4317 and publish API on port 4318
-- Vercel production deployment is live; custom domain `guyong.site` is attached and awaiting the Cloudflare DNS switch
+- Vercel production deployment is live at `https://guyong.site`; `www.guyong.site` is also connected over HTTPS
 - Fallback production URL: `https://personal-site-pearl-eta-55.vercel.app`
 - Public content snapshot currently empty and ready for real articles
 

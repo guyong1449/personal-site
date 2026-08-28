@@ -4,7 +4,7 @@
 
 - [x] **Vercel 登录与项目绑定** — CLI 已登录，已创建并绑定 `personal-site` 项目
 - [x] **Vercel 正式部署** — 生产部署已为 `READY`，回退地址可公开访问
-- [ ] **自定义域名** — `guyong.site` 与 `www.guyong.site` 已绑定 Vercel，等待 Cloudflare DNS 最终授权与传播验证
+- [x] **自定义域名** — `guyong.site` 与 `www.guyong.site` 已绑定 Vercel，Cloudflare DNS 和 HTTPS 已验证
 - [x] **Obsidian 插件启用** — Frontmatter Helper 1.1.1 已安装并加入启用列表，发布服务可自动启动
 
 ## 内容扩充
