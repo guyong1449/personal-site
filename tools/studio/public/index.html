@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>GUYONG STUDIO / LOCAL</title>
+  <link rel="stylesheet" href="/studio/style.css" />
+</head>
+<body>
+  <header class="studio-header">
+    <div class="studio-brand">
+      <span class="studio-brand__mark"></span>
+      <strong>GUYONG STUDIO</strong>
+      <span class="studio-brand__note">LOCAL / 127.0.0.1</span>
+    </div>
+    <div class="studio-header__actions">
+      <button id="btn-import" type="button">导入 Markdown</button>
+      <button id="btn-new-note" type="button">新建 Note</button>
+      <button id="btn-new-gallery" type="button">新建 Gallery</button>
+    </div>
+  </header>
+
+  <main class="studio-layout">
+    <aside class="studio-side">
+      <nav class="studio-filters" aria-label="筛选">
+        <button class="filter is-active" data-kind="all" type="button">全部</button>
+        <button class="filter" data-kind="notes" type="button">NOTE</button>
+        <button class="filter" data-kind="gallery" type="button">GALLERY</button>
+      </nav>
+      <ul id="item-list" class="studio-list"></ul>
+    </aside>
+
+    <section class="studio-editor" id="editor" hidden>
+      <div class="editor-meta">
+        <label>标题<input id="f-title" type="text" /></label>
+        <label>SLUG<input id="f-slug" type="text" /></label>
+        <label>摘要<input id="f-summary" type="text" placeholder="留空则自动提取" /></label>
+        <label>标签<input id="f-tags" type="text" placeholder="course/CS308, topic/algorithm" /></label>
+        <div class="editor-meta__cover">
+          <label>Cover
+            <select id="f-cover"><option value="">（无）</option></select>
+          </label>
+          <img id="cover-preview" alt="封面预览" hidden />
+          <div class="cover-actions">
+            <input id="asset-file" type="file" hidden />
+            <button id="btn-upload-asset" type="button">上传资产</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="editor-panes">
+        <textarea id="f-body" spellcheck="false" placeholder="Markdown 正文……"></textarea>
+        <article id="preview" class="studio-preview"></article>
+      </div>
+
+      <div class="editor-actions">
+        <span id="save-state" class="save-state"></span>
+        <button id="btn-save" type="button" class="primary">保存草稿</button>
+        <button id="btn-publish" type="button">发布</button>
+        <button id="btn-unpublish" type="button">下线</button>
+        <button id="btn-delete" type="button" class="danger">永久删除</button>
+      </div>
+    </section>
+
+    <section class="studio-empty" id="empty-hint">
+      <p>QUEUE / 000</p>
+      <p>从左侧选择内容，或新建 / 导入一篇草稿。</p>
+    </section>
+  </main>
+
+  <dialog id="import-dialog">
+    <form method="dialog">
+      <h2>导入 Markdown</h2>
+      <p class="dialog-note">Obsidian 原文件不会被修改；内容会复制为本机草稿。</p>
+      <label>目标类型
+        <select id="import-kind">
+          <option value="notes">note</option>
+          <option value="gallery">gallery</option>
+        </select>
+      </label>
+      <label>来源文件（可选）<input id="import-file" type="file" accept=".md,.markdown,text/markdown" /></label>
+      <label>或粘贴 Markdown<textarea id="import-text" rows="10"></textarea></label>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">取消</button>
+        <button value="ok" type="submit" class="primary" id="import-submit">导入为草稿</button>
+      </div>
+      <p id="import-conflict" class="dialog-conflict" hidden></p>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <label id="confirm-input-label" hidden
+        >输入标题以确认<input id="confirm-input" type="text" autocomplete="off" /></label>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">取消</button>
+        <button value="ok" type="submit" class="danger" id="confirm-ok">确认</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/studio/vendor/marked.js"></script>
+  <script src="/studio/app.js"></script>
+</body>
+</html>
