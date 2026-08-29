@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Personal Site</title>
+    <title>GUYONG</title>
     <link>https://guyong.site</link>
-    <description>Public publishing pipeline preview site.</description>
+    <description>Guyong 的个人网站：技术笔记、课程学习记录与少量画作。</description>
     <language>zh-CN</language>
-    <lastBuildDate>Fri, 28 Aug 2026 05:08:32 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 28 Aug 2026 18:33:47 GMT</lastBuildDate>
     <atom:link href="https://guyong.site/feed.xml" rel="self" type="application/rss+xml"/>
 
   </channel>
