@@ -10,7 +10,6 @@ export default async function GalleryPage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
         <h1>GALLERY</h1>
-        <p>少量图像、作品与视觉实验，保持克制。</p>
         <span>{gallery.length} 件</span>
       </header>
       <section aria-label="作品索引">

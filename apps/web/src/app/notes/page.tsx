@@ -15,7 +15,6 @@ export default async function NotesPage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
         <h1>NOTES</h1>
-        <p>学习笔记、技术文档与持续形成的思考。</p>
         <span>{notes.length} 篇</span>
       </header>
       <section aria-label="笔记索引">
