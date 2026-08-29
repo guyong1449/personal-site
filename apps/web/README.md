@@ -1,11 +1,22 @@
 # Web App
 
-Next.js 15 App Router frontend.
+`apps/web` 是唯一部署产物，使用 Next.js 15 App Router。
 
-Current scope:
+## 内容边界
 
-- Phase 1 complete: runtime shell, TypeScript, Tailwind baseline, minimal `/` route
-- Phase 2 complete: typed content adapter over `../../content/public`
-- Phase 3+: route migration for `notes`, `courses`, and `gallery`
+- 只读取 `../../content/public`，不直接读取 Studio 草稿或 `content/site`。
+- 列表、搜索、RSS 和 Sitemap 读取生成的 metadata。
+- Note/Gallery 详情页在构建时静态生成。
+- 内容支持 GFM、数学公式、代码高亮；原始 HTML 不渲染。
 
-This app should read only from `../../content/public`, and should not introduce a second content source of truth.
+## 页面
+
+- `/`、`/notes`、`/notes/[slug]`
+- `/gallery`、`/gallery/[slug]`
+- `/archive`、`/search`、`/account`
+- `/sitemap.xml`、`/robots.txt`、`/feed.xml`
+
+## 命令
+
+从仓库根目录运行 `pnpm dev:web`、`pnpm build:web`、`pnpm test:web` 和
+`pnpm lint:web`。完整仓库验证使用 `pnpm verify`。

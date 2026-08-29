@@ -44,10 +44,10 @@
 ## 构建与验证
 
 ```bash
-pnpm check        # site-builder + studio + publisher 测试 + web lint/vitest
-pnpm build:web    # prebuild 重建 content/public（Vercel 同款单点流程）
+pnpm verify       # 测试 + lint + build + 链接 + 生成文件一致性
+pnpm build:web    # 仅需单独验证生产构建时使用
 ```
 
 `apps/web/scripts/generate-rss.js` 的日期全部取自内容 frontmatter，
 连续构建产出字节级一致的 feed.xml。GitHub Actions（`.github/workflows/ci.yml`）
-在每次推送与 PR 上执行同样的检查。
+在每次推送与 PR 上执行 `pnpm verify`。

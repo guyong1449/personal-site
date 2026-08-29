@@ -1,40 +1,27 @@
-# Web Preview
+# Web Runtime
 
-## Purpose
+## 内容边界
 
-`apps/web` is the repository's local preview surface and static deployment app.
+`apps/web` 只读取 `content/public`：
 
-## Content Boundary
+- `metadata/notes.json`、`gallery.json`：列表、归档、Sitemap 和 RSS；
+- `metadata/search.json`：客户端全文检索；
+- `notes/*.md`、`gallery/*.md`：静态详情页；
+- `assets/*`：构建前同步到 `apps/web/public/assets`。
 
-The app reads from `content/public` only.
+## 公共页面
 
-It does not read the Obsidian Vault directly.
+- 首页、Note、Gallery、Archive、Search、Account；
+- Note/Gallery 静态详情；
+- Sitemap、robots、RSS；
+- Note 动态 Open Graph 图片。
 
-This keeps the frontend side stable even when the Vault layout changes.
+## Markdown 契约
 
-## Current Pages
+支持标准 Markdown、GFM、KaTeX 与代码高亮。原始 HTML 节点被丢弃，Studio
+预览使用同一规则。图片必须使用标准 Markdown 语法并引用 `assets/`。
 
-- `/`: note index page based on `metadata/notes.json`
-- `/notes/[slug]`: note detail page based on exported markdown
+## 构建
 
-## Data Access
-
-The content loader in `src/lib/content.js` reads:
-
-- `metadata/notes.json` for listing data
-- `notes/<slug>.md` for detail pages
-
-## Rendering Behavior
-
-The note detail page:
-
-- parses exported markdown with `marked`
-- renders raw markdown and HTML image embeds
-- constrains content images to the article width
-- keeps article overflow clipped on the x-axis
-
-## Deployment Shape
-
-The Astro app builds a static site.
-
-`content/public` is used as the app's public asset directory so copied images are directly served under `/assets/...`.
+`apps/web` 的 `prebuild` 是唯一生产预构建入口：重建 `content/public`、同步资产、
+生成确定性的 RSS，然后执行 Next.js 生产构建。

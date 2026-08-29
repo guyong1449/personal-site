@@ -1,105 +1,49 @@
 # 部署指南
 
-## Vercel 部署
+## 生产拓扑
 
-### 首次配置
-
-1. 安装 Vercel CLI：
-   ```bash
-   npm i -g vercel
-   ```
-
-2. 登录：
-   ```bash
-   vercel login
-   ```
-
-3. 在项目根目录关联项目：
-   ```bash
-   vercel link
-   ```
-
-### 部署
-
-```bash
-# 预览部署
-vercel
-
-# 确认预览无误后再生产部署
-vercel --prod
-```
-
-### Vercel 配置
-
-当前项目使用 Vercel 项目设置：
-
-- Root Directory：`apps/web`
+- Vercel Root Directory：`apps/web`
 - Framework：Next.js
-- Build Command：自动检测
-- Output Directory：自动检测
 - Install Command：`cd ../.. && pnpm install --frozen-lockfile`
+- Node.js：24
+- 主域名：`https://guyong.site`
 
-`apps/web` 在构建时仍可读取仓库根目录的 `content/public`。
+Web 包的 `prebuild` 会从仓库根目录重建内容、同步资产并生成 RSS，因此 Git 构建
+不依赖开发机的 `content/public/notes` 或 `assets` 缓存。
 
-当前生产项目已部署成功。Vercel 回退地址：
+## Git 自动部署
 
-`https://personal-site-pearl-eta-55.vercel.app`
+Studio 发布会提交并推送当前分支。生产环境应在 Vercel Dashboard 中把 GitHub
+仓库的 `main` 设为 Production Branch。仓库本身无法证明 Dashboard 连接状态，
+首次上线必须完成一次“推送 → Vercel Ready → 线上页面可访问”的人工验收。
 
-## 短期和长期发布方式
+Studio 顶部“部署状态”按钮可查看当前提交与线上响应，但它不是 Vercel 构建成功的
+替代证据。
 
-### 短期：本机 CLI 发布
+## 手动部署
 
-在 Obsidian 发布当前文件后，从仓库根目录运行 `vercel` 或插件中的“部署到 Vercel”。Vercel CLI 上传本机已有的公开 Markdown 和图片，不依赖 Git 是否跟踪这些生成文件。
+仅在 Git 集成不可用时从仓库根目录运行：
 
-适合目前阶段：配置少、可以立刻发布；缺点是每次上线都依赖这台电脑。
-
-### 长期：Git 自动发布
-
-把 GitHub 仓库连接到 Vercel，推送 `main` 后自动部署。当前 Vercel 账号还需要先关联 GitHub 登录方式，并且需要决定如何把 `content/public` 的公开快照提供给 Git 构建环境。
-
-适合稳定运营：可追踪、可回滚、自动部署；配置工作比本机 CLI 多。
-
-### 环境变量
-
-当前无需额外环境变量。如需添加：
-
-```bash
-vercel env add VARIABLE_NAME
+```powershell
+npx vercel --prod
 ```
 
-## 自定义域名
+生产部署属于外部状态变更，执行前需要明确确认。
 
-`guyong.site` 和 `www.guyong.site` 已添加到 Vercel 项目。DNS 由 Cloudflare 托管：
+## 环境变量
 
-- 根域名：DNS-only CNAME 指向 Vercel 提供的项目 CNAME
-- `www`：DNS-only CNAME 指向同一个 Vercel CNAME
-- 网站 canonical、RSS、Sitemap、robots 均使用 `https://guyong.site`
+网站默认不要求运行时秘密。可选 Giscus 需要：
 
-Cloudflare DNS 已生效，两个域名均可通过 HTTPS 访问。需要复查域名状态时可运行：
+- `NEXT_PUBLIC_GISCUS_REPO`
+- `NEXT_PUBLIC_GISCUS_REPO_ID`
+- `NEXT_PUBLIC_GISCUS_CATEGORY`
+- `NEXT_PUBLIC_GISCUS_CATEGORY_ID`
 
-```bash
-vercel domains verify guyong.site
-vercel domains verify www.guyong.site
+## 部署前检查
+
+```powershell
+corepack pnpm verify
 ```
 
-## GitHub Actions 自动部署
-
-推送到 `main` 分支时自动部署（需在 Vercel Dashboard 中配置 Git 集成）。
-
-手动 CI 配置见 `.github/workflows/`（当前为占位文件）。
-
-## 本地构建验证
-
-部署前建议本地验证：
-
-```bash
-# 发布一篇文章
-pnpm publish:file "E:/Mywork/Obsidian Vault/任意目录/文章.md"
-
-# 构建
-pnpm build:web
-
-# 本地预览
-pnpm dev:web
-# http://localhost:4317
-```
+该命令覆盖测试、lint、生产构建、死链/资源检查以及生成文件一致性。CI 在推送和
+Pull Request 上运行同一命令；Vercel 仍负责实际部署。

@@ -1,12 +1,38 @@
 # 工具详解
 
 当前主力工具是 **Studio（`tools/studio/`）** 与 **site-builder（`tools/site-builder/`）**，
-见 [workflow.md](workflow.md)。以下 Publisher 相关内容为 **Legacy** 归档：
+见 [workflow.md](workflow.md)。
+
+## Studio (`tools/studio/`)
+
+```powershell
+corepack pnpm studio
+```
+
+Studio 只监听 `127.0.0.1:4319`，管理 `.local-content` 草稿和 `content/site`
+正式内容。主要能力：Markdown 导入、自动保存、历史版本、定时发布、置顶、
+Gallery 元数据、图片压缩/插入、发布、下线、删除和部署状态查询。
+
+`STUDIO_PUBLISH_DRY_RUN=1` 会执行生成与质量检查，但跳过 Git 提交和推送。
+
+## site-builder (`tools/site-builder/`)
+
+```powershell
+corepack pnpm build:content
+corepack pnpm test:content
+```
+
+site-builder 是 `content/site` 到 `content/public` 的唯一生成器。它负责 frontmatter
+校验、排序、搜索索引、规范化 Markdown 和资产复制。
+
+## Legacy 工具
+
+以下 Publisher 相关内容为 **Legacy** 归档：
 该管线已被 Studio 取代，仅在需要参考旧 Obsidian 导出行为时阅读。
 其产出的 HTML 图片格式与当前"禁用原始 HTML"契约不再兼容，历史内容如需
 迁移请一次性转换为标准 Markdown 图片语法。
 
-## Legacy: Publisher (`tools/publisher/`)
+### Publisher (`tools/publisher/`)
 
 从 Obsidian Vault 导出文章到 `content/public/`。
 
@@ -55,7 +81,7 @@ npm test
 
 ---
 
-## 2. Publish Server (`tools/publish-server.js`)
+### Publish Server (`tools/publish-server.js`)
 
 轻量 HTTP API 服务器，供 Obsidian 插件调用。
 
@@ -96,7 +122,7 @@ curl -X POST http://localhost:4318/api/preview \
 
 ---
 
-## 3. Add Frontmatter (`tools/add-frontmatter.js`)
+### Add Frontmatter (`tools/add-frontmatter.js`)
 
 批量为 Obsidian 笔记添加 frontmatter 的 CLI 工具。
 

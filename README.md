@@ -31,14 +31,14 @@ pnpm studio        # 启动本机 Studio：http://127.0.0.1:4319/studio（仅监
 pnpm dev:web       # 开发服务器 http://127.0.0.1:4317，开发模式下 /studio 转发到 Studio
 pnpm build:web     # 生产构建（自动先 build:content 重建 content/public）
 pnpm build:content # 仅重建 content/public 与 metadata
-pnpm test:web      # vitest；pnpm test:content 为 site-builder 测试
+pnpm verify        # 全量测试、lint、构建、链接与生成文件一致性
 ```
 
 注意：Windows 上若全局 `pnpm` 垫片损坏，用 `corepack pnpm` 代替。
 
 ## Studio 与发布
 
-Studio 提供内容列表、Note/Gallery 筛选、Markdown 导入（同 slug 再导入需确认覆盖）、新建/编辑/实时预览、自动标题与摘要、稳定 slug、标签、封面上传与预览、保存草稿、发布、下线、永久删除（需输入标题确认）。
+Studio 提供内容列表、Note/Gallery 筛选、Markdown 导入（同 slug 再导入需确认覆盖）、新建/编辑/实时预览、自动保存、历史版本、定时发布、自动标题与摘要、稳定 slug、标签、日期、置顶、Gallery 分类/系列、图片压缩与正文插入、发布、下线和永久删除（需输入标题确认）。原始 HTML 不渲染，内容统一使用标准 Markdown。
 
 发布按钮执行：校验 → 写入 `content/site` → 重建 `content/public` → site-builder 测试 / lint / vitest / next build → 仅暂存内容相关路径 → `content: publish <slug>` 提交 → 推送当前分支 → Vercel 自动部署。任一阶段失败会保留草稿并提示失败阶段。`STUDIO_PUBLISH_DRY_RUN=1` 可演练（跳过 Git 步骤）。
 
@@ -52,4 +52,4 @@ Vercel 项目 `personal-site`，生产域名 `guyong.site` / `www.guyong.site`�
 
 ## 文档
 
-更多细节见 `docs/`（workflow、deployment、tools）与 `agent.md`（架构契约）。
+更多细节见 `docs/`（workflow、deployment、development-plan）与 `agent.md`（架构契约）。

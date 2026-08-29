@@ -13,7 +13,8 @@ content/public → Next.js → Vercel**。
 | [发布工作流](workflow.md) | Studio 写作、发布、下线、删除的完整流程（当前主文档） |
 | [快速开始](getting-started.md) | 环境准备、安装、首次运行 |
 | [部署指南](deployment.md) | Vercel 部署配置与自定义域名 |
-| [待办事项](remaining-tasks.md) | 当前需要完成的工作 |
+| [后续开发计划](development-plan.md) | 当前基线、分阶段目标与验收标准 |
+| [待办事项](remaining-tasks.md) | 面向内容与外部配置的短清单 |
 | [工具详解](tools.md) | Studio / site-builder；publisher 相关内容为 Legacy |
 | [Obsidian 插件](obsidian-plugin.md) | Legacy：Frontmatter Helper 插件（已被 Studio 取代） |
 
@@ -37,4 +38,4 @@ content/public → Next.js → Vercel**。
 
 `content/site` 是正式内容唯一维护源（进 Git）；`content/public` 为自动生成；
 `.local-content` 为本机草稿（gitignore）。CI（`.github/workflows/ci.yml`）
-在推送与 PR 上执行 `pnpm check` 与 `pnpm build:web`。
+在推送与 PR 上执行仓库统一验证命令 `pnpm verify`。

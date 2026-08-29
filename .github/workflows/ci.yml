@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -9,13 +12,13 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.0.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -23,14 +26,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check (content, studio, publisher, web lint/test)
-        run: pnpm check
-
-      - name: Build web
-        run: pnpm build:web
-
-      - name: Check content links and assets
-        run: pnpm check:links
+      - name: Verify repository
+        run: pnpm verify
 
       - name: Dependency audit (report only)
         run: pnpm audit --prod --audit-level high

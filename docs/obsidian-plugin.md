@@ -1,5 +1,7 @@
 # Obsidian 插件 — Frontmatter Helper
 
+> Legacy 文档：插件保留作旧内容迁移参考，当前写作与发布入口是本机 Studio。
+
 ## 安装
 
 ```bash

@@ -1,5 +1,7 @@
 # Frontmatter Helper - Obsidian 插件
 
+> Legacy 插件：当前网站使用本机 Studio 写作与发布；本插件只保留作旧内容迁移参考。
+
 一键添加 frontmatter 到 Obsidian 笔记的插件。
 
 ## 功能特性

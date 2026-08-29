@@ -4,11 +4,16 @@
   "type": "module",
   "version": "0.1.0",
   "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev:web": "pnpm --dir apps/web dev",
     "build:web": "pnpm --dir apps/web build",
     "check": "pnpm test:content && pnpm --dir tools/studio test && pnpm --dir tools/publisher test && pnpm lint:web && pnpm test:web",
+    "verify": "pnpm check && pnpm build:web && pnpm check:links && pnpm check:generated",
     "check:links": "node apps/web/scripts/check-links.mjs",
+    "check:generated": "git diff --exit-code -- content/public/metadata apps/web/public/feed.xml",
     "build:content": "pnpm --dir tools/site-builder build",
     "test:content": "pnpm --dir tools/site-builder test",
     "lint:web": "pnpm --dir apps/web lint",

@@ -55,15 +55,17 @@ Treat this directory as generated output. The web app reads nothing else.
 - content model: text content is `content_type: note` (course context lives in
   tags such as `course/CS308`); gallery stays a separate kind
 - public routes: `/`, `/notes`, `/gallery`, `/account`, `/search`, detail
-  routes, sitemap/RSS/robots
+  routes, `/archive`, sitemap/RSS/robots
+- detail routes are statically generated; raw HTML is not rendered
 - `/studio` exists only in dev (rewrite to the local Studio); production
   returns 404
 
 ### 5. Studio Layer
 
 `tools/studio` runs standalone on `127.0.0.1:4319` only. Write APIs reject
-non-local origins. It owns drafts, import, publish, unpublish, and permanent
-deletion (title-confirmed, draft-only, exclusive assets reclaimed).
+non-local origins. It owns drafts, import, autosave, version history, scheduled
+publishing, image compression, publish, unpublish, and permanent deletion
+(title-confirmed, draft-only, exclusive assets reclaimed).
 
 ### 6. Deployment Layer
 
@@ -88,7 +90,7 @@ Vercel deploys `apps/web` after content is exported into `content/public`
 ## Rules For Implementation
 
 - keep changes small and reviewable; one batch per commit
-- every batch ends with lint, `tsc --noEmit`, vitest, and `next build`
+- every batch ends with `pnpm verify`
 - do not stage unrelated user changes with content commits
 - do not edit `content/public` by hand
 - do not deploy to production without an explicit user request
@@ -96,6 +98,7 @@ Vercel deploys `apps/web` after content is exported into `content/public`
 ## Working Commands
 
 - `pnpm dev:web` / `pnpm build:web` / `pnpm lint:web` / `pnpm test:web`
+- `pnpm verify` (repository-wide quality gate)
 - `pnpm studio` (local only)
 - `pnpm build:content` / `pnpm test:content`
 - `corepack pnpm` if the global pnpm shim is broken (Windows/conda PATH issue)

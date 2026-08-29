@@ -1,5 +1,8 @@
 # Publisher Flow
 
+> Legacy 文档：该流程已被 Studio → `content/site` → site-builder 取代，
+> 不得作为当前发布或内容契约的依据。
+
 ## Purpose
 
 `tools/publisher` turns selected Obsidian content into a frontend-ready public snapshot.

@@ -1,5 +1,8 @@
 # Publisher
 
+> Legacy tool: the canonical workflow is Studio → `content/site` → site-builder.
+> Keep this package for one-time Obsidian migration and regression reference only.
+
 Content export pipeline for converting Obsidian vault content into public-safe format for the Next.js frontend.
 
 ## Features

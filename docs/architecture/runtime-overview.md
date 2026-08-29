@@ -1,63 +1,46 @@
 # Runtime Overview
 
-## Repository Role
+## 数据流
 
-This repository packages the public publishing path for a personal site.
+```text
+.local-content（本机草稿，gitignore）
+  -> tools/studio
+content/site（正式内容，git-tracked）
+  -> tools/site-builder
+content/public（生成快照）
+  -> apps/web（Next.js 15）
+  -> Vercel
+```
 
-The runtime path is:
+## 层级职责
 
-`Obsidian Vault -> tools/publisher -> content/public -> apps/web -> Vercel`
+### Studio
 
-## Layer Responsibilities
+只监听 `127.0.0.1:4319`，负责新建、导入、自动保存、历史版本、定时发布、
+资产处理、发布、下线和草稿删除。外部 Markdown 只会被复制，不修改原文件。
 
-### `tools/publisher`
+### `content/site`
 
-This package is the adaptation layer between Obsidian-authored source files and the website.
+正式内容唯一维护源，包含 `notes/`、`gallery/` 和 `assets/`。发布操作只定向
+暂存内容相关路径，不使用 `git add .`。
 
-It is responsible for:
+### site-builder 与 `content/public`
 
-- reading markdown files from configured Vault scopes
-- parsing frontmatter
-- filtering publishable content
-- resolving relative assets and shared Vault image assets
-- rewriting Obsidian links into site routes
-- exporting markdown, metadata, assets, and social drafts
+site-builder 校验 frontmatter、slug 和内容类型，生成排序后的 metadata、搜索索引、
+规范化 Markdown 与资产快照。`content/public` 不手工编辑。
 
-### `content/public`
+### Web
 
-This directory is the site-facing content boundary.
+Next.js App Router 只读取生成快照。列表和索引在构建期生成，Note/Gallery 详情页
+通过 `generateStaticParams` 静态生成。Markdown 支持 GFM、数学和代码高亮，原始
+HTML 不渲染。
 
-It contains:
+### 部署
 
-- `notes/`, `courses/`, `gallery/`: exported markdown documents
-- `assets/`: copied images and covers
-- `metadata/`: JSON indexes for frontend listing pages
-- `social/`: generated cross-posting drafts
+推送 Git 分支后由 Vercel Git 集成构建 `apps/web`。GitHub Actions 是质量门，
+不直接部署生产环境。
 
-### `apps/web`
+## Legacy
 
-This app is a lightweight Astro consumer of generated content.
-
-It is responsible for:
-
-- reading metadata and detail markdown from `content/public`
-- rendering local preview pages
-- serving as the deployable static site target for Vercel
-
-## Technology Stack
-
-- Publisher: `Node.js` with ESM JavaScript
-- Site app: `Astro`
-- Content format: `Markdown + frontmatter + JSON metadata`
-- Deployment target: `Vercel`
-
-## Current Execution Model
-
-The site is built as a static-content pipeline.
-
-That means:
-
-- the Vault remains the authoring source
-- the publisher produces a clean, public-safe content snapshot
-- the frontend consumes generated files without needing direct Vault access
-- deployment does not require a database for the current scope
+`tools/publisher`、`tools/publish-server.js` 与 Obsidian 插件是旧导出管线，保留作
+迁移参考，不是正式内容维护源。
