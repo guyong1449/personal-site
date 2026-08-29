@@ -263,6 +263,8 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 .account-row__handle { color: var(--muted); font-size: .86rem; word-break: break-all; }
 .account-row__arrow { color: var(--muted); font-size: .88rem; }
 .account-row:hover .account-row__handle { color: var(--foreground); }
+[data-theme="dark"] .account-row:hover { background: var(--surface); }
+[data-theme="dark"] .account-row:hover .account-row__service { color: var(--foreground); }
 
 /* Article detail */
 .article-page { max-width: 800px; }
