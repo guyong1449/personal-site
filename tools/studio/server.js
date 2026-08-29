@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   KIND_IDS,
@@ -524,6 +525,47 @@ async function handleApi(req, res, url) {
 
   if (method === "GET" && pathname === "/api/items") {
     sendJson(res, 200, { items: collectItems() });
+    return;
+  }
+
+  if (method === "GET" && pathname === "/api/deploy-status") {
+    // Deployment echo: ask the Vercel CLI (already authenticated on this
+    // machine) for the latest production deployment of the linked project.
+    const listing = spawnSync(
+      "npx",
+      [
+        "--yes",
+        "vercel@latest",
+        "ls",
+        "personal-site",
+        "--json",
+        "--scope",
+        "guyongs-projects-f59a7a4c",
+      ],
+      { encoding: "utf8", shell: process.platform === "win32", timeout: 90000 },
+    );
+    const output = `${listing.stdout ?? ""}${listing.stderr ?? ""}`;
+    const jsonStart = output.indexOf("[");
+    const jsonEnd = output.lastIndexOf("]");
+    if (jsonStart === -1 || jsonEnd <= jsonStart) {
+      sendError(res, 502, `查询部署状态失败：${output.slice(0, 200) || "vercel 无输出"}`);
+      return;
+    }
+    try {
+      const deployments = JSON.parse(output.slice(jsonStart, jsonEnd + 1));
+      const production = deployments.find((entry) => entry.target === "production") ?? deployments[0];
+      if (!production) {
+        sendError(res, 404, "没有查询到部署记录");
+        return;
+      }
+      sendJson(res, 200, {
+        state: production.state ?? production.readyState ?? "UNKNOWN",
+        url: production.url ? `https://${production.url}` : null,
+        created: production.created ?? null,
+      });
+    } catch (error) {
+      sendError(res, 502, `解析部署状态失败：${error.message}`);
+    }
     return;
   }
 
