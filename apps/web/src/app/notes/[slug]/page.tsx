@@ -91,7 +91,21 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
           </div>
         )}
 
-        <MarkdownBody content={note.body} />
+        <MarkdownBody
+          content={note.body}
+          sidebarExtra={
+            related.length > 0 ? (
+              <section className="related" aria-label="相关文章">
+                <h2>相关文章</h2>
+                {related.map((item) => (
+                  <Link key={item.slug} href={`/notes/${item.slug}`} className="related__item">
+                    <strong>{item.title}</strong>
+                  </Link>
+                ))}
+              </section>
+            ) : null
+          }
+        />
 
         <nav className="post-nav" aria-label="相邻文章">
           {older ? (
@@ -113,7 +127,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
         </nav>
 
         {related.length > 0 && (
-          <section className="related" aria-label="相关文章">
+          <section className="related lg:hidden" aria-label="相关文章">
             <h2>相关文章</h2>
             {related.map((item) => (
               <Link key={item.slug} href={`/notes/${item.slug}`} className="related__item">

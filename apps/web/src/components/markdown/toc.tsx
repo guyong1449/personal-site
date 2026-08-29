@@ -37,7 +37,7 @@ export function Toc({ items }: TocProps) {
   }
 
   return (
-    <nav className="sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
+    <nav>
       <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[var(--accent)]">
         目录
       </h4>
@@ -52,7 +52,7 @@ export function Toc({ items }: TocProps) {
               className={`block py-1 transition-colors ${
                 activeId === item.id
                   ? "text-[var(--accent)] font-medium"
-                  : "text-[rgba(34,27,22,0.6)] hover:text-[var(--accent)]"
+                  : "text-[var(--muted)] hover:text-[var(--accent)]"
               }`}
             >
               {item.text}

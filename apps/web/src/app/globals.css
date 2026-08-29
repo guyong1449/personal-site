@@ -201,11 +201,11 @@ button, a { touch-action: manipulation; }
 .post-nav__item strong { font-size: .88rem; line-height: 1.4; }
 
 /* Related posts */
-.related { margin-top: 26px; border: 1px solid var(--line); background: var(--surface); padding: 14px 18px; }
-.related h2 { margin: 0 0 8px; font-size: .95rem; }
-.related__item { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.related { margin-top: 24px; border-top: 1px solid var(--line); padding: 14px 0 0; }
+.related h2 { margin: 0 0 8px; font-size: .78rem; font-weight: 700; letter-spacing: .12em; color: var(--accent); }
+.related__item { display: flex; flex-direction: column; gap: 2px; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .related__item:last-child { border-bottom: 0; }
-.related__item strong { font-size: .88rem; }
+.related__item strong { font-size: .84rem; line-height: 1.5; }
 .related__item:hover strong { color: var(--accent-deep); }
 .related__item span { color: var(--muted); font-size: .8rem; }
 

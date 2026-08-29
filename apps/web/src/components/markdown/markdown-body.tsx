@@ -1,25 +1,31 @@
 import { renderMarkdownToHtml } from "@/lib/markdown/pipeline";
 import { extractTocFromHtml } from "@/lib/toc";
+import type { ReactNode } from "react";
 import { Toc } from "./toc";
 
 type MarkdownBodyProps = {
   content: string;
   showToc?: boolean;
+  sidebarExtra?: ReactNode;
 };
 
-export async function MarkdownBody({ content, showToc = true }: MarkdownBodyProps) {
+export async function MarkdownBody({ content, showToc = true, sidebarExtra }: MarkdownBodyProps) {
   const html = await renderMarkdownToHtml(content);
   const toc = extractTocFromHtml(html);
+  const hasSidebar = (showToc && toc.length > 0) || Boolean(sidebarExtra);
 
   return (
-    <div className="flex gap-8">
+    <div className="flex gap-16">
       <article
-        className="prose prose-lg max-w-none flex-1"
+        className="prose prose-lg max-w-none min-w-0 flex-1"
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {showToc && toc.length > 0 && (
-        <aside className="hidden w-64 shrink-0 lg:block">
-          <Toc items={toc} />
+      {hasSidebar && (
+        <aside className="hidden w-52 shrink-0 lg:block">
+          <div className="sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
+            {showToc && toc.length > 0 && <Toc items={toc} />}
+            {sidebarExtra}
+          </div>
         </aside>
       )}
     </div>
