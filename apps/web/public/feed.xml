@@ -8,14 +8,6 @@
   <lastBuildDate>Sat, 29 Aug 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href="https://guyong.site/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
-      <title>近期写作计划</title>
-      <link>https://guyong.site/notes/writing-plan</link>
-      <guid isPermaLink="true">https://guyong.site/notes/writing-plan</guid>
-      <description>接下来几篇的选题方向：CS308 的算法笔记先行，辅以工具与方法的短文。</description>
-      <pubDate>Sat, 29 Aug 2026 00:00:00 GMT</pubDate>
-      <category>notes</category>
-    </item>
-    <item>
       <title>开站记：这个网站是怎么跑起来的</title>
       <link>https://guyong.site/notes/hello-guyong</link>
       <guid isPermaLink="true">https://guyong.site/notes/hello-guyong</guid>

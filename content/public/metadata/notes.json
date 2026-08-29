@@ -1,16 +1,5 @@
 [
   {
-    "slug": "writing-plan",
-    "title": "近期写作计划",
-    "summary": "接下来几篇的选题方向：CS308 的算法笔记先行，辅以工具与方法的短文。",
-    "tags": [
-      "topic/meta",
-      "course/CS308"
-    ],
-    "cover": null,
-    "updated": "2026-08-29"
-  },
-  {
     "slug": "hello-guyong",
     "title": "开站记：这个网站是怎么跑起来的",
     "summary": "第一篇文章，记录这个网站的定位、内容方向，以及从写作到上线的完整链路。",
