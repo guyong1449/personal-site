@@ -15,8 +15,6 @@ export default function AccountPage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
         <h1>ACCOUNT</h1>
-        <p>安静的官方入口，仅此三处。其余账号均与本站无关。</p>
-        <span>{accounts.length} 个链接</span>
       </header>
 
       <section aria-label="账号列表" className="account-list">
