@@ -66,6 +66,7 @@
       <div class="editor-actions">
         <span id="save-state" class="save-state"></span>
         <button id="btn-save" type="button" class="primary">保存草稿</button>
+        <button id="btn-versions" type="button">历史版本</button>
         <button id="btn-publish" type="button">发布</button>
         <button id="btn-unpublish" type="button">下线</button>
         <button id="btn-delete" type="button" class="danger">永久删除</button>
@@ -96,6 +97,15 @@
       </div>
       <p id="import-conflict" class="dialog-conflict" hidden></p>
     </form>
+  </dialog>
+
+  <dialog id="versions-dialog">
+    <h2>历史版本</h2>
+    <p class="dialog-note">每次手动保存生成一份快照，最多保留 20 份。恢复会先把当前内容存为快照。</p>
+    <ul id="versions-list" class="versions-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" id="versions-close">关闭</button>
+    </div>
   </dialog>
 
   <dialog id="confirm-dialog">

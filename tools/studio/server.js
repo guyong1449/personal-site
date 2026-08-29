@@ -81,6 +81,49 @@ function listMarkdownSlugs(dir) {
     .map((file) => file.slice(0, -3));
 }
 
+function historyDir(kind, slug) {
+  return path.join(localRoot, "history", kind, slug);
+}
+
+const MAX_VERSIONS = 20;
+
+// Snapshot the current draft before an explicit overwrite; autosaves pass
+// snapshot:false and never pollute history.
+function snapshotDraft(kind, slug) {
+  const file = draftPath(kind, slug);
+  if (!fs.existsSync(file)) {
+    return;
+  }
+  const dir = historyDir(kind, slug);
+  ensureDir(dir);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  fs.copyFileSync(file, path.join(dir, `${stamp}.md`));
+
+  const versions = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".md"))
+    .sort();
+  while (versions.length > MAX_VERSIONS) {
+    fs.rmSync(path.join(dir, versions.shift()));
+  }
+}
+
+function listVersions(kind, slug) {
+  const dir = historyDir(kind, slug);
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".md"))
+    .sort()
+    .reverse()
+    .map((f) => {
+      const stat = fs.statSync(path.join(dir, f));
+      return { id: f.slice(0, -3), savedAt: stat.mtime.toISOString(), bytes: stat.size };
+    });
+}
+
 function uniqueSlug(kind, wanted) {
   const taken = new Set([
     ...listMarkdownSlugs(kindDir(kind, "draft")),
@@ -394,6 +437,9 @@ async function saveDraft(kind, slug, body, res) {
   }
 
   const doc = readDocument(file);
+  if (body.snapshot !== false) {
+    snapshotDraft(kind, slug);
+  }
   const nextBody = typeof body.body === "string" ? body.body : doc.body;
   const extract = body.extractMeta !== false;
 
@@ -451,6 +497,11 @@ async function saveDraft(kind, slug, body, res) {
   fs.writeFileSync(targetFile, markdown, "utf8");
   if (targetFile !== file) {
     fs.rmSync(file);
+    const oldHistory = historyDir(kind, slug);
+    if (fs.existsSync(oldHistory)) {
+      fs.mkdirSync(path.dirname(historyDir(kind, nextSlug)), { recursive: true });
+      fs.renameSync(oldHistory, historyDir(kind, nextSlug));
+    }
   }
 
   sendJson(res, 200, { kind, slug: nextSlug, renamed: nextSlug !== slug });
@@ -478,6 +529,10 @@ function deleteDraft(kind, slug, body, res) {
   }
 
   fs.rmSync(file);
+  const draftHistory = historyDir(kind, slug);
+  if (fs.existsSync(draftHistory)) {
+    fs.rmSync(draftHistory, { recursive: true, force: true });
+  }
 
   for (const otherKind of KIND_IDS) {
     for (const otherSlug of listMarkdownSlugs(kindDir(otherKind, "draft"))) {
@@ -686,6 +741,33 @@ async function handleApi(req, res, url) {
       deleteDraft(kind, slug, body, res);
       return;
     }
+  }
+
+  const versionsMatch = pathname.match(/^\/api\/versions\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
+  if (versionsMatch && method === "GET") {
+    const [, kind, slug] = versionsMatch;
+    sendJson(res, 200, { versions: listVersions(kind, slug) });
+    return;
+  }
+
+  const restoreMatch = pathname.match(
+    /^\/api\/versions\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)\/([0-9A-Z-]+)\/restore$/,
+  );
+  if (restoreMatch && method === "POST") {
+    const [, kind, slug, versionId] = restoreMatch;
+    const snapshotFile = path.join(historyDir(kind, slug), `${versionId}.md`);
+    if (!fs.existsSync(snapshotFile)) {
+      sendError(res, 404, "版本不存在");
+      return;
+    }
+    if (!fileExists(draftPath(kind, slug))) {
+      sendError(res, 404, "草稿不存在，无法恢复");
+      return;
+    }
+    snapshotDraft(kind, slug);
+    fs.copyFileSync(snapshotFile, draftPath(kind, slug));
+    sendJson(res, 200, { kind, slug, restoredTo: versionId });
+    return;
   }
 
   const publishMatch = pathname.match(/^\/api\/publish\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);

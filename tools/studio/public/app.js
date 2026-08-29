@@ -510,6 +510,57 @@ function wireImportDialog() {
   });
 }
 
+async function openVersions() {
+  if (!state.current) return;
+  const { kind, slug } = state.current;
+  try {
+    const data = await api(`/api/versions/${kind}/${slug}`);
+    const list = $("versions-list");
+    list.replaceChildren(
+      ...(data.versions.length === 0
+        ? [Object.assign(document.createElement("li"), { textContent: "还没有快照。点击「保存草稿」后会生成。" })]
+        : data.versions.map((version) => {
+            const li = document.createElement("li");
+            const time = document.createElement("span");
+            time.className = "version-time";
+            time.textContent = new Date(version.savedAt).toLocaleString();
+            const right = document.createElement("span");
+            right.style.display = "flex";
+            right.style.alignItems = "center";
+            right.style.gap = "10px";
+            const size = document.createElement("span");
+            size.className = "version-size";
+            size.textContent = `${(version.bytes / 1024).toFixed(1)} KB`;
+            const restore = document.createElement("button");
+            restore.type = "button";
+            restore.textContent = "恢复";
+            restore.addEventListener("click", async () => {
+              const confirmed = await confirmDialog({
+                title: "恢复历史版本",
+                text: `将把草稿恢复到 ${new Date(version.savedAt).toLocaleString()} 的快照。当前内容会先存为新快照。`,
+                requireInput: false,
+              });
+              if (!confirmed) return;
+              const result = await api(`/api/versions/${kind}/${slug}/${version.id}/restore`, {
+                method: "POST",
+                body: "{}",
+              });
+              $("versions-dialog").close();
+              const doc = await api(`/api/drafts/${kind}/${slug}`);
+              applyDoc(doc);
+              setSaveState(`已恢复到 ${new Date(version.savedAt).toLocaleTimeString()} 的版本`);
+            });
+            right.append(size, restore);
+            li.append(time, right);
+            return li;
+          })),
+    );
+    $("versions-dialog").showModal();
+  } catch (error) {
+    setSaveState(error.message, true);
+  }
+}
+
 function wire() {
   $("btn-deploy-status").addEventListener("click", async () => {
     setSaveState("查询最新生产部署…");
@@ -535,6 +586,8 @@ function wire() {
   $("btn-new-note").addEventListener("click", () => createDraft("notes").catch((e) => setSaveState(e.message, true)));
   $("btn-new-gallery").addEventListener("click", () => createDraft("gallery").catch((e) => setSaveState(e.message, true)));
   $("btn-save").addEventListener("click", () => saveDraft().catch(() => {}));
+  $("btn-versions").addEventListener("click", openVersions);
+  $("versions-close").addEventListener("click", () => $("versions-dialog").close());
   $("btn-publish").addEventListener("click", publishCurrent);
   $("btn-unpublish").addEventListener("click", unpublishCurrent);
   $("btn-delete").addEventListener("click", deleteCurrent);
