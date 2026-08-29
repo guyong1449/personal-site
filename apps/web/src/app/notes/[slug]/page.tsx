@@ -23,6 +23,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: note.title,
     description: note.summary,
+    openGraph: {
+      title: note.title,
+      description: note.summary ?? undefined,
+      type: "article",
+      publishedTime: note.created ?? undefined,
+      modifiedTime: note.updated ?? undefined,
+      tags: note.tags,
+    },
   };
 }
 
@@ -33,6 +41,19 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
   if (!note) {
     notFound();
   }
+
+  const index = await loadIndex("notes");
+  const position = index.findIndex((item) => item.slug === slug);
+  const newer = position > 0 ? index[position - 1] : null;
+  const older = position >= 0 && position < index.length - 1 ? index[position + 1] : null;
+  const related = index
+    .filter((item) => item.slug !== slug && item.tags.some((tag) => note.tags.includes(tag)))
+    .sort(
+      (left, right) =>
+        right.tags.filter((tag) => note.tags.includes(tag)).length -
+        left.tags.filter((tag) => note.tags.includes(tag)).length,
+    )
+    .slice(0, 2);
 
   const coverSrc = note.cover
     ? note.cover.startsWith("assets/")
@@ -50,7 +71,9 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
           {note.tags.length > 0 && (
             <div className="tag-list" aria-label="标签">
               {note.tags.map((tag) => (
-                <span key={tag}>#{tag}</span>
+                <Link key={tag} href={`/notes?tag=${encodeURIComponent(tag)}`}>
+                  #{tag}
+                </Link>
               ))}
             </div>
           )}
@@ -62,13 +85,44 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
               src={`/${coverSrc}`}
               alt={`${note.title} 封面`}
               fill
-              sizes="(max-width: 900px) 100vw, 1180px"
+              sizes="(max-width: 900px) 100vw, 800px"
               priority
             />
           </div>
         )}
 
         <MarkdownBody content={note.body} />
+
+        <nav className="post-nav" aria-label="相邻文章">
+          {older ? (
+            <Link href={`/notes/${older.slug}`} className="post-nav__item">
+              <span>← 较早</span>
+              <strong>{older.title}</strong>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {newer ? (
+            <Link href={`/notes/${newer.slug}`} className="post-nav__item post-nav__item--right">
+              <span>较新 →</span>
+              <strong>{newer.title}</strong>
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+
+        {related.length > 0 && (
+          <section className="related" aria-label="相关文章">
+            <h2>相关文章</h2>
+            {related.map((item) => (
+              <Link key={item.slug} href={`/notes/${item.slug}`} className="related__item">
+                <strong>{item.title}</strong>
+                {item.summary && <span>{item.summary}</span>}
+              </Link>
+            ))}
+          </section>
+        )}
 
         <div className="article-footer">
           <NoteComments />

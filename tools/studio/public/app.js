@@ -508,6 +508,16 @@ function wireImportDialog() {
 }
 
 function wire() {
+  $("btn-deploy-status").addEventListener("click", async () => {
+    setSaveState("查询最新生产部署…");
+    try {
+      const status = await api("/api/deploy-status");
+      setSaveState(`最新生产部署：${status.state} · ${status.url ?? ""}`);
+    } catch (error) {
+      setSaveState(error.message, true);
+    }
+  });
+
   for (const button of document.querySelectorAll(".filter")) {
     button.addEventListener("click", () => {
       for (const other of document.querySelectorAll(".filter")) {

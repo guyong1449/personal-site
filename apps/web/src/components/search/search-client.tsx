@@ -2,36 +2,50 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import type { SearchDoc } from "@/lib/content";
+
+// Split text around matched terms so hits can be highlighted with <mark>.
+function highlight(text: string, terms: string[]): ReactNode {
+  if (terms.length === 0) {
+    return text;
+  }
+  const pattern = new RegExp(
+    `(${terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`,
+    "gi",
+  );
+  return text.split(pattern).map((part, index) =>
+    pattern.test(part) ? <mark key={index}>{part}</mark> : <span key={index}>{part}</span>,
+  );
+}
 
 export function SearchClient({ docs }: { docs: SearchDoc[] }) {
   const [query, setQuery] = useState("");
 
+  const terms = useMemo(
+    () => query.trim().toLowerCase().split(/\s+/).filter(Boolean),
+    [query],
+  );
+
   const results = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (needle.length < 2) {
+    if (terms.length === 0) {
       return [];
     }
     return docs
       .map((doc) => {
-        const haystack = [
-          doc.title,
-          doc.summary,
-          doc.tags.join(" "),
-          doc.text,
-        ]
+        const haystack = [doc.title, doc.summary, doc.tags.join(" "), doc.text]
           .join(" ")
           .toLowerCase();
-        const hits = needle.split(/\s+/).filter((part) => haystack.includes(part)).length;
-        return { doc, hits, score: hits / needle.split(/\s+/).length };
+        const hits = terms.filter((term) => haystack.includes(term)).length;
+        return { doc, score: hits / terms.length };
       })
-      .filter((entry) => entry.hits > 0)
+      .filter((entry) => entry.score > 0)
       .sort((left, right) => right.score - left.score)
       .map((entry) => entry.doc);
-  }, [docs, query]);
+  }, [docs, terms]);
 
   return (
-    <div className="search-panel">
+    <div>
       <input
         type="search"
         className="search-input"
@@ -41,9 +55,7 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
         aria-label="全站搜索"
       />
       <p className="search-count">
-        {query.trim().length < 2
-          ? `索引内共 ${docs.length} 篇内容`
-          : `${results.length} 个结果`}
+        {terms.length === 0 ? `索引内共 ${docs.length} 篇内容` : `${results.length} 个结果`}
       </p>
 
       {results.length > 0 && (
@@ -54,18 +66,9 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
               href={`/${doc.kind}/${doc.slug}`}
               className="index-entry"
             >
-              <span className="index-entry__number" aria-hidden="true">
-                {doc.kind === "gallery" ? "G" : "N"}
-              </span>
               <div className="index-entry__body">
-                <div className="index-entry__meta">
-                  <span>{doc.kind.toUpperCase()}</span>
-                  {doc.tags.slice(0, 3).map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-                <h2>{doc.title}</h2>
-                {doc.summary && <p>{doc.summary}</p>}
+                <h2>{highlight(doc.title, terms)}</h2>
+                {doc.summary && <p>{highlight(doc.summary, terms)}</p>}
               </div>
               <span className="index-entry__arrow" aria-hidden="true">↗</span>
             </Link>

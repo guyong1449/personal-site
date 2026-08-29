@@ -1,7 +1,12 @@
 import { loadIndex } from "@/lib/content";
-import { ContentIndex } from "@/components/content/content-index";
+import { FilterableIndex } from "@/components/content/filterable-index";
+import { Suspense } from "react";
 
 export const dynamic = "force-static";
+
+export const metadata = {
+  title: "Notes",
+};
 
 export default async function NotesPage() {
   const notes = await loadIndex("notes");
@@ -14,7 +19,9 @@ export default async function NotesPage() {
         <span>{notes.length} 篇</span>
       </header>
       <section aria-label="笔记索引">
-        <ContentIndex items={notes} emptyMessage="暂无笔记。发布后的文字会按索引排列在这里。" />
+        <Suspense fallback={null}>
+          <FilterableIndex items={notes} emptyMessage="暂无笔记。发布后的文字会按索引排列在这里。" />
+        </Suspense>
       </section>
     </main>
   );
