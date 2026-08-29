@@ -343,7 +343,6 @@ button, a { touch-action: manipulation; }
   .index-entry { grid-template-columns: minmax(0, 1fr); gap: 10px; padding-block: 11px; }
   .index-entry__cover { width: min(100%, 220px); }
   .empty-index { align-items: flex-start; padding: 14px; }
-  .site-footer__inner { flex-direction: column; align-items: flex-start; gap: 0; }
   .go-to-top { right: 12px; bottom: 12px; }
 }
 
