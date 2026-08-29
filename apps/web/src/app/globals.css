@@ -174,8 +174,8 @@ button, a { touch-action: manipulation; }
   transition: all 200ms ease-out;
 }
 .article-header .tag-list a:hover {
-  background: color-mix(in srgb, var(--accent-warm) 22%, transparent);
-  color: var(--accent-deep); border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-warm) 30%, transparent);
+  color: var(--accent-warm); border-color: var(--accent-warm);
 }
 
 /* Tag filter chips */
