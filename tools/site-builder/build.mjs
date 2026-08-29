@@ -105,6 +105,7 @@ function readEntries(kind, errors) {
       cover: asString(frontmatter.cover),
       created: asString(frontmatter.created),
       updated: asString(frontmatter.updated),
+      pinned: frontmatter.pinned === true,
     });
   }
 
@@ -129,7 +130,11 @@ function recencyKey(entry) {
 }
 
 function sortByRecency(entries) {
+  // Pinned entries float to the top; the rest keep recency order.
   return [...entries].sort((left, right) => {
+    if (left.pinned !== right.pinned) {
+      return left.pinned ? -1 : 1;
+    }
     const leftKey = recencyKey(left);
     const rightKey = recencyKey(right);
     if (leftKey !== rightKey) {
@@ -154,6 +159,7 @@ function serializeFrontmatter(entry, kindId) {
   if (entry.cover) lines.push(`cover: ${JSON.stringify(entry.cover)}`);
   if (entry.created) lines.push(`created: ${JSON.stringify(entry.created)}`);
   if (entry.updated) lines.push(`updated: ${JSON.stringify(entry.updated)}`);
+  if (entry.pinned) lines.push("pinned: true");
   if (kindId === "gallery") {
     const artCategory = asString(entry.frontmatter.art_category);
     const series = asString(entry.frontmatter.series);
@@ -174,6 +180,9 @@ function metadataRow(entry, kindId) {
     updated: entry.updated,
   };
 
+  if (entry.pinned) {
+    row.pinned = true;
+  }
   if (kindId === "gallery") {
     row.art_category = asString(entry.frontmatter.art_category);
     row.series = asString(entry.frontmatter.series);

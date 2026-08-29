@@ -1,6 +1,7 @@
 import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import { NoteComments } from "@/components/note-comments";
+import { siteConfig } from "@/lib/config";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -61,8 +62,24 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
       : `assets/${note.cover}`
     : null;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: note.title,
+    description: note.summary ?? undefined,
+    keywords: note.tags.join(", ") || undefined,
+    dateCreated: note.created ?? undefined,
+    dateModified: note.updated ?? undefined,
+    author: { "@type": "Person", name: siteConfig.name, url: siteConfig.url },
+    mainEntityOfPage: `${siteConfig.url}/notes/${slug}`,
+  };
+
   return (
     <main id="main-content" className="site-shell archive-page article-page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <article>
         <header className="article-header">
           {note.updated && <p className="article-meta">{note.updated}</p>}

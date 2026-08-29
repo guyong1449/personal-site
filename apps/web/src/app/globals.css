@@ -167,6 +167,12 @@ button, a { touch-action: manipulation; }
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
 .index-entry .tag-list { display: none; }
+.pin-badge {
+  display: inline-block; margin-right: 8px; padding: 1px 8px;
+  border: 1px solid var(--accent); color: var(--accent-deep);
+  font-size: .66rem; font-weight: 700; letter-spacing: .08em;
+  vertical-align: 2px;
+}
 .article-header .tag-list { display: flex; margin-top: 12px; flex-wrap: wrap; gap: 8px; }
 .article-header .tag-list a {
   padding: 2px 10px; border: 1px solid var(--accent-warm);
@@ -210,6 +216,7 @@ button, a { touch-action: manipulation; }
 .related__item span { color: var(--muted); font-size: .8rem; }
 
 mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
+.search-snippet { color: var(--muted); font-size: .78rem; line-height: 1.6; }
 
 @media (max-width: 680px) {
   .post-nav { grid-template-columns: 1fr; }

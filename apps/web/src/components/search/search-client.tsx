@@ -19,6 +19,27 @@ function highlight(text: string, terms: string[]): ReactNode {
   );
 }
 
+// Short excerpt centered on the first hit so the result shows where the
+// match happened, not just the frontmatter summary.
+function snippetFor(text: string, terms: string[]): { raw: string; terms: string[] } | null {
+  const lower = text.toLowerCase();
+  let position = -1;
+  for (const term of terms) {
+    position = lower.indexOf(term);
+    if (position >= 0) {
+      break;
+    }
+  }
+  if (position < 0) {
+    return null;
+  }
+  const start = Math.max(0, position - 40);
+  const end = Math.min(text.length, position + 120);
+  const raw =
+    (start > 0 ? "…" : "") + text.slice(start, end).trim() + (end < text.length ? "…" : "");
+  return { raw, terms };
+}
+
 export function SearchClient({ docs }: { docs: SearchDoc[] }) {
   const [query, setQuery] = useState("");
 
@@ -76,6 +97,12 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
               <div className="index-entry__body">
                 <h2>{highlight(doc.title, terms)}</h2>
                 {doc.summary && <p>{highlight(doc.summary, terms)}</p>}
+                {(() => {
+                  const snippet = snippetFor(doc.text, terms);
+                  return snippet ? (
+                    <p className="search-snippet">{highlight(snippet.raw, snippet.terms)}</p>
+                  ) : null;
+                })()}
               </div>
               <span className="index-entry__arrow" aria-hidden="true">↗</span>
             </Link>

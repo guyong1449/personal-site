@@ -326,6 +326,7 @@ export function publishDraft(kind, slug) {
       contentType: doc.frontmatter.content_type,
       tags: Array.isArray(doc.frontmatter.tags) ? doc.frontmatter.tags : [],
       cover: typeof doc.frontmatter.cover === "string" ? doc.frontmatter.cover : null,
+      pinned: doc.frontmatter.pinned === true,
       body: doc.body,
     };
 
@@ -353,6 +354,7 @@ export function publishDraft(kind, slug) {
         cover: normalized.cover,
         created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : undefined,
         updated: new Date().toISOString().slice(0, 10),
+        pinned: normalized.pinned ? true : undefined,
         ...(kind === "gallery"
           ? {
               art_category:

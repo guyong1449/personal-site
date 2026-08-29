@@ -79,6 +79,7 @@ function formState() {
     cover: $("f-cover").value,
     created: $("f-created").value,
     updated: $("f-updated").value,
+    pinned: $("f-pinned").checked,
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,
@@ -173,6 +174,7 @@ function applyDoc(doc) {
   $("f-tags").value = (doc.tags ?? []).join(", ");
   $("f-created").value = doc.created ?? "";
   $("f-updated").value = doc.updated ?? "";
+  $("f-pinned").checked = doc.pinned === true;
   $("f-art-category").value = doc.artCategory ?? "";
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
@@ -222,6 +224,7 @@ function buildSavePayload() {
     cover: $("f-cover").value || null,
     created: $("f-created").value,
     updated: $("f-updated").value,
+    pinned: $("f-pinned").checked,
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,

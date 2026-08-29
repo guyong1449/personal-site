@@ -36,7 +36,10 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
             className="index-entry"
           >
             <div className="index-entry__body">
-              <h2>{item.title}</h2>
+              <h2>
+                {item.pinned && <span className="pin-badge">置顶</span>}
+                {item.title}
+              </h2>
               {item.summary && <p>{item.summary}</p>}
             </div>
 

@@ -61,6 +61,7 @@ function readDocument(file) {
       ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
       : [],
     cover: typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null,
+    pinned: parsed.frontmatter.pinned === true,
     artCategory:
       typeof parsed.frontmatter.art_category === "string" ? parsed.frontmatter.art_category : "",
     series: typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
@@ -422,6 +423,7 @@ async function saveDraft(kind, slug, body, res) {
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const created = datePattern.test(body.created ?? "") ? body.created : (doc.created ?? nowIsoDate());
   const updated = datePattern.test(body.updated ?? "") ? body.updated : nowIsoDate();
+  const pinned = typeof body.pinned === "boolean" ? body.pinned : doc.pinned;
   const artCategory =
     kind === "gallery" && typeof body.artCategory === "string" ? body.artCategory.trim() : doc.artCategory ?? "";
   const series =
@@ -438,6 +440,7 @@ async function saveDraft(kind, slug, body, res) {
       cover,
       created,
       updated,
+      pinned: pinned || undefined,
       ...(kind === "gallery" ? { art_category: artCategory, series } : {}),
     },
     nextBody,

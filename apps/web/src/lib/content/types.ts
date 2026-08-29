@@ -10,6 +10,7 @@ export type ContentListItem = {
   tags: string[];
   cover: string | null;
   updated: string | null;
+  pinned: boolean;
   artCategory: string | null;
   series: string | null;
 };

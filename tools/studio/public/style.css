@@ -60,6 +60,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--cyan); outl
 
 .editor-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; border: 1px solid var(--line); background: var(--surface); padding: 12px 14px; }
 .editor-meta label { display: flex; flex-direction: column; gap: 4px; font-size: .7rem; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+.editor-meta label.check-label { flex-direction: row; align-items: center; gap: 8px; grid-column: 1 / -1; }
+.editor-meta label.check-label input { width: auto; }
 .editor-meta__cover { display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; }
 .editor-meta__cover img { max-width: 240px; max-height: 140px; object-fit: cover; border: 1px solid var(--foreground); }
 .cover-actions { display: flex; gap: 8px; }
