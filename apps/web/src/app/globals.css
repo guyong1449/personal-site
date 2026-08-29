@@ -15,8 +15,8 @@
   --accent: #16b0bf;
   --accent-deep: #0e8e9c;
   --accent-soft: #ddf0f2;
-  --accent-warm: #d0a919;
-  --accent-warm-soft: #f6efda;
+  --accent-warm: #d4b716;
+  --accent-warm-soft: #f8f3d6;
   --header-bg: rgba(246, 251, 252, 0.94);
   --prose-text: #2e4351;
   --prose-code-bg: #e8f3f5;
@@ -297,15 +297,21 @@ button, a { touch-action: manipulation; }
 .site-footer__right { display: flex; align-items: center; gap: 12px; }
 .site-footer__divider { width: 1px; height: 14px; background: var(--line-strong); }
 .site-footer__right a {
+  position: relative;
   display: inline-flex; align-items: center; padding: 3px 8px;
   color: var(--muted); font-size: .76rem; font-weight: 600;
   transition: color 150ms ease-out;
 }
-.site-footer__right a:hover { color: var(--accent-deep); }
-.site-footer__right a.is-active {
-  color: var(--accent-deep); font-weight: 700;
-  box-shadow: inset 0 -2px 0 var(--accent);
+.site-footer__right a::after {
+  content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px;
+  background: var(--accent);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform 240ms ease-out;
 }
+.site-footer__right a:hover { color: var(--accent-deep); }
+.site-footer__right a:hover::after { transform: scaleX(1); }
+.site-footer__right a.is-active { color: var(--accent-deep); font-weight: 700; }
+.site-footer__right a.is-active::after { transform: scaleX(1); }
 .go-to-top {
   position: fixed; right: 18px; bottom: 18px; z-index: 50;
   display: flex; width: 36px; height: 36px; align-items: center; justify-content: center;
@@ -336,7 +342,7 @@ button, a { touch-action: manipulation; }
     font-size: .88rem; font-weight: 600; color: var(--muted);
   }
   .mobile-nav__panel nav > a::after {
-    content: ""; position: absolute; left: 18px; bottom: -1px; height: 2px; width: 100%;
+    content: ""; position: absolute; left: 18px; bottom: -1px; height: 2px; width: 28px;
     background: var(--accent);
     transform: scaleX(0); transform-origin: left;
     transition: transform 240ms ease-out;
