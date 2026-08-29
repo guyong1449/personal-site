@@ -5,10 +5,21 @@ import { fileURLToPath } from "node:url";
 import { KIND_IDS, parseFrontmatter, nowIsoDate, serializeFrontmatter } from "./lib.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(toolDir, "..", "..");
-const localRoot = path.join(repoRoot, ".local-content");
-const siteRoot = path.join(repoRoot, "content", "site");
-const webRoot = path.join(repoRoot, "apps", "web");
+const defaultRepoRoot = path.resolve(toolDir, "..", "..");
+
+// Mirrors publish.js: STUDIO_REPO_ROOT redirects to a fixture repository
+// for tests.
+function getPaths() {
+  const repoRoot = process.env.STUDIO_REPO_ROOT
+    ? path.resolve(process.env.STUDIO_REPO_ROOT)
+    : defaultRepoRoot;
+  return {
+    repoRoot,
+    localRoot: path.join(repoRoot, ".local-content"),
+    siteRoot: path.join(repoRoot, "content", "site"),
+    webRoot: path.join(repoRoot, "apps", "web"),
+  };
+}
 
 const STAGE_PATHS = ["content/site", "content/public/metadata", "apps/web/public/feed.xml"];
 
@@ -20,7 +31,7 @@ export function isBusy() {
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
-    cwd: options.cwd ?? repoRoot,
+    cwd: options.cwd ?? getPaths().repoRoot,
     encoding: "utf8",
     shell: false,
     timeout: options.timeoutMs ?? 120000,
@@ -58,6 +69,7 @@ export function unpublishToDraft(kind, slug) {
   inFlight = true;
 
   try {
+    const { localRoot, siteRoot, webRoot } = getPaths();
     const siteFile = path.join(siteRoot, kind, `${slug}.md`);
     if (!fs.existsSync(siteFile)) {
       return { ok: false, stage: "locate", message: "正式内容不存在，可能已下线" };
@@ -145,12 +157,25 @@ export function unpublishToDraft(kind, slug) {
 }
 
 function regenerateAndCheck() {
-  const builder = run(process.execPath, [path.join(repoRoot, "tools", "site-builder", "build.mjs")], {
-    timeoutMs: 60000,
-  });
+  const { repoRoot, webRoot } = getPaths();
+  // The builder script always loads from the real repository; only the
+  // content directories move via STUDIO_REPO_ROOT.
+  const builder = run(
+    process.execPath,
+    [path.join(defaultRepoRoot, "tools", "site-builder", "build.mjs")],
+    {
+      timeoutMs: 60000,
+      env: { ...process.env, STUDIO_REPO_ROOT: repoRoot },
+    },
+  );
   if (!builder.ok) {
     return { ok: false, stage: "generate", message: `生成 content/public 失败：\n${builder.stderr || builder.stdout}` };
   }
+
+  if (process.env.STUDIO_E2E === "1") {
+    return { ok: true };
+  }
+
   const sync = run(process.execPath, [path.join(webRoot, "scripts", "sync-public-assets.mjs")], {
     cwd: webRoot,
     timeoutMs: 60000,

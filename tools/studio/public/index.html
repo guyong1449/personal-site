@@ -37,6 +37,12 @@
         <label>SLUG<input id="f-slug" type="text" /></label>
         <label>摘要<input id="f-summary" type="text" placeholder="留空则自动提取" /></label>
         <label>标签<input id="f-tags" type="text" placeholder="course/CS308, topic/algorithm" /></label>
+        <label>创建日期<input id="f-created" type="date" /></label>
+        <label>更新日期<input id="f-updated" type="date" /></label>
+        <div id="gallery-fields" hidden>
+          <label>分类（Gallery）<input id="f-art-category" type="text" placeholder="如 sketch / illustration" /></label>
+          <label>系列（Gallery）<input id="f-series" type="text" placeholder="如 alpha 系列" /></label>
+        </div>
         <div class="editor-meta__cover">
           <label>Cover
             <select id="f-cover"><option value="">（无）</option></select>
@@ -45,6 +51,7 @@
           <div class="cover-actions">
             <input id="asset-file" type="file" hidden />
             <button id="btn-upload-asset" type="button">上传资产</button>
+            <button id="btn-insert-image" type="button" title="把选中的 Cover 或上传的图片插入正文">插入正文</button>
           </div>
         </div>
       </div>

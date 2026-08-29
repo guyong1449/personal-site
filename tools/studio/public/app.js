@@ -3,12 +3,15 @@ const state = {
   items: [],
   filter: "all",
   current: null, // {kind, slug, status, hasLocalDraft}
+  lastSaved: null, // snapshot of form values at last load/save
+  publishing: false,
 };
 
 const $ = (id) => document.getElementById(id);
 const listEl = $("item-list");
 const editorEl = $("editor");
 const emptyEl = $("empty-hint");
+const PUBLISH_STAGES = ["校验内容…", "写入正式目录…", "重建公开快照…", "运行测试与构建…", "提交并推送…"];
 
 function api(path, options) {
   return fetch(path, {
@@ -36,6 +39,24 @@ function previewUrl(name) {
   return `/asset/draft/${encodeURIComponent(name)}`;
 }
 
+// Same contract as the production pipeline: raw HTML in Markdown is shown
+// as plain text, never interpreted.
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+marked.use({
+  renderer: {
+    html(token) {
+      return escapeHtml(token.text ?? token.raw ?? "");
+    },
+  },
+});
+
 function renderPreview(body) {
   const html = marked.parse(body ?? "");
   const holder = document.createElement("div");
@@ -47,6 +68,35 @@ function renderPreview(body) {
     }
   }
   $("preview").replaceChildren(...holder.childNodes);
+}
+
+function formState() {
+  return {
+    title: $("f-title").value,
+    slug: $("f-slug").value,
+    summary: $("f-summary").value,
+    tags: $("f-tags").value,
+    cover: $("f-cover").value,
+    created: $("f-created").value,
+    updated: $("f-updated").value,
+    artCategory: $("f-art-category").value,
+    series: $("f-series").value,
+    body: $("f-body").value,
+  };
+}
+
+function isDirty() {
+  return (
+    state.current &&
+    state.current.status !== "published" &&
+    state.lastSaved !== null &&
+    JSON.stringify(formState()) !== JSON.stringify(state.lastSaved)
+  );
+}
+
+function markSaved(message) {
+  state.lastSaved = formState();
+  setSaveState(message);
 }
 
 function renderList() {
@@ -121,9 +171,13 @@ function applyDoc(doc) {
   $("f-slug").value = doc.slug ?? "";
   $("f-summary").value = doc.summary ?? "";
   $("f-tags").value = (doc.tags ?? []).join(", ");
+  $("f-created").value = doc.created ?? "";
+  $("f-updated").value = doc.updated ?? "";
+  $("f-art-category").value = doc.artCategory ?? "";
+  $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
   renderPreview(doc.body ?? "");
-  setSaveState(
+  markSaved(
     doc.source === "site"
       ? "已发布内容（只读快照）：保存时会自动建立本机草稿"
       : "草稿已载入",
@@ -134,6 +188,7 @@ async function openItem(item) {
   state.current = { kind: item.kind, slug: item.slug, ...item };
   emptyEl.hidden = true;
   editorEl.hidden = false;
+  $("gallery-fields").hidden = item.kind !== "gallery";
   renderList();
 
   try {
@@ -155,55 +210,101 @@ async function createDraft(kind) {
   await openItem({ kind: created.kind, slug: created.slug, status: "draft" });
 }
 
-async function saveDraft() {
-  if (!state.current) {
+function buildSavePayload() {
+  return {
+    title: $("f-title").value,
+    slug: $("f-slug").value,
+    summary: $("f-summary").value,
+    tags: $("f-tags")
+      .value.split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    cover: $("f-cover").value || null,
+    created: $("f-created").value,
+    updated: $("f-updated").value,
+    artCategory: $("f-art-category").value,
+    series: $("f-series").value,
+    body: $("f-body").value,
+  };
+}
+
+async function saveDraft({ silent = false } = {}) {
+  if (!state.current || state.publishing) {
+    return;
+  }
+  if (state.current.source === "site" && state.current.hasLocalDraft === false && !isDirty()) {
     return;
   }
   const { kind, slug } = state.current;
   try {
     const result = await api(`/api/drafts/${kind}/${slug}`, {
       method: "PUT",
-      body: JSON.stringify({
-        title: $("f-title").value,
-        slug: $("f-slug").value,
-        summary: $("f-summary").value,
-        tags: $("f-tags")
-          .value.split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-        cover: $("f-cover").value || null,
-        body: $("f-body").value,
-      }),
+      body: JSON.stringify(buildSavePayload()),
     });
     state.current.slug = result.slug;
-    setSaveState(`已保存草稿 ${result.slug} · ${new Date().toLocaleTimeString()}`);
+    if (!silent) {
+      markSaved(`已保存草稿 ${result.slug} · ${new Date().toLocaleTimeString()}`);
+    } else {
+      markSaved(`已自动保存 · ${new Date().toLocaleTimeString()}`);
+    }
     await loadItems();
   } catch (error) {
     setSaveState(error.message, true);
+    throw error;
   }
 }
 
 async function publishCurrent() {
-  if (!state.current) return;
+  if (!state.current || state.publishing) return;
   const { kind, slug } = state.current;
+  if (isDirty()) {
+    await saveDraft({ silent: true }).catch(() => {});
+  }
+  state.publishing = true;
+  const button = $("btn-publish");
+  button.disabled = true;
+  let stageIndex = 0;
+  const stageTimer = setInterval(() => {
+    setSaveState(`发布中：${PUBLISH_STAGES[stageIndex % PUBLISH_STAGES.length]}`);
+    stageIndex += 1;
+  }, 1500);
+  setSaveState("发布中：校验内容…");
+
   try {
     const result = await api(`/api/publish/${kind}/${slug}`, { method: "POST", body: "{}" });
-    setSaveState(`已发布：${result.slug}（提交 ${result.commit ?? ""}）`);
+    clearInterval(stageTimer);
+    button.disabled = false;
+    state.publishing = false;
+    setSaveState(
+      result.dryRun
+        ? "DRY-RUN 通过：Git 步骤已跳过"
+        : `已发布：${result.slug}（提交 ${result.commit ?? ""}）`,
+    );
     await loadItems();
   } catch (error) {
-    setSaveState(error.message, true);
+    clearInterval(stageTimer);
+    button.disabled = false;
+    state.publishing = false;
+    setSaveState(`发布失败（${error.message}）：稿件已保留，可直接点击发布重试`, true);
+    await loadItems();
   }
 }
 
 async function unpublishCurrent() {
-  if (!state.current) return;
+  if (!state.current || state.publishing) return;
   const { kind, slug } = state.current;
+  state.publishing = true;
+  const timer = setInterval(() => setSaveState("下线中：回填草稿并重建快照…"), 1500);
   try {
     const result = await api(`/api/unpublish/${kind}/${slug}`, { method: "POST", body: "{}" });
-    setSaveState(`已下线：${result.slug}`);
+    clearInterval(timer);
+    setSaveState(`已下线：${result.slug}（提交 ${result.commit ?? ""}），内容已复制回本机草稿`);
     await loadItems();
   } catch (error) {
+    clearInterval(timer);
     setSaveState(error.message, true);
+  } finally {
+    state.publishing = false;
   }
 }
 
@@ -278,7 +379,7 @@ async function deleteCurrent() {
   }
 }
 
-async function uploadAsset() {
+function uploadAsset() {
   const input = $("asset-file");
   input.value = "";
   input.click();
@@ -293,9 +394,36 @@ async function uploadAsset() {
       setSaveState("资产上传失败", true);
       return;
     }
-    await loadAssetOptions($("f-cover").value || file.name);
-    setSaveState(`资产已上传：${file.name}`);
+    const result = await response.json();
+    await loadAssetOptions(result.name);
+    setSaveState(
+      result.renamed
+        ? `资产与已有文件重名，已自动命名为 ${result.name}`
+        : `资产已上传：${result.name}`,
+    );
   };
+}
+
+function insertImageAtCursor(markdown) {
+  const body = $("f-body");
+  const start = body.selectionStart ?? body.value.length;
+  const end = body.selectionEnd ?? body.value.length;
+  const needsBreaks = start > 0 && body.value[start - 1] !== "\n";
+  const snippet = `${needsBreaks ? "\n\n" : ""}${markdown}\n`;
+  body.value = body.value.slice(0, start) + snippet + body.value.slice(end);
+  body.dispatchEvent(new Event("input"));
+  renderPreview(body.value);
+}
+
+function insertImage() {
+  const name = $("f-cover").value;
+  if (!name) {
+    setSaveState("请先在 Cover 中选择或上传一张图片", true);
+    return;
+  }
+  const alt = name.replace(/\.[^.]+$/, "");
+  insertImageAtCursor(`![${alt}](assets/${name})`);
+  setSaveState(`已插入图片：${name}`);
 }
 
 function wireImportDialog() {
@@ -393,11 +521,12 @@ function wire() {
 
   $("btn-new-note").addEventListener("click", () => createDraft("notes").catch((e) => setSaveState(e.message, true)));
   $("btn-new-gallery").addEventListener("click", () => createDraft("gallery").catch((e) => setSaveState(e.message, true)));
-  $("btn-save").addEventListener("click", saveDraft);
+  $("btn-save").addEventListener("click", () => saveDraft().catch(() => {}));
   $("btn-publish").addEventListener("click", publishCurrent);
   $("btn-unpublish").addEventListener("click", unpublishCurrent);
   $("btn-delete").addEventListener("click", deleteCurrent);
   $("btn-upload-asset").addEventListener("click", uploadAsset);
+  $("btn-insert-image").addEventListener("click", insertImage);
   $("f-cover").addEventListener("change", updateCoverPreview);
 
   let previewTimer = null;
@@ -405,6 +534,19 @@ function wire() {
     clearTimeout(previewTimer);
     previewTimer = setTimeout(() => renderPreview($("f-body").value), 200);
   });
+
+  window.addEventListener("beforeunload", (event) => {
+    if (isDirty()) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  });
+
+  setInterval(() => {
+    if (isDirty() && !state.publishing) {
+      saveDraft({ silent: true }).catch(() => {});
+    }
+  }, 30000);
 
   wireImportDialog();
 }

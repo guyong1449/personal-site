@@ -59,6 +59,9 @@ function readDocument(file) {
       ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
       : [],
     cover: typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null,
+    artCategory:
+      typeof parsed.frontmatter.art_category === "string" ? parsed.frontmatter.art_category : "",
+    series: typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
     created: typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : null,
     updated: typeof parsed.frontmatter.updated === "string" ? parsed.frontmatter.updated : null,
     body: parsed.body.replace(/^\n+/, ""),
@@ -124,6 +127,8 @@ function collectItems() {
         tags: doc.tags,
         cover: doc.cover,
         updated: doc.updated,
+        artCategory: doc.artCategory,
+        series: doc.series,
         status: "published",
         hasLocalDraft: false,
       });
@@ -260,6 +265,23 @@ async function importDraft(kind, body, res) {
     return;
   }
 
+  const rawHtmlPatterns = [
+    /<script[\s>]/i,
+    /<iframe[\s>]/i,
+    /<style[\s>]/i,
+    /\son\w+\s*=\s*["']?/i,
+    /javascript\s*:/i,
+  ];
+  const hit = rawHtmlPatterns.find((pattern) => pattern.test(content));
+  if (hit) {
+    sendError(
+      res,
+      422,
+      "内容包含不受支持的原始 HTML（如 <script>、内联事件）。本站只渲染标准 Markdown，请移除 HTML 后重新导入。",
+    );
+    return;
+  }
+
   const parsed = parseFrontmatter(content);
   const frontTitle =
     typeof parsed.frontmatter.title === "string" ? parsed.frontmatter.title.trim() : "";
@@ -289,32 +311,42 @@ async function importDraft(kind, body, res) {
 
   const slug = body.confirmOverwrite === true ? wantedSlug : uniqueSlug(kind, wantedSlug);
   const today = nowIsoDate();
-  const summary =
-    typeof parsed.frontmatter.summary === "string"
-      ? parsed.frontmatter.summary
-      : extractSummary(parsed.body);
-  const tags = Array.isArray(parsed.frontmatter.tags)
-    ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
-    : [];
-  const cover = typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null;
+    const summary =
+      typeof doc.frontmatter.summary === "string"
+        ? doc.frontmatter.summary
+        : extractSummary(parsed.body);
+    const tags = Array.isArray(parsed.frontmatter.tags)
+      ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
+      : [];
+    const cover = typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null;
 
-  ensureDir(kindDir(kind, "draft"));
-  const markdown = serializeFrontmatter(
-    {
-      title,
-      slug,
-      content_type: kind === "gallery" ? "gallery" : "note",
-      status: "draft",
-      summary,
-      tags,
-      cover,
-      created:
-        typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : today,
-      updated:
-        typeof parsed.frontmatter.updated === "string" ? parsed.frontmatter.updated : today,
-    },
-    parsed.body,
-  );
+    ensureDir(kindDir(kind, "draft"));
+    const markdown = serializeFrontmatter(
+      {
+        title,
+        slug,
+        content_type: kind === "gallery" ? "gallery" : "note",
+        status: "draft",
+        summary,
+        tags,
+        cover,
+        created:
+          typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : today,
+        updated:
+          typeof parsed.frontmatter.updated === "string" ? parsed.frontmatter.updated : today,
+        ...(kind === "gallery"
+          ? {
+              art_category:
+                typeof parsed.frontmatter.art_category === "string"
+                  ? parsed.frontmatter.art_category
+                  : "",
+              series:
+                typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
+            }
+          : {}),
+      },
+      parsed.body,
+    );
   fs.writeFileSync(draftPath(kind, slug), markdown, "utf8");
 
   sendJson(res, 200, {
@@ -385,6 +417,13 @@ async function saveDraft(kind, slug, body, res) {
     ? body.tags.filter((tag) => typeof tag === "string" && tag.trim()).map((tag) => tag.trim())
     : doc.tags;
   const cover = typeof body.cover === "string" && body.cover.trim() ? body.cover.trim() : null;
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const created = datePattern.test(body.created ?? "") ? body.created : (doc.created ?? nowIsoDate());
+  const updated = datePattern.test(body.updated ?? "") ? body.updated : nowIsoDate();
+  const artCategory =
+    kind === "gallery" && typeof body.artCategory === "string" ? body.artCategory.trim() : doc.artCategory ?? "";
+  const series =
+    kind === "gallery" && typeof body.series === "string" ? body.series.trim() : doc.series ?? "";
 
   const markdown = serializeFrontmatter(
     {
@@ -395,8 +434,9 @@ async function saveDraft(kind, slug, body, res) {
       summary,
       tags,
       cover,
-      created: doc.created ?? nowIsoDate(),
-      updated: nowIsoDate(),
+      created,
+      updated,
+      ...(kind === "gallery" ? { art_category: artCategory, series } : {}),
     },
     nextBody,
   );
@@ -525,7 +565,7 @@ async function handleApi(req, res, url) {
     return;
   }
 
-  if (method === "POST" && pathname === "/api/assets") {
+    if (method === "POST" && pathname === "/api/assets") {
     const name = sanitizeFileName(url.searchParams.get("name") ?? "");
     if (!name) {
       sendError(res, 400, "缺少 name 参数");
@@ -538,8 +578,18 @@ async function handleApi(req, res, url) {
       sendError(res, 400, "资产内容为空");
       return;
     }
-    fs.writeFileSync(path.join(dir, name), buffer);
-    sendJson(res, 200, { name, source: "draft" });
+    // Duplicate uploads auto-rename (stem-2.ext, stem-3.ext, …) so an
+    // existing asset is never silently overwritten.
+    const ext = path.extname(name);
+    const stem = ext ? name.slice(0, name.length - ext.length) : name;
+    let finalName = name;
+    let index = 2;
+    while (fs.existsSync(path.join(dir, finalName))) {
+      finalName = `${stem}-${index}${ext}`;
+      index += 1;
+    }
+    fs.writeFileSync(path.join(dir, finalName), buffer);
+    sendJson(res, 200, { name: finalName, source: "draft", renamed: finalName !== name });
     return;
   }
 

@@ -1,6 +1,12 @@
 # 工具详解
 
-## 1. Publisher (`tools/publisher/`)
+当前主力工具是 **Studio（`tools/studio/`）** 与 **site-builder（`tools/site-builder/`）**，
+见 [workflow.md](workflow.md)。以下 Publisher 相关内容为 **Legacy** 归档：
+该管线已被 Studio 取代，仅在需要参考旧 Obsidian 导出行为时阅读。
+其产出的 HTML 图片格式与当前"禁用原始 HTML"契约不再兼容，历史内容如需
+迁移请一次性转换为标准 Markdown 图片语法。
+
+## Legacy: Publisher (`tools/publisher/`)
 
 从 Obsidian Vault 导出文章到 `content/public/`。
 

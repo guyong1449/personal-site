@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(toolDir, "..", "..");
+// STUDIO_REPO_ROOT redirects the builder to a fixture repository for tests.
+const repoRoot = process.env.STUDIO_REPO_ROOT
+  ? path.resolve(process.env.STUDIO_REPO_ROOT)
+  : path.resolve(toolDir, "..", "..");
 const siteRoot = path.join(repoRoot, "content", "site");
 const publicRoot = path.join(repoRoot, "content", "public");
 

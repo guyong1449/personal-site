@@ -11,11 +11,22 @@ import {
 } from "./lib.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(toolDir, "..", "..");
-const localRoot = path.join(repoRoot, ".local-content");
-const siteRoot = path.join(repoRoot, "content", "site");
-const webRoot = path.join(repoRoot, "apps", "web");
+const defaultRepoRoot = path.resolve(toolDir, "..", "..");
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+// STUDIO_REPO_ROOT lets tests redirect the whole pipeline to a fixture
+// repository; unset means the real repository.
+function getPaths() {
+  const repoRoot = process.env.STUDIO_REPO_ROOT
+    ? path.resolve(process.env.STUDIO_REPO_ROOT)
+    : defaultRepoRoot;
+  return {
+    repoRoot,
+    localRoot: path.join(repoRoot, ".local-content"),
+    siteRoot: path.join(repoRoot, "content", "site"),
+    webRoot: path.join(repoRoot, "apps", "web"),
+  };
+}
 
 // Generated files that a publish commit is allowed to stage. Staging is done
 // with explicit pathspecs only — never `git add .` / `git add -A`.
@@ -32,7 +43,7 @@ function run(command, args, options = {}) {
   // executables, and shell joining would break the spaced "Program Files"
   // path on Windows.
   const result = spawnSync(command, args, {
-    cwd: options.cwd ?? repoRoot,
+    cwd: options.cwd ?? getPaths().repoRoot,
     encoding: "utf8",
     shell: false,
     timeout: options.timeoutMs ?? 120000,
@@ -64,6 +75,7 @@ function assetReferences(doc) {
 
 export function validateForPublish(kind, slug, doc, fsModule = fs) {
   const errors = [];
+  const { localRoot, siteRoot } = getPaths();
 
   if (!KIND_IDS.includes(kind)) {
     errors.push(`kind "${kind}" 不受支持`);
@@ -112,6 +124,7 @@ export function validateForPublish(kind, slug, doc, fsModule = fs) {
 }
 
 function copyDraftAssets(names) {
+  const { localRoot, siteRoot } = getPaths();
   const draftAssets = path.join(localRoot, "assets");
   const siteAssets = path.join(siteRoot, "assets");
   fs.mkdirSync(siteAssets, { recursive: true });
@@ -127,11 +140,23 @@ function copyDraftAssets(names) {
 }
 
 function regeneratePublicSnapshot() {
-  const builder = run(process.execPath, [path.join(repoRoot, "tools", "site-builder", "build.mjs")], {
-    timeoutMs: 60000,
-  });
+  const { repoRoot, webRoot } = getPaths();
+  // The builder script always loads from the real repository; only the
+  // content directories move via STUDIO_REPO_ROOT.
+  const builder = run(
+    process.execPath,
+    [path.join(defaultRepoRoot, "tools", "site-builder", "build.mjs")],
+    {
+      timeoutMs: 60000,
+      env: { ...process.env, STUDIO_REPO_ROOT: repoRoot },
+    },
+  );
   if (!builder.ok) {
     return { ok: false, stage: "generate", message: `生成 content/public 失败：\n${builder.stderr || builder.stdout}` };
+  }
+
+  if (process.env.STUDIO_E2E === "1") {
+    return { ok: true };
   }
 
   const sync = run(process.execPath, [path.join(webRoot, "scripts", "sync-public-assets.mjs")], {
@@ -154,6 +179,10 @@ function regeneratePublicSnapshot() {
 }
 
 function runChecks() {
+  if (process.env.STUDIO_E2E === "1") {
+    return { ok: true };
+  }
+  const { webRoot } = getPaths();
   const builderTests = run(
     process.execPath,
     ["--test", path.join(repoRoot, "tools", "site-builder", "tests", "build.test.mjs")],
@@ -285,6 +314,7 @@ export function publishDraft(kind, slug) {
   inFlight = true;
 
   try {
+    const { localRoot, siteRoot } = getPaths();
     const draftFile = path.join(localRoot, kind, `${slug}.md`);
     if (!fs.existsSync(draftFile)) {
       return { ok: false, stage: "validate", message: "本机草稿不存在" };
@@ -323,6 +353,16 @@ export function publishDraft(kind, slug) {
         cover: normalized.cover,
         created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : undefined,
         updated: new Date().toISOString().slice(0, 10),
+        ...(kind === "gallery"
+          ? {
+              art_category:
+                typeof doc.frontmatter.art_category === "string"
+                  ? doc.frontmatter.art_category
+                  : undefined,
+              series:
+                typeof doc.frontmatter.series === "string" ? doc.frontmatter.series : undefined,
+            }
+          : {}),
       },
       normalized.body,
     );
