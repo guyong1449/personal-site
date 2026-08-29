@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "slug": "hello-guyong",
+    "title": "开站记：这个网站是怎么跑起来的",
+    "summary": "第一篇文章，记录这个网站的定位、内容方向，以及从写作到上线的完整链路。",
+    "tags": [
+      "topic/meta",
+      "course/CS308"
+    ],
+    "cover": null,
+    "updated": "2026-08-29"
+  }
+]
