@@ -7,6 +7,7 @@
   "scripts": {
     "dev:web": "pnpm --dir apps/web dev",
     "build:web": "pnpm --dir apps/web build",
+    "check": "pnpm test:content && pnpm --dir tools/studio test && pnpm --dir tools/publisher test && pnpm lint:web && pnpm test:web",
     "build:content": "pnpm --dir tools/site-builder build",
     "test:content": "pnpm --dir tools/site-builder test",
     "lint:web": "pnpm --dir apps/web lint",
@@ -15,7 +16,6 @@
     "publish:file": "pnpm --dir tools/publisher export -- --config config.yaml --file",
     "sync:assets": "node apps/web/scripts/sync-public-assets.mjs",
     "generate:rss": "node apps/web/scripts/generate-rss.js",
-    "prebuild:web": "pnpm build:content && pnpm sync:assets && pnpm generate:rss",
     "publish-server": "node tools/publish-server.js",
     "studio": "node tools/studio/server.js"
   },

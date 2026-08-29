@@ -1,11 +1,16 @@
-import { loadEntry } from "@/lib/content";
+import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import { NoteComments } from "@/components/note-comments";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+
+export async function generateStaticParams() {
+  const notes = await loadIndex("notes");
+  return notes.map((note) => ({ slug: note.slug }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

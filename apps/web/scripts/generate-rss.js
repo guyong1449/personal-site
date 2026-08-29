@@ -26,18 +26,27 @@ function escapeXml(str) {
     .replace(/'/g, "&apos;");
 }
 
+// Deterministic output: dates come from content frontmatter only. Items
+// without any date omit pubDate instead of stamping build time.
+function itemDate(item) {
+  const source = item.updated || item.created;
+  if (!source) {
+    return null;
+  }
+  const time = new Date(source).getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
 function generateItem(item, kind) {
-  const pubDate = item.updated
-    ? new Date(item.updated).toUTCString()
-    : new Date().toUTCString();
+  const time = itemDate(item);
+  const pubDate = time ? `      <pubDate>${new Date(time).toUTCString()}</pubDate>\n` : "";
 
   return `    <item>
       <title>${escapeXml(item.title)}</title>
       <link>${SITE_URL}/${kind}/${item.slug}</link>
       <guid isPermaLink="true">${SITE_URL}/${kind}/${item.slug}</guid>
       <description>${escapeXml(item.summary || "")}</description>
-      <pubDate>${pubDate}</pubDate>
-      <category>${kind}</category>
+${pubDate}      <category>${kind}</category>
     </item>`;
 }
 
@@ -49,14 +58,22 @@ function generateFeed() {
     ...notes.map((item) => ({ ...item, kind: "notes" })),
     ...gallery.map((item) => ({ ...item, kind: "gallery" })),
   ].sort((a, b) => {
-    const dateA = a.updated ? new Date(a.updated) : new Date(0);
-    const dateB = b.updated ? new Date(b.updated) : new Date(0);
-    return dateB.getTime() - dateA.getTime();
+    const dateA = itemDate(a) ?? 0;
+    const dateB = itemDate(b) ?? 0;
+    return dateB - dateA;
   });
 
   const itemsXml = allItems
     .map((item) => generateItem(item, item.kind))
     .join("\n");
+
+  const latest = allItems.reduce((max, item) => {
+    const time = itemDate(item);
+    return time && time > max ? time : max;
+  }, 0);
+  const lastBuildDate = latest
+    ? `  <lastBuildDate>${new Date(latest).toUTCString()}</lastBuildDate>\n`
+    : "";
 
   const feed = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -65,8 +82,7 @@ function generateFeed() {
     <link>${SITE_URL}</link>
     <description>${escapeXml(SITE_DESCRIPTION)}</description>
     <language>zh-CN</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
+${lastBuildDate}    <atom:link href="${SITE_URL}/feed.xml" rel="self" type="application/rss+xml"/>
 ${itemsXml}
   </channel>
 </rss>`;
