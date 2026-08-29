@@ -16,6 +16,7 @@ import {
 } from "./lib.js";
 import { isBusy, publishDraft } from "./publish.js";
 import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
+import { runScheduledPublishes } from "./scheduler.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(toolDir, "..", "..");
@@ -62,6 +63,8 @@ function readDocument(file) {
       : [],
     cover: typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null,
     pinned: parsed.frontmatter.pinned === true,
+    publishAt:
+      typeof parsed.frontmatter.publish_at === "string" ? parsed.frontmatter.publish_at : null,
     artCategory:
       typeof parsed.frontmatter.art_category === "string" ? parsed.frontmatter.art_category : "",
     series: typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
@@ -155,6 +158,7 @@ function collectItems() {
         tags: doc.tags,
         cover: doc.cover,
         updated: doc.updated,
+        publishAt: doc.publishAt,
         status: published.has(slug) ? "published" : "draft",
         hasLocalDraft: true,
       });
@@ -470,6 +474,16 @@ async function saveDraft(kind, slug, body, res) {
   const created = datePattern.test(body.created ?? "") ? body.created : (doc.created ?? nowIsoDate());
   const updated = datePattern.test(body.updated ?? "") ? body.updated : nowIsoDate();
   const pinned = typeof body.pinned === "boolean" ? body.pinned : doc.pinned;
+  let publishAt = doc.publishAt ?? "";
+  if (typeof body.publishAt === "string") {
+    const trimmed = body.publishAt.trim();
+    publishAt =
+      trimmed === ""
+        ? ""
+        : Number.isNaN(new Date(trimmed).getTime())
+          ? doc.publishAt ?? ""
+          : trimmed;
+  }
   const artCategory =
     kind === "gallery" && typeof body.artCategory === "string" ? body.artCategory.trim() : doc.artCategory ?? "";
   const series =
@@ -487,6 +501,7 @@ async function saveDraft(kind, slug, body, res) {
       created,
       updated,
       pinned: pinned || undefined,
+      publish_at: publishAt || undefined,
       ...(kind === "gallery" ? { art_category: artCategory, series } : {}),
     },
     nextBody,
@@ -861,3 +876,16 @@ ensureDir(path.join(siteRoot, "assets"));
 server.listen(PORT, HOST, () => {
   console.log(`studio listening on http://${HOST}:${PORT}/studio (local only)`);
 });
+
+// Scheduled publishing: due drafts publish on a 30s sweep, plus once at
+// startup to catch anything missed while the studio was closed.
+setInterval(() => {
+  for (const result of runScheduledPublishes()) {
+    console.log(
+      `[scheduler] ${result.ok ? "published" : "FAILED"} ${result.kind}/${result.slug}: ${result.message.split("\n")[0]}`,
+    );
+  }
+}, 30_000);
+for (const result of runScheduledPublishes()) {
+  console.log(`[scheduler] ${result.ok ? "published" : "FAILED"} ${result.kind}/${result.slug}`);
+}

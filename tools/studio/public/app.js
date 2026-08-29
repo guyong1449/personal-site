@@ -80,6 +80,7 @@ function formState() {
     created: $("f-created").value,
     updated: $("f-updated").value,
     pinned: $("f-pinned").checked,
+    publishAt: $("f-publish-at").value,
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,
@@ -117,7 +118,9 @@ function renderList() {
       kind.className = "item-kind";
       kind.textContent = `${item.kind.toUpperCase()} · ${
         item.status === "published" ? "PUBLISHED" : "DRAFT"
-      }${item.hasLocalDraft && item.status === "published" ? " · 有本机草稿" : ""}`;
+      }${item.hasLocalDraft && item.status === "published" ? " · 有本机草稿" : ""}${
+        item.publishAt ? ` · ⏰ ${item.publishAt.replace("T", " ")}` : ""
+      }`;
       const title = document.createElement("div");
       title.className = "item-title";
       title.textContent = item.title || item.slug;
@@ -175,6 +178,7 @@ function applyDoc(doc) {
   $("f-created").value = doc.created ?? "";
   $("f-updated").value = doc.updated ?? "";
   $("f-pinned").checked = doc.pinned === true;
+  $("f-publish-at").value = doc.publishAt ?? "";
   $("f-art-category").value = doc.artCategory ?? "";
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
@@ -225,6 +229,7 @@ function buildSavePayload() {
     created: $("f-created").value,
     updated: $("f-updated").value,
     pinned: $("f-pinned").checked,
+    publishAt: $("f-publish-at").value,
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,
