@@ -185,7 +185,7 @@ function runChecks() {
   const { webRoot } = getPaths();
   const builderTests = run(
     process.execPath,
-    ["--test", path.join(repoRoot, "tools", "site-builder", "tests", "build.test.mjs")],
+    ["--test", path.join(defaultRepoRoot, "tools", "site-builder", "tests", "build.test.mjs")],
     { timeoutMs: 120000 },
   );
   if (!builderTests.ok) {
