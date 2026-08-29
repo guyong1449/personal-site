@@ -2,6 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import sharp from "sharp";
 import { fileURLToPath } from "node:url";
 import {
   KIND_IDS,
@@ -620,17 +621,34 @@ async function handleApi(req, res, url) {
       sendError(res, 400, "资产内容为空");
       return;
     }
+
+    // Images (jpg/png) are downsized to a 1600px cap and re-encoded as webp;
+    // other files pass through untouched. Encoding failures fall back to the
+    // original bytes.
+    let finalBuffer = buffer;
+    let finalName = name;
+    if (/\.(jpe?g|png)$/i.test(finalName)) {
+      try {
+        finalBuffer = await sharp(buffer)
+          .resize({ width: 1600, withoutEnlargement: true })
+          .webp({ quality: 82 })
+          .toBuffer();
+        finalName = finalName.replace(/\.(jpe?g|png)$/i, ".webp");
+      } catch {
+        finalBuffer = buffer;
+      }
+    }
+
     // Duplicate uploads auto-rename (stem-2.ext, stem-3.ext, …) so an
     // existing asset is never silently overwritten.
-    const ext = path.extname(name);
-    const stem = ext ? name.slice(0, name.length - ext.length) : name;
-    let finalName = name;
+    const ext = path.extname(finalName);
+    const stem = ext ? finalName.slice(0, finalName.length - ext.length) : finalName;
     let index = 2;
     while (fs.existsSync(path.join(dir, finalName))) {
       finalName = `${stem}-${index}${ext}`;
       index += 1;
     }
-    fs.writeFileSync(path.join(dir, finalName), buffer);
+    fs.writeFileSync(path.join(dir, finalName), finalBuffer);
     sendJson(res, 200, { name: finalName, source: "draft", renamed: finalName !== name });
     return;
   }

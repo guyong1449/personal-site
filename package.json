@@ -8,6 +8,7 @@
     "dev:web": "pnpm --dir apps/web dev",
     "build:web": "pnpm --dir apps/web build",
     "check": "pnpm test:content && pnpm --dir tools/studio test && pnpm --dir tools/publisher test && pnpm lint:web && pnpm test:web",
+    "check:links": "node apps/web/scripts/check-links.mjs",
     "build:content": "pnpm --dir tools/site-builder build",
     "test:content": "pnpm --dir tools/site-builder test",
     "lint:web": "pnpm --dir apps/web lint",

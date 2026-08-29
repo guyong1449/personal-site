@@ -314,7 +314,7 @@ export function publishDraft(kind, slug) {
   inFlight = true;
 
   try {
-    const { localRoot, siteRoot } = getPaths();
+    const { repoRoot, localRoot, siteRoot } = getPaths();
     const draftFile = path.join(localRoot, kind, `${slug}.md`);
     if (!fs.existsSync(draftFile)) {
       return { ok: false, stage: "validate", message: "本机草稿不存在" };
@@ -371,6 +371,22 @@ export function publishDraft(kind, slug) {
     const generated = regeneratePublicSnapshot();
     if (!generated.ok) {
       return generated;
+    }
+
+    const linkCheck = run(
+      process.execPath,
+      [path.join(defaultRepoRoot, "apps", "web", "scripts", "check-links.mjs")],
+      {
+        timeoutMs: 60000,
+        env: { ...process.env, STUDIO_REPO_ROOT: repoRoot },
+      },
+    );
+    if (!linkCheck.ok) {
+      return {
+        ok: false,
+        stage: "generate",
+        message: `内容完整性检查失败：\n${linkCheck.stdout || linkCheck.stderr}`,
+      };
     }
 
     const checks = runChecks();

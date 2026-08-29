@@ -28,3 +28,10 @@ jobs:
 
       - name: Build web
         run: pnpm build:web
+
+      - name: Check content links and assets
+        run: pnpm check:links
+
+      - name: Dependency audit (report only)
+        run: pnpm audit --prod --audit-level high
+        continue-on-error: true

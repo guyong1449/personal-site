@@ -22,8 +22,15 @@ function highlight(text: string, terms: string[]): ReactNode {
 export function SearchClient({ docs }: { docs: SearchDoc[] }) {
   const [query, setQuery] = useState("");
 
+  // Single CJK characters are meaningful search units, so they skip the
+  // two-character minimum that guards latin terms.
   const terms = useMemo(
-    () => query.trim().toLowerCase().split(/\s+/).filter(Boolean),
+    () =>
+      query
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((term) => term.length >= 2 || /[\u4e00-\u9fff]/.test(term)),
     [query],
   );
 
