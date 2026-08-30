@@ -19,6 +19,8 @@
   --accent-warm-soft: #f8f3d6;
   --hero-line-green: #16c85f;
   --hero-line-yellow: #ffe11a;
+  --accent-warm-active: #ffe11a;
+  --on-accent-warm: #24333f;
   --header-bg: rgba(246, 251, 252, 0.94);
   --prose-text: #2e4351;
   --prose-code-bg: #e8f3f5;
@@ -56,9 +58,9 @@ body {
   flex-direction: column;
   background: var(--bg-gradient, var(--background)) fixed;
   color: var(--foreground);
-  font-family: "Quicksand", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei", sans-serif;
+  font-family: "Quicksand", "YouYuan", "幼圆", "Yuanti SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 400;
 }
 body > main { flex: 1 0 auto; }
 * { box-sizing: border-box; }
@@ -181,9 +183,10 @@ button, a { touch-action: manipulation; }
   color: var(--accent-warm); font-size: .74rem; font-weight: 600;
   transition: all 200ms ease-out;
 }
-.article-header .tag-list a:hover {
-  background: color-mix(in srgb, var(--accent-warm) 30%, transparent);
-  color: var(--accent-warm); border-color: var(--accent-warm);
+.article-header .tag-list a:hover,
+.article-header .tag-list a:focus-visible {
+  background: var(--accent-warm-active);
+  color: var(--on-accent-warm); border-color: var(--accent-warm-active);
 }
 
 /* Tag filter chips */
@@ -216,6 +219,30 @@ button, a { touch-action: manipulation; }
 .related__item strong { font-size: .84rem; line-height: 1.5; }
 .related__item:hover strong { color: var(--accent-deep); }
 .related__item span { color: var(--muted); font-size: .8rem; }
+
+/* Article table of contents */
+.article-toc {
+  margin-top: 22px; border-left: 1px solid var(--line-strong);
+  padding: 2px 0 4px 16px;
+}
+.article-toc__title {
+  margin: 0 0 10px; color: var(--accent-deep);
+  font-size: .78rem; font-weight: 700; letter-spacing: .12em;
+}
+.article-toc__list { list-style: none; margin: 0; padding: 0; }
+.article-toc__list li + li { margin-top: 2px; }
+.article-toc__link {
+  position: relative; display: block; padding: 5px 0;
+  color: var(--muted); font-size: .82rem; line-height: 1.45;
+  transition: color 150ms ease-out;
+}
+.article-toc__link:hover { color: var(--accent-deep); }
+.article-toc__link.is-active { color: var(--accent-deep); font-weight: 700; }
+.article-toc__link.is-active::before {
+  content: ""; position: absolute; top: 50%; left: -17px;
+  width: 2px; height: 18px; background: var(--accent);
+  transform: translateY(-50%);
+}
 
 mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 .search-snippet { color: var(--muted); font-size: .78rem; line-height: 1.6; }
@@ -322,7 +349,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 /* Markdown body */
 .prose {
   max-width: 700px; color: var(--prose-text);
-  font-family: "Quicksand", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei", sans-serif;
+  font-family: inherit;
   font-size: .95rem; line-height: 1.95;
 }
 .prose h1, .prose h2, .prose h3, .prose h4 {
