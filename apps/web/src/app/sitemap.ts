@@ -4,6 +4,12 @@ import { siteConfig } from "@/lib/config";
 
 export const dynamic = "force-static";
 
+function lastModified(value: string | null) {
+  if (!value) return {};
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? {} : { lastModified: date };
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
 
@@ -14,14 +20,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const noteRoutes = notes.map((note) => ({
     url: `${baseUrl}/notes/${note.slug}`,
-    lastModified: note.updated ? new Date(note.updated) : new Date(),
+    ...lastModified(note.updated ?? note.created),
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
 
   const galleryRoutes = gallery.map((item) => ({
     url: `${baseUrl}/gallery/${item.slug}`,
-    lastModified: item.updated ? new Date(item.updated) : new Date(),
+    ...lastModified(item.updated ?? item.created),
     changeFrequency: "monthly" as const,
     priority: 0.6,
   }));
@@ -29,31 +35,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: baseUrl,
-      lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${baseUrl}/notes`,
-      lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${baseUrl}/gallery`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.7,
     },
     {
       url: `${baseUrl}/account`,
-      lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${baseUrl}/archive`,
-      lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.4,
     },

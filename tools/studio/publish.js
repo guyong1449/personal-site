@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -9,6 +10,8 @@ import {
   serializeFrontmatter,
   slugify,
 } from "./lib.js";
+import { acquireOperationLock } from "./operation-lock.js";
+import { verifyRemotePush } from "./push-verification.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(toolDir, "..", "..");
@@ -27,10 +30,6 @@ function getPaths() {
     webRoot: path.join(repoRoot, "apps", "web"),
   };
 }
-
-// Generated files that a publish commit is allowed to stage. Staging is done
-// with explicit pathspecs only — never `git add .` / `git add -A`.
-const STAGE_PATHS = ["content/site", "content/public/metadata", "apps/web/public/feed.xml"];
 
 let inFlight = false;
 
@@ -73,6 +72,60 @@ function assetReferences(doc) {
   return [...references].filter((name) => name && name.includes("."));
 }
 
+function relativeRepoPath(repoRoot, absolutePath) {
+  return path.relative(repoRoot, absolutePath).replaceAll("\\", "/");
+}
+
+function generatedPaths(kind, slug) {
+  return [
+    `content/public/metadata/${kind}.json`,
+    "content/public/metadata/search.json",
+    "apps/web/public/feed.xml",
+  ];
+}
+
+function operationPaths(kind, slug, assetNames) {
+  return [
+    `content/site/${kind}/${slug}.md`,
+    ...assetNames.map((name) => `content/site/assets/${name}`),
+    ...generatedPaths(kind, slug),
+  ];
+}
+
+function createSnapshot(pathsToSave) {
+  const backupRoot = fs.mkdtempSync(path.join(os.tmpdir(), "studio-publish-"));
+  const records = pathsToSave.map((target, index) => {
+    const backup = path.join(backupRoot, String(index));
+    const exists = fs.existsSync(target);
+    if (exists) {
+      fs.mkdirSync(path.dirname(backup), { recursive: true });
+      fs.cpSync(target, backup, { recursive: true });
+    }
+    return { target, backup, exists };
+  });
+
+  return {
+    restore() {
+      for (const record of records) {
+        fs.rmSync(record.target, { recursive: true, force: true });
+        if (record.exists) {
+          fs.mkdirSync(path.dirname(record.target), { recursive: true });
+          fs.cpSync(record.backup, record.target, { recursive: true });
+        }
+      }
+    },
+    cleanup() {
+      fs.rmSync(backupRoot, { recursive: true, force: true });
+    },
+  };
+}
+
+function injectedFailure(stage) {
+  return process.env.STUDIO_FAIL_STAGE === stage
+    ? { ok: false, stage, message: `故障注入：${stage} 阶段失败` }
+    : null;
+}
+
 export function validateForPublish(kind, slug, doc, fsModule = fs) {
   const errors = [];
   const { localRoot, siteRoot } = getPaths();
@@ -82,6 +135,12 @@ export function validateForPublish(kind, slug, doc, fsModule = fs) {
   }
   if (!doc.title || !doc.title.trim()) {
     errors.push("标题不能为空");
+  }
+  if (typeof doc.slug !== "string" || !SLUG_PATTERN.test(doc.slug)) {
+    errors.push(`frontmatter slug "${doc.slug ?? ""}" 不符合规范（小写字母、数字、连字符）`);
+  }
+  if (doc.slug !== slug) {
+    errors.push(`frontmatter slug "${doc.slug ?? ""}" 必须与当前草稿 slug "${slug}" 一致`);
   }
   if (!SLUG_PATTERN.test(slug)) {
     errors.push(`slug "${slug}" 不符合规范（小写字母、数字、连字符）`);
@@ -97,8 +156,15 @@ export function validateForPublish(kind, slug, doc, fsModule = fs) {
     errors.push(`content_type "${doc.contentType}" 与目标目录 ${kind} 不一致`);
   }
 
+  if (!Array.isArray(doc.tags) || doc.tags.length === 0) {
+    errors.push("标签不能为空，至少需要一个标签");
+  }
   const seenTags = new Set();
-  for (const tag of doc.tags ?? []) {
+  for (const tag of Array.isArray(doc.tags) ? doc.tags : []) {
+    if (typeof tag !== "string" || !tag.trim()) {
+      errors.push(`标签必须是非空字符串：${tag ?? ""}`);
+      continue;
+    }
     if (seenTags.has(tag)) {
       errors.push(`标签重复：${tag}`);
     }
@@ -139,6 +205,23 @@ function copyDraftAssets(names) {
   return copied;
 }
 
+function findAssetConflicts(names) {
+  const { localRoot, siteRoot } = getPaths();
+  const conflicts = [];
+  for (const name of names) {
+    const draftFile = path.join(localRoot, "assets", name);
+    const siteFile = path.join(siteRoot, "assets", name);
+    if (
+      fs.existsSync(draftFile) &&
+      fs.existsSync(siteFile) &&
+      !fs.readFileSync(draftFile).equals(fs.readFileSync(siteFile))
+    ) {
+      conflicts.push(name);
+    }
+  }
+  return conflicts;
+}
+
 function regeneratePublicSnapshot() {
   const { repoRoot, webRoot } = getPaths();
   // The builder script always loads from the real repository; only the
@@ -153,6 +236,10 @@ function regeneratePublicSnapshot() {
   );
   if (!builder.ok) {
     return { ok: false, stage: "generate", message: `生成 content/public 失败：\n${builder.stderr || builder.stdout}` };
+  }
+  const injected = injectedFailure("generate");
+  if (injected) {
+    return injected;
   }
 
   if (process.env.STUDIO_E2E === "1") {
@@ -179,6 +266,10 @@ function regeneratePublicSnapshot() {
 }
 
 function runChecks() {
+  const injected = injectedFailure("checks");
+  if (injected) {
+    return injected;
+  }
   if (process.env.STUDIO_E2E === "1") {
     return { ok: true };
   }
@@ -221,12 +312,17 @@ function runChecks() {
   return { ok: true };
 }
 
-function gitFileExists(filter) {
-  const listed = run("git", ["ls-files", filter]);
-  return listed.ok && listed.stdout.trim().length > 0;
+function rollbackCommit(commit) {
+  if (!commit) {
+    return;
+  }
+  const head = run("git", ["rev-parse", "HEAD"]);
+  if (head.ok && head.stdout.trim() === commit) {
+    run("git", ["reset", "--mixed", "HEAD^"]);
+  }
 }
 
-function publishToGit(slug) {
+function publishToGit(kind, slug, assetNames) {
   if (process.env.STUDIO_PUBLISH_DRY_RUN === "1") {
     return {
       ok: true,
@@ -261,7 +357,14 @@ function publishToGit(slug) {
     };
   }
 
-  for (const pathSpec of STAGE_PATHS) {
+  const injectedStage = injectedFailure("stage");
+  if (injectedStage) {
+    return injectedStage;
+  }
+
+  const { repoRoot } = getPaths();
+  const pathSpecs = operationPaths(kind, slug, assetNames);
+  for (const pathSpec of pathSpecs) {
     const add = run("git", ["add", "--", pathSpec]);
     if (!add.ok) {
       run("git", ["reset"]);
@@ -271,10 +374,8 @@ function publishToGit(slug) {
 
   const stagedFiles = run("git", ["diff", "--cached", "--name-only"]);
   const stagedList = stagedFiles.stdout.split("\n").map((line) => line.trim()).filter(Boolean);
-  const allowedPrefixes = ["content/site/", "content/public/metadata/", "apps/web/public/feed.xml"];
-  const unexpected = stagedList.filter(
-    (file) => !allowedPrefixes.some((prefix) => file.startsWith(prefix)),
-  );
+  const expected = new Set(pathSpecs.map((item) => relativeRepoPath(repoRoot, path.join(repoRoot, item))));
+  const unexpected = stagedList.filter((file) => !expected.has(file));
   if (unexpected.length > 0) {
     run("git", ["reset"]);
     return {
@@ -287,20 +388,58 @@ function publishToGit(slug) {
     return { ok: false, stage: "git", message: "没有可提交的内容变更（内容可能未修改）" };
   }
 
+  const injectedCommit = injectedFailure("commit");
+  if (injectedCommit) {
+    run("git", ["reset"]);
+    return injectedCommit;
+  }
+
+  const parentHash = run("git", ["rev-parse", "HEAD"]).stdout.trim();
   const commit = run("git", ["commit", "-m", `content: publish ${slug}`]);
   if (!commit.ok) {
     run("git", ["reset"]);
     return { ok: false, stage: "git", message: `提交失败：\n${commit.stderr || commit.stdout}` };
   }
 
+  const fullHash = run("git", ["rev-parse", "HEAD"]).stdout.trim();
   const hash = run("git", ["rev-parse", "--short", "HEAD"]).stdout.trim();
+  const injectedPushUnknown = injectedFailure("push-unknown");
+  if (injectedPushUnknown) {
+    return {
+      ...injectedPushUnknown,
+      commit: hash,
+      fullCommit: fullHash,
+      rollback: false,
+      message: "推送失败且无法确认远端状态；已保留本地提交和内容，请核对远端后再处理。",
+    };
+  }
+  const injectedPush = injectedFailure("push");
+  if (injectedPush) {
+    return { ...injectedPush, commit: hash, fullCommit: fullHash, rollback: true };
+  }
   const push = run("git", ["push", "origin", branchName], { timeoutMs: 180000 });
   if (!push.ok) {
+    const remoteState = verifyRemotePush(run, branchName, fullHash, parentHash);
+    if (remoteState.state === "current") {
+      return { ok: true, commit: hash, branch: branchName, pushVerified: true };
+    }
+    if (remoteState.state === "parent") {
+      return {
+        ok: false,
+        stage: "push",
+        message: `推送失败：已确认远端仍是父提交，本次提交 ${hash} 将安全回滚。\n${push.stderr || push.stdout}`,
+        commit: hash,
+        fullCommit: fullHash,
+        rollback: true,
+      };
+    }
     return {
       ok: false,
-      stage: "push",
-      message: `推送失败：本机提交 ${hash} 已创建，稍后可手动执行 git push origin ${branchName} 重试。\n${push.stderr || push.stdout}`,
+      stage: "push-unknown",
+      message: `推送失败且无法确认远端状态：本地提交 ${hash} 已保留，未自动回滚。请先执行 git ls-remote --heads origin ${branchName} 核对远端，再决定推送或回退。\n${remoteState.reason || push.stderr || push.stdout}`,
       commit: hash,
+      fullCommit: fullHash,
+      rollback: false,
     };
   }
 
@@ -311,10 +450,15 @@ export function publishDraft(kind, slug) {
   if (inFlight) {
     return { ok: false, stage: "busy", message: "已有发布任务在进行中，请稍后再试" };
   }
+  const { repoRoot } = getPaths();
+  const operationLock = acquireOperationLock(repoRoot, `publish:${kind}/${slug}`);
+  if (!operationLock.ok) {
+    return operationLock;
+  }
   inFlight = true;
 
   try {
-    const { repoRoot, localRoot, siteRoot } = getPaths();
+    const { localRoot, siteRoot } = getPaths();
     const draftFile = path.join(localRoot, kind, `${slug}.md`);
     if (!fs.existsSync(draftFile)) {
       return { ok: false, stage: "validate", message: "本机草稿不存在" };
@@ -322,7 +466,7 @@ export function publishDraft(kind, slug) {
     const doc = parseFrontmatter(fs.readFileSync(draftFile, "utf8"));
     const normalized = {
       title: doc.frontmatter.title,
-      slug: doc.frontmatter.slug ?? slug,
+      slug: doc.frontmatter.slug,
       contentType: doc.frontmatter.content_type,
       tags: Array.isArray(doc.frontmatter.tags) ? doc.frontmatter.tags : [],
       cover: typeof doc.frontmatter.cover === "string" ? doc.frontmatter.cover : null,
@@ -336,79 +480,113 @@ export function publishDraft(kind, slug) {
     }
 
     const finalSlug = slugify(normalized.slug, slug);
-    const siteDir = path.join(siteRoot, kind);
-    fs.mkdirSync(siteDir, { recursive: true });
-    copyDraftAssets(assetReferences(normalized));
-
-    const summary =
-      typeof doc.frontmatter.summary === "string" && doc.frontmatter.summary.trim()
-        ? doc.frontmatter.summary
-        : extractSummary(normalized.body);
-    const markdown = serializeFrontmatter(
-      {
-        title: normalized.title,
-        slug: finalSlug,
-        content_type: kind === "gallery" ? "gallery" : "note",
-        summary,
-        tags: normalized.tags,
-        cover: normalized.cover,
-        created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : undefined,
-        updated: new Date().toISOString().slice(0, 10),
-        pinned: normalized.pinned ? true : undefined,
-        ...(kind === "gallery"
-          ? {
-              art_category:
-                typeof doc.frontmatter.art_category === "string"
-                  ? doc.frontmatter.art_category
-                  : undefined,
-              series:
-                typeof doc.frontmatter.series === "string" ? doc.frontmatter.series : undefined,
-            }
-          : {}),
-      },
-      normalized.body,
-    );
-    fs.writeFileSync(path.join(siteDir, `${finalSlug}.md`), markdown, "utf8");
-
-    const generated = regeneratePublicSnapshot();
-    if (!generated.ok) {
-      return generated;
-    }
-
-    const linkCheck = run(
-      process.execPath,
-      [path.join(defaultRepoRoot, "apps", "web", "scripts", "check-links.mjs")],
-      {
-        timeoutMs: 60000,
-        env: { ...process.env, STUDIO_REPO_ROOT: repoRoot },
-      },
-    );
-    if (!linkCheck.ok) {
+    const referencedAssets = assetReferences(normalized);
+    const conflicts = findAssetConflicts(referencedAssets);
+    if (conflicts.length > 0) {
       return {
         ok: false,
-        stage: "generate",
-        message: `内容完整性检查失败：\n${linkCheck.stdout || linkCheck.stderr}`,
+        stage: "asset",
+        message: `资产重名且内容不同，未覆盖正式资产：${conflicts.join(", ")}`,
       };
     }
 
-    const checks = runChecks();
-    if (!checks.ok) {
-      return { ...checks, message: `${checks.message}\n\n稿件已保留在 content/site 与本机草稿，可修复后重试发布。` };
-    }
+    const siteDir = path.join(siteRoot, kind);
+    fs.mkdirSync(siteDir, { recursive: true });
+    const { repoRoot: currentRepoRoot } = getPaths();
+    const snapshot = createSnapshot([
+      path.join(siteDir, `${finalSlug}.md`),
+      ...referencedAssets.map((name) => path.join(siteRoot, "assets", name)),
+      path.join(currentRepoRoot, "content", "public"),
+      path.join(currentRepoRoot, "apps", "web", "public", "assets"),
+      path.join(currentRepoRoot, "apps", "web", "public", "feed.xml"),
+    ]);
+    let committedHash = null;
+    let succeeded = false;
+    let rollbackOnFailure = true;
 
-    const gitResult = publishToGit(finalSlug);
-    if (!gitResult.ok) {
-      return gitResult;
-    }
+    try {
+      copyDraftAssets(referencedAssets);
 
-    return {
-      ok: true,
-      slug: finalSlug,
-      commit: gitResult.commit,
-      branch: gitResult.branch,
-      message: `已提交并推送 ${gitResult.commit}（${gitResult.branch}），Vercel 将自动部署`,
-    };
+      const summary =
+        typeof doc.frontmatter.summary === "string" && doc.frontmatter.summary.trim()
+          ? doc.frontmatter.summary
+          : extractSummary(normalized.body);
+      const markdown = serializeFrontmatter(
+        {
+          title: normalized.title,
+          slug: finalSlug,
+          content_type: kind === "gallery" ? "gallery" : "note",
+          summary,
+          tags: normalized.tags,
+          cover: normalized.cover,
+          created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : undefined,
+          updated: new Date().toISOString().slice(0, 10),
+          pinned: normalized.pinned ? true : undefined,
+          ...(kind === "gallery"
+            ? {
+                art_category:
+                  typeof doc.frontmatter.art_category === "string"
+                    ? doc.frontmatter.art_category
+                    : undefined,
+                series:
+                  typeof doc.frontmatter.series === "string" ? doc.frontmatter.series : undefined,
+              }
+            : {}),
+        },
+        normalized.body,
+      );
+      fs.writeFileSync(path.join(siteDir, `${finalSlug}.md`), markdown, "utf8");
+
+      const generated = regeneratePublicSnapshot();
+      if (!generated.ok) {
+        return generated;
+      }
+
+      const linkCheck = run(
+        process.execPath,
+        [path.join(defaultRepoRoot, "apps", "web", "scripts", "check-links.mjs")],
+        {
+          timeoutMs: 60000,
+          env: { ...process.env, STUDIO_REPO_ROOT: repoRoot },
+        },
+      );
+      if (!linkCheck.ok) {
+        return {
+          ok: false,
+          stage: "generate",
+          message: `内容完整性检查失败：\n${linkCheck.stdout || linkCheck.stderr}`,
+        };
+      }
+
+      const checks = runChecks();
+      if (!checks.ok) {
+        return { ...checks, message: `${checks.message}\n\n操作已回滚，本机草稿仍保留；修复后可重新发布。` };
+      }
+
+      const gitResult = publishToGit(kind, finalSlug, referencedAssets);
+      committedHash = gitResult.fullCommit ?? null;
+      rollbackOnFailure = gitResult.rollback !== false;
+      if (!gitResult.ok) {
+        return gitResult;
+      }
+
+      succeeded = true;
+      return {
+        ok: true,
+        slug: finalSlug,
+        commit: gitResult.commit,
+        branch: gitResult.branch,
+        message: `已提交并推送 ${gitResult.commit}（${gitResult.branch}），Vercel 将自动部署`,
+      };
+    } finally {
+      if (!succeeded && rollbackOnFailure) {
+        rollbackCommit(committedHash);
+        snapshot.restore();
+      }
+      snapshot.cleanup();
+    }
   } finally {
     inFlight = false;
+    operationLock.release();
   }
 }

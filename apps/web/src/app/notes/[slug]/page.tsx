@@ -2,6 +2,7 @@ import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import { NoteComments } from "@/components/note-comments";
 import { siteConfig } from "@/lib/config";
+import { serializeStructuredData } from "@/lib/structured-data";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,16 +22,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: "Note Not Found" };
   }
 
+  const canonical = `${siteConfig.url}/notes/${slug}`;
+  const image = `${canonical}/opengraph-image`;
+
   return {
     title: note.title,
     description: note.summary,
+    alternates: { canonical },
     openGraph: {
       title: note.title,
       description: note.summary ?? undefined,
+      url: canonical,
       type: "article",
       publishedTime: note.created ?? undefined,
       modifiedTime: note.updated ?? undefined,
       tags: note.tags,
+      images: [{ url: image, alt: `${note.title} 分享卡片` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: note.title,
+      description: note.summary ?? undefined,
+      images: [image],
     },
   };
 }
@@ -78,7 +91,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
     <main id="main-content" className="site-shell archive-page article-page">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeStructuredData(jsonLd) }}
       />
       <article>
         <header className="article-header">

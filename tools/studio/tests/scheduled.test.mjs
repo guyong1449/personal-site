@@ -31,7 +31,8 @@ function draftWith(publishAt) {
     'slug: "sched-post"',
     'content_type: "note"',
     'status: "draft"',
-    "tags: []",
+    "tags:",
+    '  - "topic/test"',
     'created: "2026-08-29"',
     'updated: "2026-08-29"',
     ...(publishAt ? [`publish_at: "${publishAt}"`] : []),
@@ -105,5 +106,60 @@ describe("scheduled publishing", () => {
     assert.equal(collectScheduled().length, 1);
     assert.ok(fs.existsSync(path.join(REPO_ROOT, ".local-content", "notes", "sched-post.md")));
     assert.equal(git(BARE_ROOT, ["log", "-1", "--format=%s"]), "content: publish sched-post");
+  });
+
+  it("persists invalid tasks and supports a manual retry", async () => {
+    write(
+      path.join(REPO_ROOT, ".local-content", "notes", "bad-schedule.md"),
+      draftWith("not-a-date").replace("sched-post", "bad-schedule"),
+    );
+    const { readSchedulerStatus, retryScheduledPublish, runScheduledPublishes } = await import("../scheduler.js");
+    runScheduledPublishes();
+    const invalid = readSchedulerStatus().tasks.find((task) => task.slug === "bad-schedule");
+    assert.equal(invalid.status, "invalid");
+    assert.match(invalid.lastError, /有效日期|publish_at/);
+
+    write(
+      path.join(REPO_ROOT, ".local-content", "notes", "retry-schedule.md"),
+      draftWith("2099-01-01T09:00").replace("sched-post", "retry-schedule"),
+    );
+    process.env.STUDIO_PUBLISH_DRY_RUN = "1";
+    try {
+      const retried = retryScheduledPublish("notes", "retry-schedule");
+      assert.equal(retried.ok, true);
+      assert.equal(retried.task.status, "published");
+      assert.equal(retried.task.attempts, 1);
+    } finally {
+      delete process.env.STUDIO_PUBLISH_DRY_RUN;
+    }
+  });
+
+  it("keeps processing after marker cleanup fails and retries cleanup without republishing", async () => {
+    const first = path.join(REPO_ROOT, ".local-content", "notes", "cleanup-one.md");
+    const second = path.join(REPO_ROOT, ".local-content", "notes", "cleanup-two.md");
+    write(first, draftWith("2020-01-01T09:00").replace("sched-post", "cleanup-one"));
+    write(second, draftWith("2020-01-01T09:00").replace("sched-post", "cleanup-two"));
+    const { readSchedulerStatus, runScheduledPublishes } = await import("../scheduler.js");
+    process.env.STUDIO_PUBLISH_DRY_RUN = "1";
+    process.env.STUDIO_FAIL_CLEAR_PUBLISH_AT = "1";
+    try {
+      const results = runScheduledPublishes();
+      const cleanupResults = results.filter((result) => result.slug.startsWith("cleanup-"));
+      assert.equal(cleanupResults.length, 2);
+      assert.ok(cleanupResults.every((result) => result.ok === true));
+      assert.ok(cleanupResults.every((result) => result.warning?.includes("清理定时标记失败")));
+      const tasks = readSchedulerStatus().tasks.filter((task) => task.slug.startsWith("cleanup-"));
+      assert.equal(tasks.length, 2);
+      assert.ok(tasks.every((task) => task.status === "published"));
+      assert.ok(tasks.every((task) => task.lastError?.includes("清理定时标记失败")));
+    } finally {
+      delete process.env.STUDIO_FAIL_CLEAR_PUBLISH_AT;
+    }
+
+    const cleanupOnly = runScheduledPublishes();
+    assert.equal(cleanupOnly.some((result) => result.slug.startsWith("cleanup-")), false);
+    assert.equal(fs.readFileSync(first, "utf8").includes("publish_at"), false);
+    assert.equal(fs.readFileSync(second, "utf8").includes("publish_at"), false);
+    delete process.env.STUDIO_PUBLISH_DRY_RUN;
   });
 });

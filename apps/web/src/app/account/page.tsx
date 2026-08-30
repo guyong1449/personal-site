@@ -2,6 +2,8 @@ export const dynamic = "force-static";
 
 export const metadata = {
   title: "Account",
+  description: "GUYONG 的公开社交账号与代码主页。",
+  alternates: { canonical: "/account" },
 };
 
 const accounts = [

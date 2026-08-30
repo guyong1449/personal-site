@@ -11,25 +11,30 @@ export function GoToTop() {
       setIsVisible(window.scrollY > 300);
     };
 
-    window.addEventListener("scroll", toggleVisibility);
+    toggleVisibility();
+    window.addEventListener("scroll", toggleVisibility, { passive: true });
     return () => window.removeEventListener("scroll", toggleVisibility);
   }, []);
 
   const scrollToTop = () => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
+      behavior: reduceMotion ? "auto" : "smooth",
     });
   };
 
   return (
     <button
+      type="button"
       onClick={scrollToTop}
       className={cn(
         "go-to-top",
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
       )}
-      aria-label="Go to top"
+      aria-label="返回页面顶部"
+      aria-hidden={!isVisible}
+      tabIndex={isVisible ? 0 : -1}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

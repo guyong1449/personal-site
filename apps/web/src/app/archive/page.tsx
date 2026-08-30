@@ -6,6 +6,8 @@ export const dynamic = "force-static";
 
 export const metadata = {
   title: "Archive",
+  description: "按年份浏览 GUYONG 的全部公开笔记与画作。",
+  alternates: { canonical: "/archive" },
 };
 
 function entryDate(entry: { updated: string | null; created?: string | null }) {

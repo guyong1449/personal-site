@@ -10,22 +10,32 @@
   "scripts": {
     "dev:web": "pnpm --dir apps/web dev",
     "build:web": "pnpm --dir apps/web build",
-    "check": "pnpm test:content && pnpm --dir tools/studio test && pnpm --dir tools/publisher test && pnpm lint:web && pnpm test:web",
-    "verify": "pnpm check && pnpm build:web && pnpm check:links && pnpm check:generated",
+    "check": "pnpm test:content && pnpm --dir tools/studio test && pnpm --dir tools/publisher test && pnpm lint:web && pnpm typecheck:web && pnpm test:web && pnpm test:links",
+    "verify": "pnpm check && pnpm build:web && pnpm smoke:web && pnpm check:links && pnpm check:generated",
     "check:links": "node apps/web/scripts/check-links.mjs",
+    "test:links": "node --test apps/web/scripts/check-links.test.mjs",
     "check:generated": "git diff --exit-code -- content/public/metadata apps/web/public/feed.xml",
     "build:content": "pnpm --dir tools/site-builder build",
     "test:content": "pnpm --dir tools/site-builder test",
     "lint:web": "pnpm --dir apps/web lint",
+    "typecheck:web": "pnpm --dir apps/web typecheck",
     "test:web": "pnpm --dir apps/web test",
+    "smoke:web": "pnpm --dir apps/web smoke",
     "export:content": "pnpm --dir tools/publisher export -- --config config.yaml",
     "publish:file": "pnpm --dir tools/publisher export -- --config config.yaml --file",
     "sync:assets": "node apps/web/scripts/sync-public-assets.mjs",
     "generate:rss": "node apps/web/scripts/generate-rss.js",
+    "backup:studio": "node tools/studio/backup.mjs create",
+    "restore:studio": "node tools/studio/backup.mjs restore",
     "publish-server": "node tools/publish-server.js",
     "studio": "node tools/studio/server.js"
   },
   "pnpm": {
+    "overrides": {
+      "nanoid": "^3.3.18",
+      "postcss": "^8.5.18",
+      "sharp": "^0.35.4"
+    },
     "onlyBuiltDependencies": [
       "esbuild",
       "sharp",

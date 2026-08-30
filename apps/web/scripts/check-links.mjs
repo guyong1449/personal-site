@@ -2,10 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Content integrity check: every asset referenced by published markdown
-// (body images, inline src, metadata covers) must exist, and every internal
-// article link must resolve to a generated slug. Run after content
-// regeneration; exits non-zero with a report on violations.
+// Content integrity check: every local asset referenced by published markdown
+// (body images, inline src, metadata covers) must exist, every internal article
+// link must resolve to a generated slug, and unsafe URL protocols are rejected.
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = process.env.STUDIO_REPO_ROOT
@@ -14,31 +13,111 @@ const repoRoot = process.env.STUDIO_REPO_ROOT
 const publicRoot = path.join(repoRoot, "content", "public");
 
 const KINDS = ["notes", "gallery"];
+const SAFE_EXTERNAL_PROTOCOLS = new Set(["http", "https", "mailto", "tel"]);
 const problems = [];
 
-function assetReferences(source) {
-  const references = new Set();
-  const patterns = [
-    /!\[[^\]]*\]\((?:assets\/)?([^)\s]+)\)/g,
-    /src="(?:assets\/)?([^"]+)"/g,
-    /cover:\s*"?([^"\n]+)"?/g,
-  ];
-  for (const pattern of patterns) {
-    for (const match of source.matchAll(pattern)) {
-      if (match[1]) {
-        references.add(path.basename(match[1].split("#")[0].split("?")[0]));
-      }
-    }
-  }
-  return [...references].filter((name) => name && name.includes("."));
+function stripQueryAndFragment(value) {
+  return value.split(/[?#]/, 1)[0];
 }
 
-function internalLinks(source) {
-  const links = [];
-  for (const match of source.matchAll(/\[[^\]]*\]\((\/(?:notes|gallery)\/[a-z0-9][a-z0-9-]*)\)/g)) {
-    links.push(match[1]);
+function decodePath(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
-  return links;
+}
+
+function parseDestination(raw) {
+  const destination = raw.trim().replace(/^<|>$/g, "");
+  const protocol = destination.match(/^([a-z][a-z\d+.-]*):/i)?.[1]?.toLowerCase();
+
+  if (protocol) {
+    return SAFE_EXTERNAL_PROTOCOLS.has(protocol)
+      ? { kind: "external", destination, protocol }
+      : { kind: "unsafe", destination, protocol };
+  }
+
+  if (destination.startsWith("//")) {
+    return { kind: "external", destination, protocol: "https" };
+  }
+
+  const pathPart = decodePath(stripQueryAndFragment(destination));
+  const rootedPath = pathPart.replace(/^\/+/, "");
+  if (rootedPath.split("/").includes("..")) {
+    return { kind: "unsafe", destination, protocol: "relative path" };
+  }
+  const normalizedPath = path.posix.normalize(rootedPath).replace(/^\.\//, "");
+
+  if (normalizedPath === "." || normalizedPath === "") {
+    return { kind: "fragment", destination };
+  }
+
+  if (normalizedPath === "assets" || normalizedPath.startsWith("assets/")) {
+    const assetPath = normalizedPath.slice("assets/".length);
+    return assetPath && !assetPath.startsWith("../") && assetPath !== ".."
+      ? { kind: "asset", destination, assetPath }
+      : { kind: "unsafe", destination, protocol: "relative path" };
+  }
+
+  const internal = normalizedPath.match(/^(notes|gallery)\/([a-z0-9][a-z0-9-]*)\/?$/);
+  if (internal) {
+    return { kind: "internal", destination, contentKind: internal[1], slug: internal[2] };
+  }
+
+  return { kind: "other", destination };
+}
+
+function collectDestinations(source) {
+  const references = [];
+  const markdownPattern = /(!?)\[[^\]]*\]\(\s*(<[^>]+>|[^\s)]+)(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g;
+  for (const match of source.matchAll(markdownPattern)) {
+    references.push({ raw: match[2] });
+  }
+
+  const srcPattern = /\bsrc\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/gi;
+  for (const match of source.matchAll(srcPattern)) {
+    references.push({ raw: match[1] ?? match[2] ?? match[3] });
+  }
+
+  const coverPattern = /^\s*cover:\s*(?:"([^"]+)"|'([^']+)'|([^\s#]+))/gim;
+  for (const match of source.matchAll(coverPattern)) {
+    references.push({ raw: match[1] ?? match[2] ?? match[3] });
+  }
+
+  return references;
+}
+
+function checkReference(reference, doc, slugs) {
+  const parsed = parseDestination(reference.raw);
+
+  if (parsed.kind === "unsafe") {
+    problems.push(
+      `[${doc.kind}/${doc.slug}] 不安全的链接协议或路径：${parsed.protocol} (${reference.raw})`,
+    );
+    return;
+  }
+
+  // External URLs are valid references but do not belong to the local asset tree.
+  if (parsed.kind === "external" || parsed.kind === "fragment" || parsed.kind === "other") {
+    return;
+  }
+
+  if (parsed.kind === "asset") {
+    const assetRoot = path.join(publicRoot, "assets");
+    const target = path.resolve(assetRoot, parsed.assetPath);
+    const relativeTarget = path.relative(assetRoot, target);
+    if (relativeTarget.startsWith("..") || path.isAbsolute(relativeTarget) || !fs.existsSync(target)) {
+      problems.push(`[${doc.kind}/${doc.slug}] 引用的资产不存在：assets/${parsed.assetPath}`);
+    }
+    return;
+  }
+
+  if (parsed.kind === "internal" && !slugs[parsed.contentKind].has(parsed.slug)) {
+    problems.push(
+      `[${doc.kind}/${doc.slug}] 内部链接指向不存在的内容：/${parsed.contentKind}/${parsed.slug}`,
+    );
+  }
 }
 
 const slugs = { notes: new Set(), gallery: new Set() };
@@ -50,7 +129,7 @@ for (const kind of KINDS) {
   );
   for (const row of metadata) {
     slugs[kind].add(row.slug);
-    documents.push({ kind, slug: row.slug, source: "" });
+    documents.push({ kind, slug: row.slug, source: row.cover ? `cover: ${JSON.stringify(row.cover)}\n` : "" });
   }
 
   const dir = path.join(publicRoot, kind);
@@ -65,16 +144,8 @@ for (const kind of KINDS) {
 }
 
 for (const doc of documents) {
-  for (const name of assetReferences(doc.source)) {
-    if (!fs.existsSync(path.join(publicRoot, "assets", name))) {
-      problems.push(`[${doc.kind}/${doc.slug}] 引用的资产不存在：assets/${name}`);
-    }
-  }
-  for (const link of internalLinks(doc.source)) {
-    const [, kind, slug] = link.split("/");
-    if (!slugs[kind].has(slug)) {
-      problems.push(`[${doc.kind}/${doc.slug}] 内部链接指向不存在的内容：${link}`);
-    }
+  for (const reference of collectDestinations(doc.source)) {
+    checkReference(reference, doc, slugs);
   }
 }
 

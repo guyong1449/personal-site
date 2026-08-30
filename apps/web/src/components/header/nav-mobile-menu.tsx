@@ -1,21 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { mainNavItems } from "./nav-data";
+import { isNavItemActive, mainNavItems } from "./nav-data";
 
 export function NavMobileMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    panelRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        !panelRef.current?.contains(target) &&
+        !toggleRef.current?.contains(target)
+      ) {
+        setIsOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+    };
+  }, [isOpen]);
+
+  const closeMenu = () => {
+    setIsOpen(false);
+    toggleRef.current?.focus();
+  };
 
   return (
     <div className="mobile-nav">
       <button
+        ref={toggleRef}
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="mobile-nav__toggle"
         aria-label={isOpen ? "关闭菜单" : "打开菜单"}
         aria-expanded={isOpen}
+        aria-controls="mobile-nav-panel"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -44,17 +86,22 @@ export function NavMobileMenu() {
       </button>
 
       {isOpen && (
-        <div className="mobile-nav__panel">
+        <div ref={panelRef} id="mobile-nav-panel" className="mobile-nav__panel">
           <nav className="site-shell" aria-label="移动端主导航">
-            {mainNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-              >
-                {item.title}
-              </Link>
-            ))}
+            {mainNavItems.map((item) => {
+              const isActive = isNavItemActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={closeMenu}
+                  className={isActive ? "is-active" : undefined}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {item.title}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       )}

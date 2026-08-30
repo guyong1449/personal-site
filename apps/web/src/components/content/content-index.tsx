@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ContentListItem } from "@/lib/content";
+import { galleryAssetPath } from "@/lib/gallery";
 
 type ContentIndexProps = {
   items: ContentListItem[];
@@ -23,11 +24,7 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
   return (
     <div className="content-index">
       {visibleItems.map((item) => {
-        const coverSrc = item.cover
-          ? item.cover.startsWith("assets/")
-            ? item.cover
-            : `assets/${item.cover}`
-          : null;
+        const coverSrc = galleryAssetPath(item.cover);
 
         return (
           <Link
@@ -49,7 +46,7 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
                   src={`/${coverSrc}`}
                   alt={`${item.title} 封面`}
                   fill
-                  sizes="96px"
+                  sizes="(max-width: 680px) 220px, 88px"
                 />
               </div>
             )}

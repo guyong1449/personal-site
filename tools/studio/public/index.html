@@ -29,6 +29,8 @@
     </div>
     <div class="studio-header__actions">
       <button id="btn-deploy-status" type="button">部署状态</button>
+      <button id="btn-scheduler-status" type="button">定时任务</button>
+      <button id="btn-cleanup-assets" type="button">清理未引用图片</button>
       <button id="btn-import" type="button">导入 Markdown</button>
       <button id="btn-new-note" type="button">新建 Note</button>
       <button id="btn-new-gallery" type="button">新建 Gallery</button>
@@ -132,6 +134,25 @@
     <ul id="versions-list" class="versions-list"></ul>
     <div class="dialog-actions">
       <button type="button" id="versions-close">关闭</button>
+    </div>
+  </dialog>
+
+  <dialog id="scheduler-dialog">
+    <h2>定时发布任务</h2>
+    <p id="scheduler-summary" class="dialog-note"></p>
+    <ul id="scheduler-list" class="scheduler-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" id="scheduler-close">关闭</button>
+    </div>
+  </dialog>
+
+  <dialog id="asset-cleanup-dialog">
+    <h2>清理未引用图片</h2>
+    <p id="asset-cleanup-summary" class="dialog-note"></p>
+    <ul id="asset-cleanup-list" class="asset-cleanup-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" id="asset-cleanup-close">关闭</button>
+      <button type="button" id="asset-cleanup-confirm" class="danger" disabled>确认删除所选</button>
     </div>
   </dialog>
 

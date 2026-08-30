@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 // The local Studio runs as a standalone tool on 127.0.0.1:4319. It is only
 // reachable through the dev server rewrite below; production builds get an
@@ -14,8 +15,9 @@ async function rewrites() {
   ];
 }
 
-const nextConfig: NextConfig = {
+const nextConfig = (phase: string): NextConfig => ({
   reactStrictMode: true,
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -31,6 +33,6 @@ const nextConfig: NextConfig = {
       "../../content/public/gallery/**/*",
     ],
   },
-};
+});
 
 export default nextConfig;

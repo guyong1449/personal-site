@@ -1,11 +1,58 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
+import { spawnSync } from "node:child_process";
 import {
   KINDS,
   parseDocument,
   sortByRecency,
   serializeFrontmatter,
 } from "../build.mjs";
+
+const BUILD_FILE = fileURLToPath(new URL("../build.mjs", import.meta.url));
+
+function write(file, content) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, content, "utf8");
+}
+
+function fixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "site-builder-test-"));
+  write(path.join(root, "content", "public", "metadata", "notes.json"), "sentinel-notes\n");
+  write(path.join(root, "content", "public", "metadata", "gallery.json"), "[]\n");
+  write(path.join(root, "content", "public", "metadata", "search.json"), "[]\n");
+  fs.mkdirSync(path.join(root, "content", "site", "notes"), { recursive: true });
+  fs.mkdirSync(path.join(root, "content", "site", "gallery"), { recursive: true });
+  fs.mkdirSync(path.join(root, "content", "site", "assets"), { recursive: true });
+  return root;
+}
+
+function runBuilder(root) {
+  return spawnSync(process.execPath, [BUILD_FILE], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, STUDIO_REPO_ROOT: root },
+  });
+}
+
+function noteFrontmatter(slug, extra = []) {
+  const extraKeys = new Set(extra.map((line) => line.split(":", 1)[0].trim()));
+  return [
+    "---",
+    `title: "${slug}"`,
+    `slug: "${slug}"`,
+    'content_type: "note"',
+    ...(extraKeys.has("tags") ? [] : ['tags: ["topic/test"]']),
+    ...(extraKeys.has("created") ? [] : ['created: "2026-08-01"']),
+    ...(extraKeys.has("updated") ? [] : ['updated: "2026-08-02"']),
+    ...extra,
+    "---",
+    "",
+  ].join("\n");
+}
 
 describe("parseDocument", () => {
   it("splits frontmatter and body", () => {
@@ -93,5 +140,90 @@ describe("kinds", () => {
       KINDS.map((kind) => kind.id),
       ["notes", "gallery"],
     );
+  });
+});
+
+describe("content contract and asset audit", () => {
+  it("rejects invalid content before writing generated snapshots", () => {
+    const root = fixture();
+    try {
+      write(
+        path.join(root, "content", "site", "notes", "empty-body.md"),
+        noteFrontmatter("empty-body"),
+      );
+      write(
+        path.join(root, "content", "site", "notes", "wrong-name.md"),
+        noteFrontmatter("different-slug") + "正文\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "bad-date.md"),
+        noteFrontmatter("bad-date", ['created: "2026-02-30"']) + "正文\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "duplicate-tags.md"),
+        noteFrontmatter("duplicate-tags", ["tags:", '  - "topic/test"', '  - "topic/test"']) + "正文\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "empty-tags.md"),
+        noteFrontmatter("empty-tags", ["tags: []"]) + "正文\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "missing-cover.md"),
+        noteFrontmatter("missing-cover", ['cover: "missing.png"']) + "正文\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "missing-inline.md"),
+        noteFrontmatter("missing-inline") + "![图](assets/missing.png)\n",
+      );
+      write(
+        path.join(root, "content", "site", "notes", "bad-image-path.md"),
+        noteFrontmatter("bad-image-path") + "![图](assets/../secret.png)\n",
+      );
+
+      const result = runBuilder(root);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /empty-body\.md: body must be non-empty/);
+      assert.match(result.stderr, /wrong-name\.md: frontmatter\.slug/);
+      assert.match(result.stderr, /bad-date\.md: created must use YYYY-MM-DD/);
+      assert.match(result.stderr, /duplicate-tags\.md: duplicate tag/);
+      assert.match(result.stderr, /empty-tags\.md: tags must be a non-empty array/);
+      assert.match(result.stderr, /missing-cover\.md: referenced asset is missing: missing\.png/);
+      assert.match(result.stderr, /missing-inline\.md: referenced asset is missing: missing\.png/);
+      assert.match(result.stderr, /bad-image-path\.md: image reference must be a relative asset path/);
+      assert.equal(
+        fs.readFileSync(path.join(root, "content", "public", "metadata", "notes.json"), "utf8"),
+        "sentinel-notes\n",
+      );
+      assert.equal(fs.existsSync(path.join(root, "content", "public", "notes")), false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("warns about orphan assets without deleting or omitting them", () => {
+    const root = fixture();
+    try {
+      write(
+        path.join(root, "content", "site", "notes", "good-note.md"),
+        noteFrontmatter("good-note", ['cover: "cover.png"']) +
+          '正文 ![图](assets/inline.webp "title")，外链 ![外链](https://example.com/image.png)\n',
+      );
+      write(path.join(root, "content", "site", "assets", "cover.png"), "cover");
+      write(path.join(root, "content", "site", "assets", "inline.webp"), "inline");
+      write(path.join(root, "content", "site", "assets", "orphan.png"), "orphan");
+
+      const result = runBuilder(root);
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stderr, /unreferenced asset content\/site\/assets\/orphan\.png/);
+      assert.ok(fs.existsSync(path.join(root, "content", "site", "assets", "orphan.png")));
+      assert.ok(fs.existsSync(path.join(root, "content", "public", "assets", "orphan.png")));
+      const metadata = JSON.parse(
+        fs.readFileSync(path.join(root, "content", "public", "metadata", "notes.json"), "utf8"),
+      );
+      assert.equal(metadata.length, 1);
+      assert.equal(metadata[0].created, "2026-08-01");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 });

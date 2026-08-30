@@ -154,6 +154,161 @@ async function loadItems() {
   renderList();
 }
 
+const SCHEDULER_LABELS = {
+  pending: "待发布",
+  overdue: "已逾期",
+  failed: "发布失败",
+  invalid: "时间无效",
+  published: "已发布",
+};
+
+function renderSchedulerStatus(data) {
+  const counts = data.summary ?? {};
+  $("scheduler-summary").textContent = `待发布 ${counts.pending ?? 0} · 逾期 ${counts.overdue ?? 0} · 失败 ${counts.failed ?? 0} · 无效 ${counts.invalid ?? 0}`;
+  const list = $("scheduler-list");
+  const tasks = data.tasks ?? [];
+  if (tasks.length === 0) {
+    const empty = document.createElement("li");
+    empty.textContent = "暂无定时任务";
+    list.replaceChildren(empty);
+    return;
+  }
+  list.replaceChildren(
+    ...tasks.map((task) => {
+      const item = document.createElement("li");
+      const copy = document.createElement("div");
+      copy.className = "scheduler-task";
+      const detail = document.createElement("span");
+      const attempted = task.lastAttemptAt ? ` · 最近尝试 ${task.lastAttemptAt.replace("T", " ").replace(".000Z", "")}` : "";
+      detail.textContent = `${task.kind}/${task.slug} · ${SCHEDULER_LABELS[task.status] ?? task.status}${task.publishAt ? ` · ${task.publishAt}` : ""}${attempted}`;
+      copy.append(detail);
+      if (task.lastError) {
+        const error = document.createElement("small");
+        error.className = "scheduler-error";
+        error.textContent = task.lastError;
+        copy.append(error);
+      }
+      item.append(copy);
+      if (["overdue", "failed"].includes(task.status)) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "scheduler-retry";
+        retry.dataset.kind = task.kind;
+        retry.dataset.slug = task.slug;
+        retry.textContent = "重试";
+        item.append(retry);
+      }
+      return item;
+    }),
+  );
+}
+
+async function loadSchedulerStatus(showError = false) {
+  try {
+    const data = await api("/api/scheduler/status");
+    renderSchedulerStatus(data);
+  } catch (error) {
+    if (showError) {
+      setSaveState(`读取定时任务失败：${error.message}`, true);
+    }
+  }
+}
+
+async function retrySchedulerTask(kind, slug) {
+  const buttons = document.querySelectorAll(`.scheduler-retry[data-kind="${kind}"][data-slug="${slug}"]`);
+  for (const button of buttons) button.disabled = true;
+  try {
+    const result = await api(`/api/scheduler/retry/${kind}/${slug}`, { method: "POST", body: "{}" });
+    setSaveState(result.ok ? `已重试：${kind}/${slug}` : `重试失败：${result.message}`, !result.ok);
+    await loadSchedulerStatus(true);
+  } catch (error) {
+    setSaveState(`重试失败：${error.message}`, true);
+  } finally {
+    for (const button of buttons) button.disabled = false;
+  }
+}
+
+function formatAssetSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function renderAssetCleanup(data) {
+  const assets = data.assets ?? [];
+  const summary = $("asset-cleanup-summary");
+  const list = $("asset-cleanup-list");
+  const confirm = $("asset-cleanup-confirm");
+  confirm.disabled = assets.length === 0;
+  if (assets.length === 0) {
+    summary.textContent = "没有可清理的未引用图片。正式稿和本机草稿引用中的资产不会出现在这里。";
+    const empty = document.createElement("li");
+    empty.className = "asset-cleanup-empty";
+    empty.textContent = "暂无未引用图片";
+    list.replaceChildren(empty);
+    return;
+  }
+  summary.textContent = `找到 ${assets.length} 个未被正式稿或本机草稿引用的图片。删除前会再次检查引用。`;
+  list.replaceChildren(
+    ...assets.map((asset) => {
+      const item = document.createElement("li");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.name = asset.name;
+      checkbox.dataset.source = asset.source;
+      checkbox.setAttribute("aria-label", `选择 ${asset.name}`);
+      const copy = document.createElement("span");
+      copy.className = "asset-cleanup-item";
+      const name = document.createElement("span");
+      name.className = "asset-cleanup-name";
+      name.textContent = asset.name;
+      const meta = document.createElement("span");
+      meta.className = "asset-cleanup-meta";
+      meta.textContent = `${asset.source === "draft" ? "本机草稿" : "正式资产"} · ${formatAssetSize(asset.size)}`;
+      copy.append(name, meta);
+      item.append(checkbox, copy);
+      return item;
+    }),
+  );
+  confirm.disabled = true;
+}
+
+async function loadAssetCleanup(showDialog = false) {
+  try {
+    const data = await api("/api/assets/cleanup");
+    renderAssetCleanup(data);
+    if (showDialog) $("asset-cleanup-dialog").showModal();
+  } catch (error) {
+    setSaveState(`读取未引用图片失败：${error.message}`, true);
+  }
+}
+
+async function deleteSelectedAssets() {
+  const selected = [...document.querySelectorAll("#asset-cleanup-list input[type=checkbox]:checked")].map((checkbox) => ({
+    name: checkbox.dataset.name,
+    source: checkbox.dataset.source,
+  }));
+  if (selected.length === 0) return;
+  const names = selected.map((asset) => asset.name).join("、");
+  if (!window.confirm(`确认删除以下图片？\n${names}\n\n删除时会再次核对引用。`)) return;
+
+  const button = $("asset-cleanup-confirm");
+  button.disabled = true;
+  try {
+    for (const asset of selected) {
+      await api("/api/assets/cleanup", {
+        method: "POST",
+        body: JSON.stringify({ ...asset, confirmName: asset.name }),
+      });
+    }
+    setSaveState(`已删除 ${selected.length} 个未引用图片`);
+    await loadAssetCleanup(false);
+  } catch (error) {
+    setSaveState(`清理未引用图片失败：${error.message}`, true);
+    await loadAssetCleanup(false);
+  }
+}
+
 async function loadAssetOptions(selected) {
   const data = await api("/api/assets");
   const select = $("f-cover");
@@ -523,13 +678,15 @@ function wireImportDialog() {
       dialog.close();
       textInput.value = "";
       fileInput.value = "";
-      setSaveState(
-        result.hasPublishedCopy
-          ? "导入完成：已建立本机草稿；再次发布后才会更新网站版本"
-          : "导入完成：已建立本机草稿",
-      );
+      const importedMessage = result.hasPublishedCopy
+        ? "导入完成：已建立本机草稿；再次发布后才会更新网站版本"
+        : "导入完成：已建立本机草稿";
+      const unresolvedMessage = Array.isArray(result.unresolvedAssets) && result.unresolvedAssets.length > 0
+        ? `；需上传并改为 assets/...：${result.unresolvedAssets.join("、")}`
+        : "";
       await loadItems();
       await openItem({ kind: result.kind, slug: result.slug, status: "draft" });
+      setSaveState(`${importedMessage}${unresolvedMessage}`, Boolean(unresolvedMessage));
     } catch (error) {
       if (error.status === 409) {
         pendingOverwrite = false;
@@ -630,6 +787,23 @@ function wire() {
     }
   });
 
+  $("btn-scheduler-status").addEventListener("click", async () => {
+    await loadSchedulerStatus(true);
+    $("scheduler-dialog").showModal();
+  });
+  $("scheduler-close").addEventListener("click", () => $("scheduler-dialog").close());
+  $("scheduler-list").addEventListener("click", (event) => {
+    const button = event.target.closest(".scheduler-retry");
+    if (button) retrySchedulerTask(button.dataset.kind, button.dataset.slug);
+  });
+  $("btn-cleanup-assets").addEventListener("click", () => loadAssetCleanup(true));
+  $("asset-cleanup-close").addEventListener("click", () => $("asset-cleanup-dialog").close());
+  $("asset-cleanup-confirm").addEventListener("click", deleteSelectedAssets);
+  $("asset-cleanup-list").addEventListener("change", () => {
+    $("asset-cleanup-confirm").disabled =
+      document.querySelectorAll("#asset-cleanup-list input[type=checkbox]:checked").length === 0;
+  });
+
   for (const button of document.querySelectorAll(".filter")) {
     button.addEventListener("click", () => {
       for (const other of document.querySelectorAll(".filter")) {
@@ -680,9 +854,11 @@ function wire() {
       saveDraft({ silent: true }).catch(() => {});
     }
   }, 30000);
+  setInterval(() => loadSchedulerStatus(), 30000);
 
   wireImportDialog();
 }
 
 wire();
 loadItems().catch((error) => setSaveState(error.message, true));
+loadSchedulerStatus();

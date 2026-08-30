@@ -6,6 +6,8 @@ export const dynamic = "force-static";
 
 export const metadata = {
   title: "Notes",
+  description: "GUYONG 的技术学习、课程笔记与长期思考。",
+  alternates: { canonical: "/notes" },
 };
 
 export default async function NotesPage() {

@@ -40,6 +40,36 @@ describe("validateForPublish", () => {
     assert.match(errors.join("\n"), /标签不能包含空格/);
   });
 
+  it("requires a valid frontmatter slug matching the current file", () => {
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, slug: "Bad Slug" }).join("\n"),
+      /frontmatter slug.*不符合规范/,
+    );
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, slug: "other-slug" }).join("\n"),
+      /必须与当前草稿 slug/,
+    );
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, slug: undefined }).join("\n"),
+      /frontmatter slug/,
+    );
+  });
+
+  it("requires at least one non-empty tag", () => {
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, tags: [] }).join("\n"),
+      /标签不能为空/,
+    );
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, tags: [""] }).join("\n"),
+      /标签必须是非空字符串/,
+    );
+    assert.match(
+      validateForPublish("notes", "test-slug", { ...baseDoc, tags: ["topic/a", 3] }).join("\n"),
+      /标签必须是非空字符串/,
+    );
+  });
+
   it("rejects references to missing assets", () => {
     const errors = validateForPublish("notes", "test-slug", {
       ...baseDoc,

@@ -2,6 +2,10 @@ import { loadIndex } from "@/lib/content";
 import { ContentIndex } from "@/components/content/content-index";
 import Link from "next/link";
 
+export const metadata = {
+  alternates: { canonical: "/" },
+};
+
 export const dynamic = "force-static";
 
 export default async function HomePage() {

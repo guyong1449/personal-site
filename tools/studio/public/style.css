@@ -145,6 +145,18 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: .75; }
 .schedule-control .check-label { grid-column: auto; min-width: 96px; }
 .schedule-field { width: min(100%, 250px); }
 .schedule-help { color: var(--muted); font-size: .7rem; line-height: 1.5; }
+.scheduler-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.scheduler-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--line); color: var(--foreground); font-size: .78rem; }
+.scheduler-task { display: grid; min-width: 0; gap: 4px; }
+.scheduler-error { color: var(--danger); font-size: .7rem; line-height: 1.45; overflow-wrap: anywhere; }
+.scheduler-retry { flex: 0 0 auto; padding: 4px 10px; }
+.asset-cleanup-list { max-height: 360px; overflow-y: auto; list-style: none; margin: 10px 0; padding: 0; }
+.asset-cleanup-list li { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding: 9px 2px; font-size: .8rem; }
+.asset-cleanup-list input[type="checkbox"] { width: 18px; height: 18px; flex: 0 0 18px; accent-color: var(--accent-deep); }
+.asset-cleanup-item { display: grid; min-width: 0; gap: 3px; }
+.asset-cleanup-name { overflow-wrap: anywhere; color: var(--foreground); font-weight: 600; }
+.asset-cleanup-meta { color: var(--muted); font-size: .72rem; }
+.asset-cleanup-empty { color: var(--muted); font-size: .78rem; }
 #gallery-fields { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .editor-meta__cover { display: flex; grid-column: 1 / -1; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: var(--background); }
 .cover-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }

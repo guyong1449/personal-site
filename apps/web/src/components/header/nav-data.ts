@@ -17,3 +17,7 @@ export const mainNavItems: NavItem[] = [
     href: "/account",
   },
 ];
+
+export function isNavItemActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}

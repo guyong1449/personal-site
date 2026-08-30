@@ -27,6 +27,5 @@ jobs:
       - name: Verify repository
         run: pnpm verify
 
-      - name: Dependency audit (report only)
+      - name: Dependency audit (high severity gate)
         run: pnpm audit --prod --audit-level high
-        continue-on-error: true

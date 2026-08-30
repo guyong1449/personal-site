@@ -18,6 +18,19 @@ export const metadata: Metadata = {
     template: `%s / ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  openGraph: {
+    type: "website",
+    locale: siteConfig.locale,
+    siteName: siteConfig.name,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    url: siteConfig.url,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+  },
 };
 
 const themeInitScript = `(function(){var t="light";try{var s=localStorage.getItem("guyong-theme-v2");if(s==="dark"||s==="light"){t=s;}}catch(e){}document.documentElement.dataset.theme=t;})();`;

@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+export function demoteMarkdownHeadings(html: string) {
+  return html.replace(/<h1(\s[^>]*)?>/gi, "<h2$1>").replace(/<\/h1>/gi, "</h2>");
+}
+
 export const markdownComponents = {
   a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
     if (href?.startsWith("/") || href?.startsWith("#")) {

@@ -7,15 +7,17 @@
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 4317",
     "lint": "eslint .",
+    "smoke": "node scripts/smoke-build.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "prebuild": "node ../../tools/site-builder/build.mjs && node scripts/sync-public-assets.mjs && node scripts/generate-rss.js"
   },
   "dependencies": {
     "@fontsource/quicksand": "^5.3.0",
     "clsx": "^2.1.1",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.3.1",
     "lxgw-wenkai-webfont": "1.7.0",
-    "next": "^15.0.0",
+    "next": "^15.5.21",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
@@ -36,7 +38,7 @@
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "eslint": "8.57.1",
-    "eslint-config-next": "^15.0.0",
+    "eslint-config-next": "^15.5.21",
     "tailwindcss": "^4.1.7",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

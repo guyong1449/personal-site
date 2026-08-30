@@ -3,6 +3,7 @@ package-lock.json
 dist/
 .vercel/
 .next/
+.next-dev/
 .DS_Store
 .astro/
 *.log

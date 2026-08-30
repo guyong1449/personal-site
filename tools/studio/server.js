@@ -16,7 +16,12 @@ import {
 } from "./lib.js";
 import { isBusy, publishDraft } from "./publish.js";
 import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
-import { runScheduledPublishes } from "./scheduler.js";
+import {
+  getSchedulerHealth,
+  readSchedulerStatus,
+  retryScheduledPublish,
+  runScheduledPublishes,
+} from "./scheduler.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(toolDir, "..", "..");
@@ -32,9 +37,92 @@ const wenkaiFontDir = path.join(toolDir, "node_modules", "lxgw-wenkai-webfont");
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.STUDIO_PORT ?? 4319);
 const LOCAL_HOSTNAMES = new Set(["127.0.0.1", "localhost", "[::1]"]);
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_IMAGE_PIXELS = 40_000_000;
+const IMAGE_EXTENSIONS = {
+  avif: ".avif",
+  gif: ".gif",
+  jpeg: ".jpg",
+  png: ".png",
+  webp: ".webp",
+};
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function healthCommand(command, args) {
+  try {
+    const result = spawnSync(command, args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      shell: false,
+      timeout: 5000,
+    });
+    return {
+      ok: result.status === 0,
+      stdout: (result.stdout ?? "").toString().trim(),
+      stderr: (result.stderr ?? "").toString().trim(),
+    };
+  } catch (error) {
+    return { ok: false, stdout: "", stderr: error.message ?? "命令执行失败" };
+  }
+}
+
+function gitHealth() {
+  const branch = healthCommand("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
+  const status = healthCommand("git", ["status", "--porcelain=v1", "--untracked-files=all"]);
+  return {
+    ok: branch.ok && status.ok,
+    branch: branch.stdout || null,
+    clean: status.ok ? status.stdout.length === 0 : null,
+    error: branch.ok && status.ok ? null : branch.stderr || status.stderr || "Git 检查失败",
+  };
+}
+
+function contentHealth() {
+  const requiredMetadata = ["notes.json", "gallery.json", "search.json"];
+  const problems = [];
+  if (!fs.existsSync(path.join(siteRoot, "notes")) || !fs.existsSync(path.join(siteRoot, "gallery"))) {
+    problems.push("content/site 目录不完整");
+  }
+  const metadataDir = path.join(repoRoot, "content", "public", "metadata");
+  for (const name of requiredMetadata) {
+    const file = path.join(metadataDir, name);
+    if (!fs.existsSync(file)) {
+      problems.push(`缺少生成文件：${name}`);
+      continue;
+    }
+    try {
+      JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch {
+      problems.push(`生成文件不是有效 JSON：${name}`);
+    }
+  }
+  return {
+    ok: problems.length === 0,
+    site: problems.every((problem) => !problem.startsWith("content/site")),
+    generated: problems.every((problem) => !problem.startsWith("缺少") && !problem.startsWith("生成文件")),
+    error: problems.length > 0 ? problems.join("；") : null,
+  };
+}
+
+function healthReport() {
+  const processLayer = { ok: true, pid: process.pid, uptimeSeconds: Math.floor(process.uptime()) };
+  const git = gitHealth();
+  const content = contentHealth();
+  const scheduler = getSchedulerHealth();
+  const ready = git.ok && content.ok && scheduler.ok;
+  return {
+    ok: processLayer.ok,
+    ready,
+    degraded: !ready || !git.clean || scheduler.degraded,
+    checkedAt: new Date().toISOString(),
+    process: processLayer,
+    git,
+    content,
+    scheduler,
+  };
 }
 
 function kindDir(kind, layer) {
@@ -206,6 +294,189 @@ function assetReferencesIn(body) {
   return references;
 }
 
+const MARKDOWN_IMAGE_PATTERN =
+  /!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+["'][^)]*["'])?\s*\)/g;
+const URL_SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/i;
+
+function isExternalImageReference(reference) {
+  const trimmed = String(reference ?? "").trim();
+  return (
+    !trimmed ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("\\") ||
+    URL_SCHEME_PATTERN.test(trimmed)
+  );
+}
+
+function imageReferencesIn(markdown) {
+  return [...String(markdown ?? "").matchAll(MARKDOWN_IMAGE_PATTERN)].map(
+    (match) => match[1] ?? match[2],
+  );
+}
+
+function isSafeAssetName(name) {
+  return Boolean(name) && !name.includes("/") && !name.includes("\\") && name !== "." && name !== "..";
+}
+
+function assetExistsInStudio(name) {
+  if (!isSafeAssetName(name)) {
+    return false;
+  }
+  const roots = [path.join(localRoot, "assets"), path.join(siteRoot, "assets")];
+  return roots.some((root) => {
+    const file = path.resolve(root, name);
+    return file.startsWith(`${path.resolve(root)}${path.sep}`) && fs.existsSync(file) && fs.statSync(file).isFile();
+  });
+}
+
+function unresolvedAssetsIn(markdown) {
+  const unresolved = new Set();
+  for (const rawReference of imageReferencesIn(markdown)) {
+    const reference = String(rawReference ?? "").trim();
+    if (isExternalImageReference(reference)) {
+      continue;
+    }
+    const withoutSuffix = reference.split(/[?#]/, 1)[0].replace(/\\/g, "/");
+    if (!withoutSuffix.startsWith("assets/")) {
+      unresolved.add(reference);
+      continue;
+    }
+    const name = withoutSuffix.slice("assets/".length);
+    if (!assetExistsInStudio(name)) {
+      unresolved.add(reference);
+    }
+  }
+  return [...unresolved];
+}
+
+function assetNameFromReference(reference, { allowBare = false } = {}) {
+  const value = String(reference ?? "").trim();
+  if (!value || URL_SCHEME_PATTERN.test(value) || value.startsWith("\\")) {
+    return null;
+  }
+  const withoutSuffix = value.split(/[?#]/, 1)[0].replace(/\\/g, "/");
+  let name = null;
+  for (const prefix of ["assets/", "./assets/", "/assets/"]) {
+    if (withoutSuffix.startsWith(prefix)) {
+      name = withoutSuffix.slice(prefix.length);
+      break;
+    }
+  }
+  if (!name && allowBare && !withoutSuffix.includes("/")) {
+    name = withoutSuffix;
+  }
+  return isSafeAssetName(name) ? name : null;
+}
+
+function documentAssetReferences(doc) {
+  const references = new Set();
+  if (doc.cover) {
+    const cover = assetNameFromReference(doc.cover, { allowBare: true });
+    if (cover) {
+      references.add(cover);
+    }
+  }
+  for (const reference of imageReferencesIn(doc.body)) {
+    const name = assetNameFromReference(reference);
+    if (name) {
+      references.add(name);
+    }
+  }
+  return references;
+}
+
+function scanPublishedAndDraftAssetReferences() {
+  const references = new Set();
+  for (const layer of ["draft", "site"]) {
+    for (const kind of KIND_IDS) {
+      const dir = kindDir(kind, layer);
+      if (!fs.existsSync(dir)) {
+        continue;
+      }
+      for (const file of fs.readdirSync(dir).filter((name) => name.endsWith(".md"))) {
+        try {
+          const doc = readDocument(path.join(dir, file));
+          for (const reference of documentAssetReferences(doc)) {
+            references.add(reference);
+          }
+        } catch {
+          // Fail closed: an unreadable content file must not make an asset
+          // eligible for cleanup.
+          return { ok: false, references, error: `无法读取 ${layer}/${kind}/${file}` };
+        }
+      }
+    }
+  }
+  return { ok: true, references, error: null };
+}
+
+function listCleanupAssets() {
+  const usage = scanPublishedAndDraftAssetReferences();
+  if (!usage.ok) {
+    return { ok: false, assets: [], error: usage.error };
+  }
+
+  const assets = [];
+  for (const [source, root] of [
+    ["draft", path.join(localRoot, "assets")],
+    ["site", path.join(siteRoot, "assets")],
+  ]) {
+    if (!fs.existsSync(root)) {
+      continue;
+    }
+    for (const name of fs.readdirSync(root)) {
+      if (name === ".gitkeep" || !isSafeAssetName(name) || usage.references.has(name)) {
+        continue;
+      }
+      const file = path.join(root, name);
+      if (!fs.statSync(file).isFile()) {
+        continue;
+      }
+      assets.push({ name, source, size: fs.statSync(file).size });
+    }
+  }
+  assets.sort((left, right) => left.name.localeCompare(right.name) || left.source.localeCompare(right.source));
+  return { ok: true, assets, error: null };
+}
+
+function cleanupAsset(body, res) {
+  const name = typeof body.name === "string" ? body.name : "";
+  const source = body.source;
+  if (!isSafeAssetName(name) || !["draft", "site"].includes(source)) {
+    sendError(res, 400, "资产名称或来源不合法");
+    return;
+  }
+  if (body.confirmName !== name) {
+    sendError(res, 400, "请提交完全匹配的资产文件名以确认删除", { expectedName: name });
+    return;
+  }
+
+  const root = source === "draft" ? path.join(localRoot, "assets") : path.join(siteRoot, "assets");
+  const rootResolved = path.resolve(root);
+  const file = path.resolve(root, name);
+  if (!file.startsWith(`${rootResolved}${path.sep}`)) {
+    sendError(res, 400, "资产路径不合法");
+    return;
+  }
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    sendError(res, 404, "资产不存在");
+    return;
+  }
+
+  const usage = scanPublishedAndDraftAssetReferences();
+  if (!usage.ok) {
+    sendError(res, 409, usage.error);
+    return;
+  }
+  if (usage.references.has(name)) {
+    sendError(res, 409, "资产仍被正式稿或本机草稿引用，拒绝删除", { referenced: true });
+    return;
+  }
+
+  fs.rmSync(file);
+  sendJson(res, 200, { ok: true, name, source, deleted: true });
+}
+
 function isLocalOrigin(req) {
   const origin = req.headers.origin;
   if (!origin) {
@@ -231,20 +502,34 @@ function sendError(res, status, message, extra = {}) {
   sendJson(res, status, { error: message, ...extra });
 }
 
-function readBody(req, limit = 8 * 1024 * 1024) {
+function httpError(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
+}
+
+function readBody(req, limit = MAX_UPLOAD_BYTES) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
+    let tooLarge = false;
     req.on("data", (chunk) => {
       size += chunk.length;
       if (size > limit) {
-        reject(new Error("payload too large"));
-        req.destroy();
+        tooLarge = true;
         return;
       }
-      chunks.push(chunk);
+      if (!tooLarge) {
+        chunks.push(chunk);
+      }
     });
-    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("end", () => {
+      if (tooLarge) {
+        reject(httpError(413, `请求体超过 ${Math.floor(limit / (1024 * 1024))}MB 限制`));
+        return;
+      }
+      resolve(Buffer.concat(chunks));
+    });
     req.on("error", reject);
   });
 }
@@ -386,11 +671,13 @@ async function importDraft(kind, body, res) {
 
   const existsDraft = fileExists(draftPath(kind, wantedSlug));
   const existsSite = fileExists(sitePath(kind, wantedSlug));
+  const unresolvedAssets = unresolvedAssetsIn(parsed.body);
   if ((existsDraft || existsSite) && body.confirmOverwrite !== true) {
     sendError(res, 409, "已存在同 slug 内容，需要明确确认才能覆盖", {
       slug: wantedSlug,
       existsInDraft: existsDraft,
       existsOnSite: existsSite,
+      unresolvedAssets,
     });
     return;
   }
@@ -442,6 +729,7 @@ async function importDraft(kind, body, res) {
     slug,
     overwritten: existsDraft,
     hasPublishedCopy: existsSite,
+    unresolvedAssets,
   });
 }
 
@@ -658,6 +946,19 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/scheduler/status") {
+    sendJson(res, 200, readSchedulerStatus());
+    return;
+  }
+
+  const retryScheduledMatch = pathname.match(/^\/api\/scheduler\/retry\/(notes|gallery)\/([a-z0-9][a-z0-9-]*)$/);
+  if (retryScheduledMatch && method === "POST") {
+    const [, kind, slug] = retryScheduledMatch;
+    const result = retryScheduledPublish(kind, slug);
+    sendJson(res, result.ok ? 200 : 422, result);
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/items") {
     sendJson(res, 200, { items: collectItems() });
     return;
@@ -704,6 +1005,22 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (method === "GET" && pathname === "/api/assets/cleanup") {
+    const result = listCleanupAssets();
+    if (!result.ok) {
+      sendError(res, 409, result.error);
+      return;
+    }
+    sendJson(res, 200, { assets: result.assets });
+    return;
+  }
+
+  if (method === "POST" && pathname === "/api/assets/cleanup") {
+    const body = await readJsonBody(req);
+    cleanupAsset(body, res);
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/assets") {
     const assets = [];
     const draftDir = path.join(localRoot, "assets");
@@ -742,7 +1059,7 @@ async function handleApi(req, res, url) {
     return;
   }
 
-    if (method === "POST" && pathname === "/api/assets") {
+  if (method === "POST" && pathname === "/api/assets") {
     const name = sanitizeFileName(url.searchParams.get("name") ?? "");
     if (!name) {
       sendError(res, 400, "缺少 name 参数");
@@ -756,22 +1073,49 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    // Images (jpg/png) are downsized to a 1600px cap and re-encoded as webp;
-    // other files pass through untouched. Encoding failures fall back to the
-    // original bytes.
+    let metadata;
+    try {
+      metadata = await sharp(buffer).metadata();
+    } catch {
+      sendError(res, 415, "上传内容不是有效的支持格式图片（JPEG、PNG、WebP、GIF 或 AVIF）");
+      return;
+    }
+
+    const format =
+      metadata.format === "heif" &&
+      (metadata.mediaType === "image/avif" || metadata.compression === "av1")
+        ? "avif"
+        : metadata.format;
+    if (!Object.prototype.hasOwnProperty.call(IMAGE_EXTENSIONS, format)) {
+      sendError(res, 415, "仅支持 JPEG、PNG、WebP、GIF 或 AVIF 图片");
+      return;
+    }
+    if (!Number.isFinite(metadata.width) || !Number.isFinite(metadata.height)) {
+      sendError(res, 422, "无法读取图片尺寸");
+      return;
+    }
+    const pixels = metadata.width * metadata.height;
+    if (pixels > MAX_IMAGE_PIXELS) {
+      sendError(res, 413, `图片像素超过上限（最多 ${MAX_IMAGE_PIXELS / 1_000_000}MP）`);
+      return;
+    }
+
+    // JPEG/PNG keep the existing WebP compression path. Other supported
+    // formats retain their real format and receive a canonical extension.
     let finalBuffer = buffer;
-    let finalName = name;
+    let finalName = `${path.parse(name).name || "image"}${IMAGE_EXTENSIONS[format]}`;
     let converted = false;
-    if (/\.(jpe?g|png)$/i.test(finalName)) {
+    if (format === "jpeg" || format === "png") {
       try {
         finalBuffer = await sharp(buffer)
           .resize({ width: 1600, withoutEnlargement: true })
           .webp({ quality: 82 })
           .toBuffer();
-        finalName = finalName.replace(/\.(jpe?g|png)$/i, ".webp");
+        finalName = `${path.parse(name).name || "image"}.webp`;
         converted = true;
       } catch {
-        finalBuffer = buffer;
+        sendError(res, 422, "图片转换失败，请重新选择图片");
+        return;
       }
     }
 
@@ -885,7 +1229,8 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${HOST}:${PORT}`);
 
     if (url.pathname === "/healthz") {
-      sendJson(res, 200, { ok: true });
+      const report = healthReport();
+      sendJson(res, report.ok ? 200 : 503, report);
       return;
     }
 
@@ -951,7 +1296,7 @@ const server = http.createServer(async (req, res) => {
 
     sendError(res, 404, "not found");
   } catch (error) {
-    sendError(res, 400, error.message ?? "bad request");
+    sendError(res, error.status ?? 400, error.message ?? "bad request");
   }
 });
 

@@ -9,6 +9,7 @@ export type ContentListItem = {
   summary: string;
   tags: string[];
   cover: string | null;
+  created: string | null;
   updated: string | null;
   pinned: boolean;
   artCategory: string | null;
@@ -17,6 +18,5 @@ export type ContentListItem = {
 
 export type ContentDocument = ContentListItem & {
   body: string;
-  created: string | null;
   contentType: string | null;
 };

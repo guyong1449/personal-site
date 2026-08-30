@@ -1,6 +1,7 @@
 import { renderMarkdownToHtml } from "@/lib/markdown/pipeline";
 import { extractTocFromHtml } from "@/lib/toc";
 import type { ReactNode } from "react";
+import { demoteMarkdownHeadings } from "./markdown-components";
 import { Toc } from "./toc";
 
 type MarkdownBodyProps = {
@@ -10,7 +11,7 @@ type MarkdownBodyProps = {
 };
 
 export async function MarkdownBody({ content, showToc = true, sidebarExtra }: MarkdownBodyProps) {
-  const html = await renderMarkdownToHtml(content);
+  const html = demoteMarkdownHeadings(await renderMarkdownToHtml(content));
   const toc = extractTocFromHtml(html);
   const hasSidebar = (showToc && toc.length > 0) || Boolean(sidebarExtra);
 
