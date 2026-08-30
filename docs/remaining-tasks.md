@@ -1,19 +1,22 @@
-# 待办事项
+# 最近开发清单
 
-更新于 2026-08-29。工程路线与验收标准见 [development-plan.md](development-plan.md)。
+详细优先级、依赖与验收见 [development-plan.md](development-plan.md)，该文件是唯一状态源。
 
-## 内容
+## 已完成：P0-A（2026-08-30）
 
-- [ ] 发布至少一篇正式 Note。
-- [ ] 发布至少一件带真实封面的 Gallery。
-- [ ] 验证首页、归档、搜索、RSS 与分享卡片中的真实内容表现。
+- [x] 修复 Studio 导入接口并增加 API 集成测试。
+- [x] 修复已发布内容编辑、自动保存、slug 改名后发布和删除保护。
+- [x] 保证下线回草稿的元数据完整。
+- [x] 将自动 Git 同步收紧为干净工作区下的快进拉取，不再自动提交/推送。
+- [x] `pnpm verify` 通过：site-builder 6、Studio 24、publisher 9、Web 11，合计 50 项测试。
 
-## 外部配置
+## 下一批：P0-B
 
-- [ ] 在 Vercel Dashboard 验证 GitHub `main` 自动部署。
-- [ ] 决定是否启用 Giscus；启用时配置四个 `NEXT_PUBLIC_GISCUS_*` 环境变量。
+- [ ] 发布/下线失败时自动回滚本地正式层。
+- [ ] Git 只暂存当前内容、当前资产和必要生成索引。
+- [ ] 增加生成、检查、提交和推送失败的恢复测试。
 
-## 下一批代码
+## 外部验收（另行确认）
 
-- [ ] Gallery Open Graph、结构化数据与同系列导航。
-- [ ] 线上冒烟检查与定时发布逾期提示。
+- [ ] 测试 Note/Gallery 发布 → CI → Vercel Ready → 线上 200。
+- [ ] 下线 → 第二次部署 → 原 URL 404，并确认本机草稿可恢复。

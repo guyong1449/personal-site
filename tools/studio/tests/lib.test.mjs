@@ -41,7 +41,15 @@ describe("extractTitle / extractSummary", () => {
 describe("frontmatter", () => {
   it("round-trips fields and drops empty ones", () => {
     const source = serializeFrontmatter(
-      { title: "T", slug: "t", status: "draft", tags: ["a/b"], cover: null, summary: "" },
+      {
+        title: "T",
+        slug: "t",
+        status: "draft",
+        tags: ["a/b"],
+        cover: null,
+        summary: "",
+        pinned: true,
+      },
       "Body text",
     );
     const parsed = parseFrontmatter(source);
@@ -51,6 +59,7 @@ describe("frontmatter", () => {
     assert.deepEqual(parsed.frontmatter.tags, ["a/b"]);
     assert.ok(!("cover" in parsed.frontmatter));
     assert.ok(!("summary" in parsed.frontmatter));
+    assert.equal(parsed.frontmatter.pinned, true);
     assert.equal(parsed.body.trim(), "Body text");
   });
 

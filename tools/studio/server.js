@@ -19,7 +19,10 @@ import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
 import { runScheduledPublishes } from "./scheduler.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(toolDir, "..", "..");
+const defaultRepoRoot = path.resolve(toolDir, "..", "..");
+const repoRoot = process.env.STUDIO_REPO_ROOT
+  ? path.resolve(process.env.STUDIO_REPO_ROOT)
+  : defaultRepoRoot;
 const localRoot = path.join(repoRoot, ".local-content");
 const siteRoot = path.join(repoRoot, "content", "site");
 const publicDir = path.join(toolDir, "public");
@@ -394,49 +397,51 @@ async function importDraft(kind, body, res) {
 
   const slug = body.confirmOverwrite === true ? wantedSlug : uniqueSlug(kind, wantedSlug);
   const today = nowIsoDate();
-    const summary =
-      typeof doc.frontmatter.summary === "string"
-        ? doc.frontmatter.summary
-        : extractSummary(parsed.body);
-    const tags = Array.isArray(parsed.frontmatter.tags)
-      ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
-      : [];
-    const cover = typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null;
+  const summary =
+    typeof parsed.frontmatter.summary === "string"
+      ? parsed.frontmatter.summary
+      : extractSummary(parsed.body);
+  const tags = Array.isArray(parsed.frontmatter.tags)
+    ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
+    : [];
+  const cover = typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null;
 
-    ensureDir(kindDir(kind, "draft"));
-    const markdown = serializeFrontmatter(
-      {
-        title,
-        slug,
-        content_type: kind === "gallery" ? "gallery" : "note",
-        status: "draft",
-        summary,
-        tags,
-        cover,
-        created:
-          typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : today,
-        updated:
-          typeof parsed.frontmatter.updated === "string" ? parsed.frontmatter.updated : today,
-        ...(kind === "gallery"
-          ? {
-              art_category:
-                typeof parsed.frontmatter.art_category === "string"
-                  ? parsed.frontmatter.art_category
-                  : "",
-              series:
-                typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
-            }
-          : {}),
-      },
-      parsed.body,
-    );
+  ensureDir(kindDir(kind, "draft"));
+  const markdown = serializeFrontmatter(
+    {
+      title,
+      slug,
+      content_type: kind === "gallery" ? "gallery" : "note",
+      status: "draft",
+      summary,
+      tags,
+      cover,
+      created:
+        typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : today,
+      updated:
+        typeof parsed.frontmatter.updated === "string" ? parsed.frontmatter.updated : today,
+      pinned: parsed.frontmatter.pinned === true ? true : undefined,
+      publish_at:
+        typeof parsed.frontmatter.publish_at === "string" ? parsed.frontmatter.publish_at : undefined,
+      ...(kind === "gallery"
+        ? {
+            art_category:
+              typeof parsed.frontmatter.art_category === "string"
+                ? parsed.frontmatter.art_category
+                : "",
+            series: typeof parsed.frontmatter.series === "string" ? parsed.frontmatter.series : "",
+          }
+        : {}),
+    },
+    parsed.body,
+  );
   fs.writeFileSync(draftPath(kind, slug), markdown, "utf8");
 
   sendJson(res, 200, {
     kind,
     slug,
-    overwritten: existsDraft || existsSite,
-    replacedSiteCopy: existsSite,
+    overwritten: existsDraft,
+    hasPublishedCopy: existsSite,
   });
 }
 
@@ -466,6 +471,14 @@ async function saveDraft(kind, slug, body, res) {
           cover: siteDoc.cover,
           created: siteDoc.created ?? nowIsoDate(),
           updated: nowIsoDate(),
+          pinned: siteDoc.pinned ? true : undefined,
+          publish_at: siteDoc.publishAt ?? undefined,
+          ...(kind === "gallery"
+            ? {
+                art_category: siteDoc.artCategory || undefined,
+                series: siteDoc.series || undefined,
+              }
+            : {}),
         },
         siteDoc.body,
       ),
@@ -497,12 +510,23 @@ async function saveDraft(kind, slug, body, res) {
       sendError(res, 409, `slug "${nextSlug}" 已被其他草稿使用`);
       return;
     }
+    if (nextSlug !== slug && fileExists(sitePath(kind, nextSlug))) {
+      sendError(res, 409, `slug "${nextSlug}" 已被正式内容使用`);
+      return;
+    }
+    if (fileExists(sitePath(kind, slug))) {
+      sendError(res, 409, "原 slug 已在线，请先下线后再改名");
+      return;
+    }
   }
 
   const tags = Array.isArray(body.tags)
     ? body.tags.filter((tag) => typeof tag === "string" && tag.trim()).map((tag) => tag.trim())
     : doc.tags;
-  const cover = typeof body.cover === "string" && body.cover.trim() ? body.cover.trim() : null;
+  let cover = doc.cover;
+  if (Object.prototype.hasOwnProperty.call(body, "cover")) {
+    cover = typeof body.cover === "string" && body.cover.trim() ? body.cover.trim() : null;
+  }
   const datePattern = /^\d{4}-\d{2}-\d{2}$/;
   const created = datePattern.test(body.created ?? "") ? body.created : (doc.created ?? nowIsoDate());
   const updated = datePattern.test(body.updated ?? "") ? body.updated : nowIsoDate();
@@ -559,6 +583,10 @@ function deleteDraft(kind, slug, body, res) {
   const file = draftPath(kind, slug);
   if (!fileExists(file)) {
     sendError(res, 404, "草稿不存在（正式内容请先下线）");
+    return;
+  }
+  if (fileExists(sitePath(kind, slug))) {
+    sendError(res, 409, "该内容仍有正式版本，请先下线后再删除草稿");
     return;
   }
 
@@ -935,7 +963,9 @@ ensureDir(path.join(siteRoot, "gallery"));
 ensureDir(path.join(siteRoot, "assets"));
 
 server.listen(PORT, HOST, () => {
-  console.log(`studio listening on http://${HOST}:${PORT}/studio (local only)`);
+  const address = server.address();
+  const actualPort = typeof address === "object" && address ? address.port : PORT;
+  console.log(`studio listening on http://${HOST}:${actualPort}/studio (local only)`);
 });
 
 // Scheduled publishing: due drafts publish on a 30s sweep, plus once at

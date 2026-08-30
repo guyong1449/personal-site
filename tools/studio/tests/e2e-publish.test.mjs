@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
+import { parseFrontmatter } from "../lib.js";
 
 // End-to-end drill: draft -> publish -> snapshot -> unpublish -> restored
 // draft, running against a throwaway git repository so the real content,
@@ -15,6 +16,7 @@ const FIXTURE_HOME = fs.mkdtempSync(path.join(os.tmpdir(), "studio-e2e-"));
 const REPO_ROOT = path.join(FIXTURE_HOME, "repo");
 const BARE_ROOT = path.join(FIXTURE_HOME, "origin.git");
 const SLUG = "e2e-post";
+const GALLERY_SLUG = "e2e-gallery";
 
 function git(cwd, args) {
   const result = spawnSync("git", args, { cwd, encoding: "utf8" });
@@ -116,10 +118,15 @@ describe("publish -> unpublish drill", () => {
 
   it("unpublishes: site copy removed, draft restored, origin gets the unpublish commit", async () => {
     const { unpublishToDraft } = await import("../unpublish.js");
+    const existingDraft = fs.readFileSync(
+      path.join(REPO_ROOT, ".local-content", "notes", `${SLUG}.md`),
+      "utf8",
+    );
     const result = unpublishToDraft("notes", SLUG);
 
     assert.equal(result.ok, true, `unpublish failed: ${result.message}`);
     assert.equal(result.removedAssets, 1); // e2e.png was exclusive to this document
+    assert.equal(result.preservedExistingDraft, true);
 
     assert.ok(
       !fs.existsSync(path.join(REPO_ROOT, "content", "site", "notes", `${SLUG}.md`)),
@@ -128,8 +135,12 @@ describe("publish -> unpublish drill", () => {
       path.join(REPO_ROOT, ".local-content", "notes", `${SLUG}.md`),
       "utf8",
     );
+    assert.equal(draft, existingDraft);
     assert.match(draft, /status: "draft"/);
     assert.match(draft, /演练正文/);
+    const restored = parseFrontmatter(draft);
+    assert.equal(restored.frontmatter.created, "2026-08-29");
+    assert.equal(restored.frontmatter.updated, "2026-08-29");
 
     const metadata = JSON.parse(
       fs.readFileSync(path.join(REPO_ROOT, "content", "public", "metadata", "notes.json"), "utf8"),
@@ -140,5 +151,58 @@ describe("publish -> unpublish drill", () => {
     assert.equal(message, `content: unpublish ${SLUG}`);
     const remoteHead = git(BARE_ROOT, ["log", "-1", "--format=%s"]);
     assert.equal(remoteHead, `content: unpublish ${SLUG}`);
+  });
+
+  it("restores Gallery metadata, including scheduling and existing booleans", async () => {
+    const { unpublishToDraft } = await import("../unpublish.js");
+    const siteFile = path.join(REPO_ROOT, "content", "site", "gallery", `${GALLERY_SLUG}.md`);
+    const assetFile = path.join(REPO_ROOT, "content", "site", "assets", "gallery.png");
+    write(
+      siteFile,
+      [
+        "---",
+        'title: "图库演练"',
+        `slug: "${GALLERY_SLUG}"`,
+        'content_type: "gallery"',
+        'status: "published"',
+        'summary: "图库摘要"',
+        "tags:",
+        '  - "art/e2e"',
+        'cover: "gallery.png"',
+        'created: "2026-08-20"',
+        'updated: "2026-08-28"',
+        "pinned: true",
+        'publish_at: "2026-09-01T09:00"',
+        'art_category: "插画"',
+        'series: "演练系列"',
+        "---",
+        "",
+        "图库正文",
+        "",
+      ].join("\n"),
+    );
+    write(assetFile, "gallery-bytes");
+    git(REPO_ROOT, ["add", "--", "content/site/gallery", "content/site/assets/gallery.png"]);
+    git(REPO_ROOT, ["commit", "-m", `fixture: publish ${GALLERY_SLUG}`]);
+    git(REPO_ROOT, ["push", "origin", "main"]);
+
+    const result = unpublishToDraft("gallery", GALLERY_SLUG);
+
+    assert.equal(result.ok, true, `unpublish failed: ${result.message}`);
+    assert.equal(result.preservedExistingDraft, false);
+    const draft = parseFrontmatter(
+      fs.readFileSync(
+        path.join(REPO_ROOT, ".local-content", "gallery", `${GALLERY_SLUG}.md`),
+        "utf8",
+      ),
+    );
+    assert.equal(draft.frontmatter.status, "draft");
+    assert.equal(draft.frontmatter.pinned, true);
+    assert.equal(draft.frontmatter.publish_at, "2026-09-01T09:00");
+    assert.equal(draft.frontmatter.art_category, "插画");
+    assert.equal(draft.frontmatter.series, "演练系列");
+    assert.equal(draft.frontmatter.created, "2026-08-20");
+    assert.equal(draft.frontmatter.updated, "2026-08-28");
+    assert.equal(draft.body.trim(), "图库正文");
   });
 });

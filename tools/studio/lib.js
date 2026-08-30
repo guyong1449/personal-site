@@ -89,6 +89,10 @@ export function serializeFrontmatter(fields, body) {
       lines.push(`${key}:`, ...value.map((item) => `  - ${JSON.stringify(item)}`));
       continue;
     }
+    if (typeof value === "boolean") {
+      lines.push(`${key}: ${value}`);
+      continue;
+    }
     lines.push(`${key}: ${JSON.stringify(String(value))}`);
   }
 

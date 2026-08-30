@@ -104,7 +104,6 @@ function formState() {
 function isDirty() {
   return (
     state.current &&
-    state.current.status !== "published" &&
     state.lastSaved !== null &&
     JSON.stringify(formState()) !== JSON.stringify(state.lastSaved)
   );
@@ -266,9 +265,11 @@ async function saveDraft({ silent = false } = {}) {
   try {
     const result = await api(`/api/drafts/${kind}/${slug}`, {
       method: "PUT",
-      body: JSON.stringify(buildSavePayload()),
+      body: JSON.stringify({ ...buildSavePayload(), snapshot: !silent }),
     });
     state.current.slug = result.slug;
+    state.current.source = "draft";
+    state.current.hasLocalDraft = true;
     if (!silent) {
       markSaved(`已保存草稿 ${result.slug} · ${new Date().toLocaleTimeString()}`);
     } else {
@@ -283,10 +284,15 @@ async function saveDraft({ silent = false } = {}) {
 
 async function publishCurrent() {
   if (!state.current || state.publishing) return;
-  const { kind, slug } = state.current;
+  const { kind } = state.current;
   if (isDirty()) {
-    await saveDraft({ silent: true }).catch(() => {});
+    try {
+      await saveDraft({ silent: true });
+    } catch {
+      return;
+    }
   }
+  const slug = state.current.slug;
   state.publishing = true;
   const button = $("btn-publish");
   button.disabled = true;
@@ -302,6 +308,11 @@ async function publishCurrent() {
     clearInterval(stageTimer);
     button.disabled = false;
     state.publishing = false;
+    state.current.slug = result.slug ?? state.current.slug;
+    state.current.status = "published";
+    state.current.hasLocalDraft = true;
+    state.current.source = "draft";
+    $("btn-unpublish").hidden = false;
     setSaveState(
       result.dryRun
         ? "DRY-RUN 通过：Git 步骤已跳过"
@@ -478,7 +489,10 @@ function wireImportDialog() {
   $("btn-import").addEventListener("click", () => {
     pendingOverwrite = false;
     $("import-conflict").hidden = true;
-    form.setAttribute("data-result", "cancel");
+    const overwriteCheckbox = $("import-overwrite-confirm");
+    if (overwriteCheckbox) {
+      overwriteCheckbox.checked = false;
+    }
     dialog.showModal();
   });
 
@@ -491,7 +505,7 @@ function wireImportDialog() {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const value = form.getAttribute("data-result");
+    const value = event.submitter?.value ?? "cancel";
     if (value !== "ok") {
       dialog.close();
       return;
@@ -510,8 +524,8 @@ function wireImportDialog() {
       textInput.value = "";
       fileInput.value = "";
       setSaveState(
-        result.replacedSiteCopy
-          ? "导入完成：已覆盖草稿与已发布版本（Obsidian 原文件未改动）"
+        result.hasPublishedCopy
+          ? "导入完成：已建立本机草稿；再次发布后才会更新网站版本"
           : "导入完成：已建立本机草稿",
       );
       await loadItems();
@@ -523,7 +537,7 @@ function wireImportDialog() {
         const siteNote = error.payload.existsOnSite
           ? "注意：网站上已有该 slug 的已发布版本。"
           : "";
-        conflict.textContent = `${error.message}。${siteNote}勾选确认后再次导入将覆盖网站版本。`;
+        conflict.textContent = `${error.message}。${siteNote}勾选确认后再次导入将覆盖本机草稿；网站版本只会在发布后更新。`;
         conflict.hidden = false;
 
         const confirmCheckbox = $("import-overwrite-confirm");
@@ -538,7 +552,7 @@ function wireImportDialog() {
           checkbox.addEventListener("change", () => {
             pendingOverwrite = checkbox.checked;
           });
-          label.append(checkbox, document.createTextNode("我确认覆盖已有草稿/网站版本"));
+          label.append(checkbox, document.createTextNode("我确认覆盖已有本机草稿"));
           conflict.after(label);
         }
         return;

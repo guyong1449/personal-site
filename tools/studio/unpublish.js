@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { KIND_IDS, parseFrontmatter, nowIsoDate, serializeFrontmatter } from "./lib.js";
+import { KIND_IDS, parseFrontmatter, serializeFrontmatter } from "./lib.js";
 
 const toolDir = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(toolDir, "..", "..");
@@ -79,19 +79,16 @@ export function unpublishToDraft(kind, slug) {
     const draftDir = path.join(localRoot, kind);
     fs.mkdirSync(draftDir, { recursive: true });
     const draftFile = path.join(draftDir, `${slug}.md`);
+    const preservedExistingDraft = fs.existsSync(draftFile);
 
-    if (!fs.existsSync(draftFile)) {
+    if (!preservedExistingDraft) {
       const markdown = serializeFrontmatter(
         {
+          ...doc.frontmatter,
           title: doc.frontmatter.title ?? slug,
           slug,
           content_type: kind === "gallery" ? "gallery" : "note",
           status: "draft",
-          summary: typeof doc.frontmatter.summary === "string" ? doc.frontmatter.summary : "",
-          tags: Array.isArray(doc.frontmatter.tags) ? doc.frontmatter.tags : [],
-          cover: typeof doc.frontmatter.cover === "string" ? doc.frontmatter.cover : null,
-          created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : nowIsoDate(),
-          updated: nowIsoDate(),
         },
         doc.body,
       );
@@ -149,6 +146,7 @@ export function unpublishToDraft(kind, slug) {
       commit: gitResult.commit,
       branch: gitResult.branch,
       removedAssets,
+      preservedExistingDraft,
       message: `已下线并推送 ${gitResult.commit}；内容已复制回本机草稿`,
     };
   } finally {

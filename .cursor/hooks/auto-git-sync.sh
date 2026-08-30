@@ -20,32 +20,31 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 BRANCH="$(git symbolic-ref --short HEAD 2>/dev/null || echo main)"
-TIMESTAMP="$(date '+%Y-%m-%d %H:%M')"
-
-log "Starting auto sync on branch $BRANCH"
-
-if ! git pull origin "$BRANCH" >> "$LOG_FILE" 2>&1; then
-  log "WARN: git pull failed"
-fi
-
-git add . >> "$LOG_FILE" 2>&1
-
-if git diff --cached --quiet; then
-  log "No staged changes; skipping commit and push"
+if [[ -z "$BRANCH" || "$BRANCH" == "HEAD" ]]; then
+  log "WARN: unable to determine a named branch; skipping pull"
   exit 0
 fi
 
-if git commit -m "auto sync: $TIMESTAMP" >> "$LOG_FILE" 2>&1; then
-  log "Committed changes"
-else
-  log "WARN: git commit failed"
+STATUS="$(git status --porcelain=v1 --untracked-files=all 2>&1)"
+if [[ $? -ne 0 ]]; then
+  log "WARN: git status failed; skipping pull"
+  log "$STATUS"
   exit 0
 fi
 
-if git push origin "$BRANCH" >> "$LOG_FILE" 2>&1; then
-  log "Pushed to origin/$BRANCH"
+if [[ -n "$STATUS" ]]; then
+  log "Local changes detected; skipping pull on branch $BRANCH"
+  while IFS= read -r line; do
+    log "  $line"
+  done <<< "$STATUS"
+  exit 0
+fi
+
+log "Starting fast-forward-only pull on branch $BRANCH"
+if git pull --ff-only origin "$BRANCH" >> "$LOG_FILE" 2>&1; then
+  log "Fast-forward-only pull completed on origin/$BRANCH"
 else
-  log "WARN: git push failed"
+  log "WARN: fast-forward-only pull failed"
 fi
 
 exit 0
