@@ -12,6 +12,15 @@ const listEl = $("item-list");
 const editorEl = $("editor");
 const emptyEl = $("empty-hint");
 const PUBLISH_STAGES = ["校验内容…", "写入正式目录…", "重建公开快照…", "运行测试与构建…", "提交并推送…"];
+const THEME_KEY = "guyong-theme";
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  $("btn-theme").textContent = theme === "dark" ? "LIGHT" : "DARK";
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {}
+}
 
 function api(path, options) {
   return fetch(path, {
@@ -567,6 +576,11 @@ async function openVersions() {
 }
 
 function wire() {
+  applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+  $("btn-theme").addEventListener("click", () => {
+    applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  });
+
   $("btn-deploy-status").addEventListener("click", async () => {
     setSaveState("查询最新生产部署…");
     try {

@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
   <title>GUYONG STUDIO / LOCAL</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("guyong-theme");
+      document.documentElement.dataset.theme = savedTheme
+        ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    } catch {}
+  </script>
   <link rel="stylesheet" href="/studio/style.css" />
 </head>
 <body>
@@ -15,6 +22,7 @@
       <span class="studio-brand__note">LOCAL / 127.0.0.1</span>
     </div>
     <div class="studio-header__actions">
+      <button id="btn-theme" class="theme-toggle" type="button" aria-label="切换深浅色主题">DARK</button>
       <button id="btn-deploy-status" type="button">部署状态</button>
       <button id="btn-import" type="button">导入 Markdown</button>
       <button id="btn-new-note" type="button">新建 Note</button>
