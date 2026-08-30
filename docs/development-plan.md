@@ -22,8 +22,8 @@
   `guyongs-projects-f59a7a4c/personal-site`，Root Directory 为 `apps/web`。
 - `guyong.site`、`/notes`、`/gallery`、`/account` 当前可访问；生产环境
   `/studio` 返回 404，符合本机 Studio 的安全边界。
-- Vercel 项目的 Git 连接仍为空，现有生产部署是手动部署；需要在 Dashboard
-  连接 GitHub 仓库并指定 `main` 为 Production Branch。
+- 2026-08-30 已将 Vercel 项目连接到 `guyong1449/personal-site`，并将 `main`
+  设为 Production Branch；下一次推送用于验收 Git 自动部署。
 - GitHub Actions 最近的失败发生在依赖安装前：工作流和 `packageManager`
   同时声明 pnpm 版本。本计划第一批先修复并重新验证。
 - 2026-08-30 已将前台 / Studio 视觉改动和 CI 修复分批推送；提交
@@ -35,7 +35,7 @@
 - [x] 修复 GitHub Actions 的 pnpm 重复版本配置，本机运行 `pnpm verify`。
 - [x] 将现有改动按“CI / 前台视觉 / Studio 视觉与交互”拆分检查并提交。
 - [x] 推送后确认 GitHub Actions 全绿，通过的提交为 `2f9196e`。
-- [ ] 在 Vercel Dashboard 连接 GitHub 仓库，确认 `main` 自动部署真实可用。
+- [x] 在 Vercel Dashboard 连接 GitHub 仓库，并将 `main` 设为 Production Branch。
 - [ ] 用一篇测试 Note 完成“发布 → Git 推送 → Vercel Ready → 线上访问 →
   下线 → 再次部署 → 线上 404”验收。
 - [ ] 决定是否启用 Giscus；若启用，配置四个 `NEXT_PUBLIC_GISCUS_*` 变量。
