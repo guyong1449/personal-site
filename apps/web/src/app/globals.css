@@ -45,13 +45,13 @@
   --accent: #3ed3de;
   --accent-deep: #8ce6ee;
   --accent-soft: #1e3d45;
-  --accent-warm: #cfc2a2;
+  --accent-warm: #f5dd4d;
   --accent-warm-soft: #23414e;
   --tag-bg: #24343e;
   --tag-bg-hover: #2b4049;
   --tag-bg-active: #fff2a3;
-  --tag-border: #d6bf1f;
-  --tag-text: #f2d400;
+  --tag-border: #f5dd4d;
+  --tag-text: #f5dd4d;
   --tag-text-hover: #ffffff;
   --tag-text-active: #1d2b33;
   --header-bg: rgba(29, 43, 51, 0.94);
