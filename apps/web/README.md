@@ -19,4 +19,5 @@
 ## 命令
 
 从仓库根目录运行 `pnpm dev:web`、`pnpm build:web`、`pnpm test:web` 和
-`pnpm lint:web`。完整仓库验证使用 `pnpm verify`。
+`pnpm lint:web`。完整仓库验证使用 `pnpm verify`。开发服务器写入 `.next-dev`，
+生产构建写入 `.next`，两者不会互相覆盖构建清单。

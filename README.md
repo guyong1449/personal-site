@@ -2,7 +2,9 @@
 
 个人网站：技术笔记、课程学习记录与少量画作。站点名 `GUYONG`，线上地址 `https://guyong.site`。
 
-视觉风格：铅雪青配色（主色 70% 淡青白 / 辅色 20% 青灰蓝 / 重点色 10% 亮青），Quicksand 圆润字体，紧凑无圆角排版。旧版"明日方舟式"平面风保留在 `backup/style-v1-flat` 分支。
+视觉风格：铅雪青配色（主色 70% 淡青白 / 辅色 20% 青灰蓝 / 重点色 10% 亮青），
+英文使用 Quicksand，中文使用霞鹜文楷（LXGW WenKai），整体保持紧凑无圆角排版。
+旧版"明日方舟式"平面风保留在 `backup/style-v1-flat` 分支。
 
 ## 结构
 
@@ -39,6 +41,8 @@ pnpm verify        # 全量测试、lint、构建、链接与生成文件一致�
 ```
 
 注意：Windows 上若全局 `pnpm` 垫片损坏，用 `corepack pnpm` 代替。
+开发服务器使用 `apps/web/.next-dev`，生产构建使用 `apps/web/.next`，因此桌面预览运行时也可
+安全执行 `pnpm build:web` 或 `pnpm verify`。
 
 ## Studio 与发布
 

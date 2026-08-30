@@ -81,8 +81,9 @@ Vercel deploys `apps/web` after content is exported into `content/public`
 - Palette ratio 主:辅:重 = 7:2:1 — pale cyan-white surfaces, slate/steel text
   and structure, bright teal accents only
 - Square corners, no soft shadows, compact vertical rhythm
-- Quicksand for Latin, system CJK stack for Chinese
-- Selected-page state lives in the thin footer nav, not the header
+- Quicksand for Latin and LXGW WenKai for Chinese, with local rounded/system fallbacks
+- Primary section state is visible in the desktop/mobile header navigation; Archive/Search
+  utility state remains in the thin footer strip
 - Previous flat style preserved on `backup/style-v1-flat`
 
 ---
@@ -102,3 +103,7 @@ Vercel deploys `apps/web` after content is exported into `content/public`
 - `pnpm studio` (local only)
 - `pnpm build:content` / `pnpm test:content`
 - `corepack pnpm` if the global pnpm shim is broken (Windows/conda PATH issue)
+
+The Next.js dev server writes `apps/web/.next-dev`; production builds write
+`apps/web/.next`. This separation allows `pnpm verify` to run while the local
+4317 preview remains active.

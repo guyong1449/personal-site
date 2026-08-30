@@ -61,3 +61,5 @@ corepack pnpm studio
 | `corepack pnpm build:content` | 只重建 `content/public` |
 
 Windows 上若全局 `pnpm` 垫片异常，始终使用 `corepack pnpm`。
+开发服务器写入 `apps/web/.next-dev`，生产构建写入 `apps/web/.next`；无需为了运行
+`corepack pnpm verify` 停止 4317 本机预览。

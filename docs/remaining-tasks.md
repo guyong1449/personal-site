@@ -1,6 +1,6 @@
 # 当前开发清单
 
-更新于 2026-08-30。详细优先级、依赖与验收见 [development-plan.md](development-plan.md)，
+更新于 2026-08-31。详细优先级、依赖与验收见 [development-plan.md](development-plan.md)，
 该文件是唯一状态源。
 
 ## 已完成：P0-A（2026-08-30）
@@ -39,6 +39,8 @@
   未结束非项目进程。
 - [x] 临时目录备份恢复演练通过：`BackupFiles=13`、`RestoredNotes=6`、`RestoredGallery=2`，
   manifest 未混入恢复内容，临时目录已清理。
+- [x] 2026-08-31 在 4317/4319 持续运行时完成 `pnpm verify`；`.next-dev` 与 `.next`
+  并发隔离有效，构建后两端仍 `Owned=True`、`Healthy=True`，依赖审计无已知漏洞。
 
 ## 外部生产验收（保持未完成）
 

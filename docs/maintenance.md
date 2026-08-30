@@ -8,6 +8,8 @@
 
 - [ ] 在仓库根目录运行 `corepack pnpm verify`：测试、lint、Web typecheck、生产构建、
   构建后 smoke、链接检查和生成快照一致性都通过。
+- [ ] 验证期间可保持 4317 预览运行；确认开发目录 `.next-dev` 与生产目录 `.next`
+  同时存在，构建完成后 4317/4319 仍为 `Owned=True`、`Healthy=True`。
 - [ ] 查看 GitHub Actions 的 push/PR 结果；确认运行的 SHA 与本地计划验证的 SHA 一致。
 - [ ] 运行或查看 CI 的 `pnpm audit --prod --audit-level high`。它是高危依赖门禁；新增
   高危漏洞要记录包名、影响范围、升级/缓解决定和复测结果。

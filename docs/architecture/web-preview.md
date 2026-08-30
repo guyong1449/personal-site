@@ -24,4 +24,5 @@
 ## 构建
 
 `apps/web` 的 `prebuild` 是唯一生产预构建入口：重建 `content/public`、同步资产、
-生成确定性的 RSS，然后执行 Next.js 生产构建。
+生成确定性的 RSS，然后执行 Next.js 生产构建。开发服务器使用 `.next-dev`，生产构建
+使用 `.next`；本机 4317 预览保持运行时执行质量门不会再互相覆盖 Next.js 清单。

@@ -20,7 +20,12 @@ content/public（生成快照）
 资产处理、发布、下线和草稿删除。外部 Markdown 只会被复制，不修改原文件。
 定时任务状态持久化到 `.local-content/scheduler-status.json`；`/healthz` 返回进程、Git、
 内容生成和 scheduler 分层状态，Studio 运行状态不等于公网部署状态。草稿、历史和资产
-可由 `tools/studio/backup.mjs` 备份与恢复。
+可由 `tools/studio/backup.mjs` 备份与恢复。发布/下线共享跨进程操作锁，并在正式层、生成、
+提交或推送阶段失败时按远端状态决定安全恢复或保留待核对提交。
+
+本机运维 API 包括 `/healthz`、`/api/scheduler/status`、
+`/api/scheduler/retry/{kind}/{slug}` 和 `/api/assets/cleanup`；写操作继续受回环地址与
+本机 Origin 边界保护。
 
 ### `content/site`
 
