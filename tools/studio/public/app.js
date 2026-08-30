@@ -93,7 +93,8 @@ function formState() {
     created: $("f-created").value,
     updated: $("f-updated").value,
     pinned: $("f-pinned").checked,
-    publishAt: $("f-publish-at").value,
+    publishEnabled: $("f-publish-enabled").checked,
+    publishAt: $("f-publish-enabled").checked ? $("f-publish-at").value : "",
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,
@@ -193,7 +194,9 @@ function applyDoc(doc) {
   $("f-created").value = doc.created ?? "";
   $("f-updated").value = doc.updated ?? "";
   $("f-pinned").checked = doc.pinned === true;
+  $("f-publish-enabled").checked = Boolean(doc.publishAt);
   $("f-publish-at").value = doc.publishAt ?? "";
+  $("publish-at-field").hidden = !doc.publishAt;
   $("f-art-category").value = doc.artCategory ?? "";
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
@@ -244,7 +247,7 @@ function buildSavePayload() {
     created: $("f-created").value,
     updated: $("f-updated").value,
     pinned: $("f-pinned").checked,
-    publishAt: $("f-publish-at").value,
+    publishAt: $("f-publish-enabled").checked ? $("f-publish-at").value : "",
     artCategory: $("f-art-category").value,
     series: $("f-series").value,
     body: $("f-body").value,
@@ -634,6 +637,15 @@ function wire() {
   $("btn-upload-asset").addEventListener("click", uploadAsset);
   $("btn-insert-image").addEventListener("click", insertImage);
   $("f-cover").addEventListener("change", updateCoverPreview);
+  $("f-publish-enabled").addEventListener("change", () => {
+    const enabled = $("f-publish-enabled").checked;
+    $("publish-at-field").hidden = !enabled;
+    if (!enabled) {
+      $("f-publish-at").value = "";
+    } else {
+      $("f-publish-at").focus();
+    }
+  });
 
   let previewTimer = null;
   $("f-body").addEventListener("input", () => {

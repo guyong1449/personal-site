@@ -43,13 +43,20 @@
     <section class="studio-editor" id="editor" hidden>
       <div class="editor-meta">
         <label>标题<input id="f-title" type="text" /></label>
-        <label>SLUG<input id="f-slug" type="text" /></label>
+        <label>
+          <span class="field-label">SLUG <small>网址短名，例如 hello-guyong</small></span>
+          <input id="f-slug" type="text" />
+        </label>
         <label>摘要<input id="f-summary" type="text" placeholder="留空则自动提取" /></label>
         <label>标签<input id="f-tags" type="text" placeholder="course/CS308, topic/algorithm" /></label>
         <label>创建日期<input id="f-created" type="date" /></label>
         <label>更新日期<input id="f-updated" type="date" /></label>
         <label class="check-label"><input id="f-pinned" type="checkbox" /> 置顶（列表与首页优先）</label>
-        <label class="check-label"><input id="f-publish-at" type="datetime-local" /> 定时发布（到点自动发布，需保持 Studio 运行；清空并保存即取消）</label>
+        <div class="schedule-control">
+          <label class="check-label"><input id="f-publish-enabled" type="checkbox" /> 定时发布</label>
+          <label id="publish-at-field" class="schedule-field" hidden>发布时间<input id="f-publish-at" type="datetime-local" /></label>
+          <span class="schedule-help">勾选后设置时间；到点发布需保持 Studio 运行，取消勾选并保存即可取消。</span>
+        </div>
         <div id="gallery-fields" hidden>
           <label>分类（Gallery）<input id="f-art-category" type="text" placeholder="如 sketch / illustration" /></label>
           <label>系列（Gallery）<input id="f-series" type="text" placeholder="如 alpha 系列" /></label>

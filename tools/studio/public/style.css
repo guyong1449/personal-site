@@ -110,7 +110,13 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: .75; }
 .editor-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: 13px 14px; }
 .editor-meta label { display: flex; min-width: 0; flex-direction: column; gap: 5px; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; }
 .editor-meta label.check-label { min-height: 32px; flex-direction: row; grid-column: 1 / -1; align-items: center; gap: 8px; letter-spacing: 0; }
-.editor-meta label.check-label input { width: 18px; min-height: 18px; accent-color: var(--accent); }
+.editor-meta label.check-label input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; flex: 0 0 18px; margin: 0; accent-color: var(--accent); }
+.field-label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.field-label small { color: var(--muted); font-size: .66rem; font-weight: 400; letter-spacing: 0; }
+.schedule-control { display: flex; grid-column: 1 / -1; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.schedule-control .check-label { grid-column: auto; min-width: 96px; }
+.schedule-field { width: min(100%, 250px); }
+.schedule-help { color: var(--muted); font-size: .7rem; line-height: 1.5; }
 .editor-meta__cover { display: flex; grid-column: 1 / -1; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: var(--background); }
 .cover-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .cover-heading strong { font-size: .84rem; }
@@ -169,6 +175,9 @@ dialog textarea { font-family: ui-monospace, Consolas, monospace; font-size: .8r
   .studio-editor { padding-inline: 14px; }
   .editor-meta { grid-template-columns: 1fr; }
   .editor-meta label.check-label, .editor-meta__cover { grid-column: 1; }
+  .schedule-control { align-items: flex-start; flex-direction: column; }
+  .schedule-field { width: 100%; }
+  .field-label { align-items: flex-start; flex-direction: column; gap: 2px; }
   .cover-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
   .editor-actions button { min-height: 44px; flex: 1 1 calc(50% - 8px); }
   .save-state { width: 100%; margin-right: 0; }
