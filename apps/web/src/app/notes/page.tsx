@@ -13,7 +13,7 @@ export default async function NotesPage() {
 
   return (
     <main id="main-content" className="site-shell archive-page">
-      <header className="archive-header">
+      <header className="archive-header archive-header--notes">
         <h1>NOTES</h1>
         <span>{notes.length} 篇</span>
       </header>
