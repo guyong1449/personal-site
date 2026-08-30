@@ -8,8 +8,9 @@
 ## 日常流程
 
 ```
-1. 启动 Studio
-   └─ pnpm studio（仅监听 127.0.0.1:4319）
+1. 启动两个本机服务
+   └─ 桌面 `启动-GUYONG-网站和-Studio.cmd`（默认 start）
+   └─ 或分别运行 `pnpm studio` 与 `pnpm dev:web`
 
 2. 写作 / 导入 / 编辑
    └─ http://127.0.0.1:4319/studio
@@ -26,6 +27,11 @@
    └─ Vercel Git 集成自动部署（已连接后）
    └─ 未连接时手动：npx vercel --prod --yes --scope guyongs-projects-f59a7a4c
 ```
+
+定时发布只在 Studio 持续运行时执行。Studio 的“定时任务”面板和
+`GET http://127.0.0.1:4319/api/scheduler/status` 显示待发布、逾期、失败、无效、尝试次数
+和上次尝试；失败任务可通过面板或 `POST /api/scheduler/retry/{kind}/{slug}` 重试。
+状态持久化在 `.local-content/scheduler-status.json`。
 
 ## 下线与删除
 
@@ -76,4 +82,17 @@ pnpm build:web    # 仅需单独验证生产构建时使用
 
 `apps/web/scripts/generate-rss.js` 的日期全部取自内容 frontmatter，
 连续构建产出字节级一致的 feed.xml。GitHub Actions（`.github/workflows/ci.yml`）
-在每次推送与 PR 上执行 `pnpm verify`。
+在每次推送与 PR 上执行 `pnpm verify`，其中包含 Web typecheck、构建后本地 smoke、链接和
+生成快照一致性检查，并额外执行高危级别依赖审计。
+
+## 日常运维
+
+- `/healthz` 是本机 Studio 的分层检查，包含进程、Git、内容生成和 scheduler；`ready` 不等于
+  Vercel 已部署。
+- 桌面入口的 `status` 会检查 4317/4319 监听、PID 所有权和 HTTP 健康；日志位于
+  `.local-content/runtime/`。发现端口被非 GUYONG 进程占用时不会强制结束它。
+- 草稿、历史和资产优先用 `corepack pnpm backup:studio` 备份；恢复使用
+  `corepack pnpm restore:studio -- <备份目录> --replace`，恢复前先用临时目录演练，详见
+  [月度维护清单](maintenance.md)。
+- Studio 的“清理未引用图片”先预览 draft/site 两层未被引用的资产；选择并二次确认后，
+  服务端会重新扫描正式稿与本机草稿，仍被引用的资产拒绝删除。

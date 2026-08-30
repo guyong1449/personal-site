@@ -16,6 +16,7 @@ content/public → Next.js → Vercel**。
 | [后续开发计划](development-plan.md) | 当前基线、分阶段目标与验收标准 |
 | [待办事项](remaining-tasks.md) | 面向内容与外部配置的短清单 |
 | [工具详解](tools.md) | Studio / site-builder；publisher 相关内容为 Legacy |
+| [月度维护清单](maintenance.md) | 备份恢复、scheduler、health、桌面入口、CI 与 Vercel 复核 |
 | [Obsidian 插件](obsidian-plugin.md) | Legacy：Frontmatter Helper 插件（已被 Studio 取代） |
 
 ## 架构概览
@@ -38,4 +39,4 @@ content/public → Next.js → Vercel**。
 
 `content/site` 是正式内容唯一维护源（进 Git）；`content/public` 为自动生成；
 `.local-content` 为本机草稿（gitignore）。CI（`.github/workflows/ci.yml`）
-在推送与 PR 上执行仓库统一验证命令 `pnpm verify`。
+在推送与 PR 上执行仓库统一验证命令 `pnpm verify`，并执行高危级别依赖审计。

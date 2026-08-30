@@ -15,6 +15,45 @@ Gallery 元数据、图片压缩/插入、发布、下线、删除和部署状�
 
 `STUDIO_PUBLISH_DRY_RUN=1` 会执行生成与质量检查，但跳过 Git 提交和推送。
 
+### Studio 运维接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/healthz` | 进程、Git、内容生成和 scheduler 分层健康报告 |
+| GET | `/api/scheduler/status` | 定时任务状态、计数、尝试次数和错误 |
+| POST | `/api/scheduler/retry/{kind}/{slug}` | 手动重试一条失败定时任务 |
+| GET | `/api/assets/cleanup` | 预览 draft/site 两层未被引用的资产 |
+| POST | `/api/assets/cleanup` | 经文件名二次确认后删除一项未引用资产 |
+
+定时状态写入 `.local-content/scheduler-status.json`。坏 `publish_at` 会标记为无效，单条
+发布失败会记录失败而继续处理其他任务；Studio 必须持续运行才会执行定时扫描。
+
+Studio 顶部“清理未引用图片”入口会合并扫描正式稿和本机草稿的 `cover` 与正文图片引用，
+展示 draft/site 来源和大小。用户选择并确认后，服务端删除前会再次扫描双层引用；只要发现
+资产仍被引用就拒绝删除。支持 `assets/`、`./assets/`、`/assets/` 三种本地写法。
+
+### 草稿备份与恢复
+
+```powershell
+corepack pnpm backup:studio
+corepack pnpm restore:studio -- <备份目录> --replace
+
+# 底层命令
+node tools/studio/backup.mjs create
+node tools/studio/backup.mjs restore <备份目录> [--replace]
+```
+
+默认备份目录为 `%LOCALAPPDATA%\GUYONG\backups`。可通过
+`STUDIO_REPO_ROOT`、`STUDIO_BACKUP_ROOT` 和 `STUDIO_BACKUP_KEEP` 配置仓库、备份位置和
+保留份数。恢复默认拒绝覆盖已有 `.local-content`；正式恢复前应在临时目录验证备份，
+不要把备份目录放进 `.local-content`。
+
+### 桌面服务入口
+
+`C:\Users\27538\Desktop\启动-GUYONG-网站和-Studio.cmd` 支持 `start`、`stop`、`restart`、
+`status`（无参数等同 `start`）。它会保护 4317/4319 的非本项目进程，并把日志和 PID 写入
+`.local-content\runtime\`；启动服务不会将 Studio 暴露到公网。
+
 ## site-builder (`tools/site-builder/`)
 
 ```powershell

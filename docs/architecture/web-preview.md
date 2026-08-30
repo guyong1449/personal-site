@@ -14,7 +14,7 @@
 - 首页、Note、Gallery、Archive、Search、Account；
 - Note/Gallery 静态详情；
 - Sitemap、robots、RSS；
-- Note 动态 Open Graph 图片。
+- Note/Gallery 动态 Open Graph 图片和详情元数据。
 
 ## Markdown 契约
 
