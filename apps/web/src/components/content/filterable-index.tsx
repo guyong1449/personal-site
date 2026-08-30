@@ -41,6 +41,7 @@ export function FilterableIndex({
           <button
             type="button"
             className={active === null ? "is-active" : undefined}
+            aria-pressed={active === null}
             onClick={() => setActive(null)}
           >
             全部 {items.length}
@@ -50,6 +51,7 @@ export function FilterableIndex({
               key={tag}
               type="button"
               className={active === tag ? "is-active" : undefined}
+              aria-pressed={active === tag}
               onClick={() => setActive(active === tag ? null : tag)}
             >
               {tag} {count}

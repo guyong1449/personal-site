@@ -15,7 +15,6 @@ export default async function NotesPage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header archive-header--notes">
         <h1>NOTES</h1>
-        <span>{notes.length} 篇</span>
       </header>
       <section aria-label="笔记索引">
         <Suspense fallback={null}>

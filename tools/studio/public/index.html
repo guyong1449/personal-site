@@ -6,12 +6,18 @@
   <meta name="robots" content="noindex,nofollow" />
   <title>GUYONG STUDIO / LOCAL</title>
   <script>
+    document.documentElement.dataset.theme = "light";
     try {
-      const savedTheme = localStorage.getItem("guyong-theme");
-      document.documentElement.dataset.theme = savedTheme
-        ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      const savedTheme = localStorage.getItem("guyong-theme-v2");
+      if (savedTheme === "dark" || savedTheme === "light") {
+        document.documentElement.dataset.theme = savedTheme;
+      }
     } catch {}
   </script>
+  <link rel="stylesheet" href="/studio/fonts/quicksand/latin-400.css" />
+  <link rel="stylesheet" href="/studio/fonts/quicksand/latin-700.css" />
+  <link rel="stylesheet" href="/studio/fonts/wenkai/regular.css" />
+  <link rel="stylesheet" href="/studio/fonts/wenkai/bold.css" />
   <link rel="stylesheet" href="/studio/style.css" />
 </head>
 <body>
@@ -19,14 +25,14 @@
     <div class="studio-brand">
       <span class="studio-brand__mark"></span>
       <strong>GUYONG STUDIO</strong>
-      <span class="studio-brand__note">LOCAL / 127.0.0.1</span>
+      <a class="studio-brand__note" href="http://127.0.0.1:4319/studio">http://127.0.0.1:4319/studio</a>
     </div>
     <div class="studio-header__actions">
-      <button id="btn-theme" class="theme-toggle" type="button" aria-label="切换深浅色主题">DARK</button>
       <button id="btn-deploy-status" type="button">部署状态</button>
       <button id="btn-import" type="button">导入 Markdown</button>
       <button id="btn-new-note" type="button">新建 Note</button>
       <button id="btn-new-gallery" type="button">新建 Gallery</button>
+      <button id="btn-theme" class="theme-toggle" type="button" aria-label="切换深浅色主题">DARK</button>
     </div>
   </header>
 
@@ -104,15 +110,14 @@
   <dialog id="import-dialog">
     <form method="dialog">
       <h2>导入 Markdown</h2>
-      <p class="dialog-note">Obsidian 原文件不会被修改；内容会复制为本机草稿。</p>
       <label>目标类型
         <select id="import-kind">
           <option value="notes">note</option>
           <option value="gallery">gallery</option>
         </select>
       </label>
-      <label>来源文件（可选）<input id="import-file" type="file" accept=".md,.markdown,text/markdown" /></label>
-      <label>或粘贴 Markdown<textarea id="import-text" rows="10"></textarea></label>
+      <label>来源文件<input id="import-file" type="file" accept=".md,.markdown,text/markdown" /></label>
+      <label>粘贴 Markdown<textarea id="import-text" rows="10"></textarea></label>
       <div class="dialog-actions">
         <button value="cancel" type="submit">取消</button>
         <button value="ok" type="submit" class="primary" id="import-submit">导入为草稿</button>

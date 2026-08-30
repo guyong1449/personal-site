@@ -32,7 +32,6 @@ export default async function ArchivePage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
         <h1>ARCHIVE</h1>
-        <span>{entries.length} 条记录</span>
       </header>
 
       {entries.length === 0 ? (

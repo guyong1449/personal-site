@@ -2,7 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "guyong-theme";
+const STORAGE_KEY = "guyong-theme-v2";
 
 function subscribe(callback: () => void) {
   const observer = new MutationObserver(callback);

@@ -3,6 +3,8 @@ import "@fontsource/quicksand/400.css";
 import "@fontsource/quicksand/500.css";
 import "@fontsource/quicksand/600.css";
 import "@fontsource/quicksand/700.css";
+import "lxgw-wenkai-webfont/lxgwwenkai-regular.css";
+import "lxgw-wenkai-webfont/lxgwwenkai-bold.css";
 import "./globals.css";
 import { siteConfig } from "@/lib/config";
 import { Header } from "@/components/header";
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   description: siteConfig.description,
 };
 
-const themeInitScript = `(function(){try{var t=localStorage.getItem("guyong-theme");if(t!=="dark"&&t!=="light"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`;
+const themeInitScript = `(function(){var t="light";try{var s=localStorage.getItem("guyong-theme-v2");if(s==="dark"||s==="light"){t=s;}}catch(e){}document.documentElement.dataset.theme=t;})();`;
 
 export default function RootLayout({
   children,

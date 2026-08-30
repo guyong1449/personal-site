@@ -15,7 +15,6 @@ export default async function SearchPage() {
     <main id="main-content" className="site-shell archive-page">
       <header className="archive-header">
         <h1>SEARCH</h1>
-        <span>{docs.length} 篇内容</span>
       </header>
       <section aria-label="搜索" className="search-section">
         <SearchClient docs={docs} />

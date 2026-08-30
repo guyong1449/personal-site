@@ -12,7 +12,7 @@ const listEl = $("item-list");
 const editorEl = $("editor");
 const emptyEl = $("empty-hint");
 const PUBLISH_STAGES = ["校验内容…", "写入正式目录…", "重建公开快照…", "运行测试与构建…", "提交并推送…"];
-const THEME_KEY = "guyong-theme";
+const THEME_KEY = "guyong-theme-v2";
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -122,6 +122,7 @@ function renderList() {
   listEl.replaceChildren(
     ...items.map((item) => {
       const li = document.createElement("li");
+      li.dataset.kind = item.kind;
       li.className =
         state.current &&
         state.current.kind === item.kind &&
@@ -129,7 +130,7 @@ function renderList() {
           ? "is-active"
           : "";
       const kind = document.createElement("div");
-      kind.className = "item-kind";
+      kind.className = `item-kind item-kind--${item.kind}`;
       kind.textContent = `${item.kind.toUpperCase()} · ${
         item.status === "published" ? "PUBLISHED" : "DRAFT"
       }${item.hasLocalDraft && item.status === "published" ? " · 有本机草稿" : ""}${

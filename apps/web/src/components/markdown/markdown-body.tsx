@@ -21,7 +21,7 @@ export async function MarkdownBody({ content, showToc = true, sidebarExtra }: Ma
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {hasSidebar && (
-        <aside className="hidden w-52 shrink-0 lg:block">
+        <aside className="article-sidebar hidden w-52 shrink-0 lg:block">
           <div className="sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
             {showToc && toc.length > 0 && <Toc items={toc} />}
             {sidebarExtra}

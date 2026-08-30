@@ -23,6 +23,8 @@ const repoRoot = path.resolve(toolDir, "..", "..");
 const localRoot = path.join(repoRoot, ".local-content");
 const siteRoot = path.join(repoRoot, "content", "site");
 const publicDir = path.join(toolDir, "public");
+const quicksandFontDir = path.join(toolDir, "node_modules", "@fontsource", "quicksand");
+const wenkaiFontDir = path.join(toolDir, "node_modules", "lxgw-wenkai-webfont");
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.STUDIO_PORT ?? 4319);
@@ -263,6 +265,24 @@ function serveStatic(res, filePath, contentType) {
   }
   res.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-store" });
   res.end(fs.readFileSync(filePath));
+}
+
+function serveFontFile(res, fontDir, fileName) {
+  const safe = sanitizeFileName(fileName);
+  const filesDir = path.join(fontDir, "files");
+  const file = path.join(filesDir, safe);
+  const extension = path.extname(file).toLowerCase();
+  if (!file.startsWith(filesDir) || !fs.existsSync(file)) {
+    sendError(res, 404, "font not found");
+    return;
+  }
+  const contentType = extension === ".woff2" ? "font/woff2" : "font/woff";
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "X-Content-Type-Options": "nosniff",
+  });
+  fs.createReadStream(file).pipe(res);
 }
 
 function serveAsset(res, baseDir, fileName) {
@@ -865,6 +885,30 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/studio/style.css") {
       serveStatic(res, path.join(publicDir, "style.css"), "text/css; charset=utf-8");
+      return;
+    }
+    if (url.pathname === "/studio/fonts/quicksand/latin-400.css") {
+      serveStatic(res, path.join(quicksandFontDir, "latin-400.css"), "text/css; charset=utf-8");
+      return;
+    }
+    if (url.pathname === "/studio/fonts/quicksand/latin-700.css") {
+      serveStatic(res, path.join(quicksandFontDir, "latin-700.css"), "text/css; charset=utf-8");
+      return;
+    }
+    if (url.pathname.startsWith("/studio/fonts/quicksand/files/")) {
+      serveFontFile(res, quicksandFontDir, url.pathname.slice("/studio/fonts/quicksand/files/".length));
+      return;
+    }
+    if (url.pathname === "/studio/fonts/wenkai/regular.css") {
+      serveStatic(res, path.join(wenkaiFontDir, "lxgwwenkai-regular.css"), "text/css; charset=utf-8");
+      return;
+    }
+    if (url.pathname === "/studio/fonts/wenkai/bold.css") {
+      serveStatic(res, path.join(wenkaiFontDir, "lxgwwenkai-bold.css"), "text/css; charset=utf-8");
+      return;
+    }
+    if (url.pathname.startsWith("/studio/fonts/wenkai/files/")) {
+      serveFontFile(res, wenkaiFontDir, url.pathname.slice("/studio/fonts/wenkai/files/".length));
       return;
     }
     if (url.pathname === "/studio/vendor/marked.js") {
