@@ -55,15 +55,21 @@
           <label>系列（Gallery）<input id="f-series" type="text" placeholder="如 alpha 系列" /></label>
         </div>
         <div class="editor-meta__cover">
-          <label>Cover
+          <div class="cover-heading">
+            <strong>封面图片</strong>
+            <span>用于内容列表缩略图与文章顶部横幅</span>
+          </div>
+          <label>选择已上传图片
             <select id="f-cover"><option value="">（无）</option></select>
           </label>
           <img id="cover-preview" alt="封面预览" hidden />
+          <p class="cover-help">建议 1600 × 900（16:9），单张不超过 8MB。JPG/PNG 上传后自动压缩为 WebP。</p>
           <div class="cover-actions">
-            <input id="asset-file" type="file" hidden />
-            <button id="btn-upload-asset" type="button">上传资产</button>
+            <input id="asset-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden />
+            <button id="btn-upload-asset" type="button">上传封面 / 图片</button>
             <button id="btn-insert-image" type="button" title="把选中的 Cover 或上传的图片插入正文">插入正文</button>
           </div>
+          <p class="cover-path">本机草稿资产 → 发布资产 → 网站 <code>/assets/文件名</code></p>
         </div>
       </div>
 

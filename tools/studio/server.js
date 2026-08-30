@@ -272,7 +272,20 @@ function serveAsset(res, baseDir, fileName) {
     sendError(res, 404, "asset not found");
     return;
   }
-  res.writeHead(200, { "Cache-Control": "no-store" });
+  const contentTypes = {
+    ".avif": "image/avif",
+    ".gif": "image/gif",
+    ".jpeg": "image/jpeg",
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+  };
+  const contentType = contentTypes[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
   fs.createReadStream(file).pipe(res);
 }
 
@@ -700,6 +713,7 @@ async function handleApi(req, res, url) {
     // original bytes.
     let finalBuffer = buffer;
     let finalName = name;
+    let converted = false;
     if (/\.(jpe?g|png)$/i.test(finalName)) {
       try {
         finalBuffer = await sharp(buffer)
@@ -707,6 +721,7 @@ async function handleApi(req, res, url) {
           .webp({ quality: 82 })
           .toBuffer();
         finalName = finalName.replace(/\.(jpe?g|png)$/i, ".webp");
+        converted = true;
       } catch {
         finalBuffer = buffer;
       }
@@ -717,12 +732,14 @@ async function handleApi(req, res, url) {
     const ext = path.extname(finalName);
     const stem = ext ? finalName.slice(0, finalName.length - ext.length) : finalName;
     let index = 2;
+    let renamed = false;
     while (fs.existsSync(path.join(dir, finalName))) {
       finalName = `${stem}-${index}${ext}`;
       index += 1;
+      renamed = true;
     }
     fs.writeFileSync(path.join(dir, finalName), finalBuffer);
-    sendJson(res, 200, { name: finalName, source: "draft", renamed: finalName !== name });
+    sendJson(res, 200, { name: finalName, source: "draft", renamed, converted });
     return;
   }
 

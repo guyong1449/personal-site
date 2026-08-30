@@ -44,8 +44,8 @@ function setSaveState(message, isError = false) {
   el.classList.toggle("is-error", isError);
 }
 
-function previewUrl(name) {
-  return `/asset/draft/${encodeURIComponent(name)}`;
+function previewUrl(name, source = "draft") {
+  return `/asset/${source}/${encodeURIComponent(name)}`;
 }
 
 // Same contract as the production pipeline: raw HTML in Markdown is shown
@@ -73,7 +73,11 @@ function renderPreview(body) {
   for (const img of holder.querySelectorAll("img")) {
     const src = img.getAttribute("src") ?? "";
     if (src.startsWith("assets/") || (!src.startsWith("http") && !src.startsWith("/"))) {
-      img.src = previewUrl(src.replace(/^assets\//, ""));
+      const name = src.replace(/^assets\//, "");
+      img.src = previewUrl(name);
+      img.addEventListener("error", () => {
+        img.src = previewUrl(name, "site");
+      }, { once: true });
     }
   }
   $("preview").replaceChildren(...holder.childNodes);
@@ -157,6 +161,7 @@ async function loadAssetOptions(selected) {
     ...data.assets.map((asset) => {
       const option = document.createElement("option");
       option.value = asset.name;
+      option.dataset.source = asset.source;
       option.textContent = `${asset.name}（${asset.source === "site" ? "已发布" : "本机"}）`;
       return option;
     }),
@@ -175,7 +180,8 @@ function updateCoverPreview() {
     img.removeAttribute("src");
     return;
   }
-  img.src = previewUrl(name);
+  const source = $("f-cover").selectedOptions[0]?.dataset.source ?? "draft";
+  img.src = previewUrl(name, source);
   img.hidden = false;
 }
 
@@ -403,21 +409,36 @@ function uploadAsset() {
   input.onchange = async () => {
     const file = input.files?.[0];
     if (!file) return;
-    const response = await fetch(`/api/assets?name=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      body: await file.arrayBuffer(),
-    });
-    if (!response.ok) {
-      setSaveState("资产上传失败", true);
+    if (!/\.(jpe?g|png|webp|gif|avif)$/i.test(file.name)) {
+      setSaveState("请选择 JPG、PNG、WebP、GIF 或 AVIF 图片", true);
       return;
     }
-    const result = await response.json();
-    await loadAssetOptions(result.name);
-    setSaveState(
-      result.renamed
-        ? `资产与已有文件重名，已自动命名为 ${result.name}`
-        : `资产已上传：${result.name}`,
-    );
+    if (file.size > 8 * 1024 * 1024) {
+      setSaveState("图片超过 8MB，请压缩后再上传", true);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/assets?name=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        body: await file.arrayBuffer(),
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        setSaveState(error.error ?? "图片上传失败", true);
+        return;
+      }
+      const result = await response.json();
+      await loadAssetOptions(result.name);
+      setSaveState(
+        result.renamed
+          ? `图片与已有文件重名，已自动命名为 ${result.name}`
+          : result.converted
+            ? `图片已压缩为 WebP 并设为封面：${result.name}`
+            : `图片已上传并设为封面：${result.name}`,
+      );
+    } catch (error) {
+      setSaveState(`图片上传失败：${error.message}`, true);
+    }
   };
 }
 
