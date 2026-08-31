@@ -15,19 +15,18 @@
   --accent: #0b7e89;
   --accent-deep: #08717d;
   --accent-soft: #ddf0f2;
+  --accent-line: #16b0bf;
   --accent-warm: #806a00;
   --accent-warm-soft: #f8f3d6;
-  --hero-line-green: #16c85f;
-  --hero-line-yellow: #ffe11a;
   --brand-mark-cyan: #3ed3de;
   --brand-mark-yellow: #ffe45c;
-  --tag-bg: #ffffff;
-  --tag-bg-hover: #fff0a3;
-  --tag-bg-active: #ffe680;
-  --tag-border: #b99500;
-  --tag-text: #b99500;
-  --tag-text-hover: #24333f;
-  --tag-text-active: #24333f;
+  --tag-bg: #fbfefd;
+  --tag-bg-hover: #fff8c4;
+  --tag-bg-active: #fff8c4;
+  --tag-border: #d8c000;
+  --tag-text: #d8c000;
+  --tag-text-hover: #5b5000;
+  --tag-text-active: #5b5000;
   --header-bg: rgba(246, 251, 252, 0.94);
   --prose-text: #2e4351;
   --prose-code-bg: #e8f3f5;
@@ -47,15 +46,16 @@
   --accent: #3ed3de;
   --accent-deep: #8ce6ee;
   --accent-soft: #1e3d45;
+  --accent-line: #3ed3de;
   --accent-warm: #f5dd4d;
   --accent-warm-soft: #23414e;
   --tag-bg: #24343e;
-  --tag-bg-hover: #2b4049;
-  --tag-bg-active: #fff2a3;
-  --tag-border: #f5dd4d;
-  --tag-text: #f5dd4d;
-  --tag-text-hover: #ffffff;
-  --tag-text-active: #1d2b33;
+  --tag-bg-hover: #3d3920;
+  --tag-bg-active: #3d3920;
+  --tag-border: #d8c84a;
+  --tag-text: #d8c84a;
+  --tag-text-hover: #ffe45c;
+  --tag-text-active: #ffe45c;
   --header-bg: rgba(29, 43, 51, 0.94);
   --prose-text: #cfe0e7;
   --prose-code-bg: #2b4049;
@@ -114,7 +114,7 @@ button, a { touch-action: manipulation; }
 }
 .site-nav a::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
-  background: var(--accent);
+  background: var(--accent-line);
   transform: scaleX(0); transform-origin: center;
   transition: transform 240ms ease-out;
 }
@@ -145,7 +145,7 @@ button, a { touch-action: manipulation; }
 .hero h1::after {
   content: ""; display: block; width: 52px; height: 3px;
   margin-top: 14px;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--hero-line-green) 50%, var(--hero-line-yellow) 100%);
+  background: var(--accent-line);
 }
 .hero__github {
   display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center;
@@ -176,13 +176,13 @@ button, a { touch-action: manipulation; }
   font-size: .8rem; font-weight: 700; color: var(--accent-deep);
   transition: color 150ms ease-out;
 }
-.text-link:hover, .back-link:hover { color: var(--accent-warm); }
+.text-link:hover, .back-link:hover { color: var(--accent-deep); text-decoration: underline; }
 
 /* Compact content rows; dividers carry a short bright-teal segment */
 .content-index { position: relative; border-top: 1px solid var(--line); }
 .content-index::before {
   content: ""; position: absolute; top: -1px; left: 0; width: 36px; height: 2px;
-  background: var(--accent);
+  background: var(--accent-line);
 }
 .index-entry {
   position: relative; display: grid;
@@ -374,7 +374,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 }
 .archive-header::after {
   content: ""; position: absolute; bottom: -1px; left: 0; width: 36px; height: 2px;
-  background: var(--accent);
+  background: var(--accent-line);
 }
 .archive-header--notes::after { width: 72px; }
 .archive-header h1 { margin: 0; font-size: 2.1rem; font-weight: 700; }
@@ -414,7 +414,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 .article-footer { position: relative; margin-top: 34px; border-top: 1px solid var(--line); padding-top: 4px; }
 .article-footer::before {
   content: ""; position: absolute; top: -1px; left: 0; width: 36px; height: 2px;
-  background: var(--accent);
+  background: var(--accent-line);
 }
 .note-comments { padding: 14px 0 6px; }
 
@@ -504,7 +504,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 }
 .site-footer__right a::after {
   content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px;
-  background: var(--accent);
+  background: var(--accent-line);
   transform: scaleX(0); transform-origin: center;
   transition: transform 240ms ease-out;
 }
@@ -543,7 +543,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
   }
   .mobile-nav__panel nav > a::after {
     content: ""; position: absolute; left: 18px; bottom: -1px; height: 2px; width: 88px;
-    background: var(--accent);
+    background: var(--accent-line);
     transform: scaleX(0); transform-origin: left;
     transition: transform 240ms ease-out;
   }
