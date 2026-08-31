@@ -18,6 +18,8 @@
   --accent-line: #16b0bf;
   --accent-warm: #806a00;
   --accent-warm-soft: #f8f3d6;
+  --hero-line-green: #16c85f;
+  --hero-line-yellow: #ffe11a;
   --brand-mark-cyan: #3ed3de;
   --brand-mark-yellow: #ffe45c;
   --tag-bg: #fbfefd;
@@ -50,12 +52,12 @@
   --accent-warm: #f5dd4d;
   --accent-warm-soft: #23414e;
   --tag-bg: #24343e;
-  --tag-bg-hover: #3d3920;
-  --tag-bg-active: #3d3920;
-  --tag-border: #d8c84a;
-  --tag-text: #d8c84a;
-  --tag-text-hover: #ffe45c;
-  --tag-text-active: #ffe45c;
+  --tag-bg-hover: #2b4049;
+  --tag-bg-active: #fff2a3;
+  --tag-border: #fff2a3;
+  --tag-text: #fff2a3;
+  --tag-text-hover: #ffffff;
+  --tag-text-active: #1d2b33;
   --header-bg: rgba(29, 43, 51, 0.94);
   --prose-text: #cfe0e7;
   --prose-code-bg: #2b4049;
@@ -145,7 +147,7 @@ button, a { touch-action: manipulation; }
 .hero h1::after {
   content: ""; display: block; width: 52px; height: 3px;
   margin-top: 14px;
-  background: var(--accent-line);
+  background: linear-gradient(90deg, var(--accent) 0%, var(--hero-line-green) 50%, var(--hero-line-yellow) 100%);
 }
 .hero__github {
   display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center;
@@ -177,6 +179,8 @@ button, a { touch-action: manipulation; }
   transition: color 150ms ease-out;
 }
 .text-link:hover, .back-link:hover { color: var(--accent-deep); text-decoration: underline; }
+[data-theme="dark"] .text-link:hover,
+[data-theme="dark"] .back-link:hover { color: var(--accent-warm); text-decoration: none; }
 
 /* Compact content rows; dividers carry a short bright-teal segment */
 .content-index { position: relative; border-top: 1px solid var(--line); }
