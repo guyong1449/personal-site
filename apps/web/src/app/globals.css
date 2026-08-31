@@ -22,10 +22,10 @@
   --brand-mark-cyan: #3ed3de;
   --brand-mark-yellow: #ffe45c;
   --tag-bg: #ffffff;
-  --tag-bg-hover: #fff7bd;
-  --tag-bg-active: #fff2a3;
-  --tag-border: #f5dd4d;
-  --tag-text: #f5dd4d;
+  --tag-bg-hover: #fff0a3;
+  --tag-bg-active: #ffe680;
+  --tag-border: #b99500;
+  --tag-text: #b99500;
   --tag-text-hover: #24333f;
   --tag-text-active: #24333f;
   --header-bg: rgba(246, 251, 252, 0.94);
@@ -220,7 +220,7 @@ button, a { touch-action: manipulation; }
 .article-header .tag-list a::before,
 .article-header .tag-list span::before,
 .tag-filter button::before {
-  content: ""; position: absolute; inset: 10px 0; z-index: -1;
+  content: ""; position: absolute; inset: 4px 0; z-index: -1;
   border: 1px solid var(--tag-border); border-radius: 6px;
   background: var(--tag-bg);
   transition: border-color 200ms ease-out, background 200ms ease-out;
