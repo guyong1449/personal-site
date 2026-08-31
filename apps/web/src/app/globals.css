@@ -23,12 +23,10 @@
   --brand-mark-cyan: #3ed3de;
   --brand-mark-yellow: #ffe45c;
   --tag-bg: #fbfefd;
-  --tag-bg-hover: #fff8c4;
-  --tag-bg-active: #fff8c4;
-  --tag-border: #d8c000;
-  --tag-text: #d8c000;
-  --tag-text-hover: #5b5000;
-  --tag-text-active: #5b5000;
+  --tag-bg-emphasis: #fff8c4;
+  --tag-border: #b8a22a;
+  --tag-text: #b8a22a;
+  --tag-text-emphasis: #5b5000;
   --header-bg: rgba(246, 251, 252, 0.94);
   --prose-text: #2e4351;
   --prose-code-bg: #e8f3f5;
@@ -52,12 +50,10 @@
   --accent-warm: #f5dd4d;
   --accent-warm-soft: #23414e;
   --tag-bg: #24343e;
-  --tag-bg-hover: #2b4049;
-  --tag-bg-active: #fff2a3;
+  --tag-bg-emphasis: #fff2a3;
   --tag-border: #fff2a3;
   --tag-text: #fff2a3;
-  --tag-text-hover: #ffffff;
-  --tag-text-active: #1d2b33;
+  --tag-text-emphasis: #1d2b33;
   --header-bg: rgba(29, 43, 51, 0.94);
   --prose-text: #cfe0e7;
   --prose-code-bg: #2b4049;
@@ -231,11 +227,11 @@ button, a { touch-action: manipulation; }
 }
 .article-header .tag-list a:hover,
 .article-header .tag-list a:focus-visible {
-  color: var(--tag-text-hover);
+  color: var(--tag-text-emphasis);
 }
 .article-header .tag-list a:hover::before,
 .article-header .tag-list a:focus-visible::before {
-  border-color: var(--tag-border); background: var(--tag-bg-hover);
+  border-color: var(--tag-border); background: var(--tag-bg-emphasis);
 }
 
 /* Tag filter chips */
@@ -244,11 +240,11 @@ button, a { touch-action: manipulation; }
   cursor: pointer;
 }
 .tag-filter button:hover,
-.tag-filter button:focus-visible { color: var(--tag-text-hover); }
+.tag-filter button:focus-visible { color: var(--tag-text-emphasis); }
 .tag-filter button:hover::before,
-.tag-filter button:focus-visible::before { border-color: var(--tag-border); background: var(--tag-bg-hover); }
-.tag-filter button.is-active { color: var(--tag-text-active); }
-.tag-filter button.is-active::before { border-color: var(--tag-border); background: var(--tag-bg-active); }
+.tag-filter button:focus-visible::before { border-color: var(--tag-border); background: var(--tag-bg-emphasis); }
+.tag-filter button.is-active { color: var(--tag-text-emphasis); }
+.tag-filter button.is-active::before { border-color: var(--tag-border); background: var(--tag-bg-emphasis); }
 
 /* Prev / next post navigation */
 .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 34px; }
