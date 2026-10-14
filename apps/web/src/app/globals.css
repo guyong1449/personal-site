@@ -145,13 +145,14 @@ button, a { touch-action: manipulation; }
   margin-top: 14px;
   background: linear-gradient(90deg, var(--accent) 0%, var(--hero-line-green) 50%, var(--hero-line-yellow) 100%);
 }
-.hero__github {
+.hero__links { display: flex; gap: 2px; }
+.hero__link {
   display: grid; width: 44px; height: 44px; flex: 0 0 44px; place-items: center;
   border: 1px solid transparent; color: var(--muted);
   transition: color 180ms ease-out, border-color 180ms ease-out, background 180ms ease-out;
 }
-.hero__github svg { width: 24px; height: 24px; fill: currentColor; }
-.hero__github:hover {
+.hero__link svg { width: 24px; height: 24px; fill: currentColor; }
+.hero__link:hover {
   border-color: var(--line-strong); background: var(--accent-soft); color: var(--accent-deep);
 }
 .hero__intro {
