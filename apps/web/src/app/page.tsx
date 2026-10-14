@@ -30,7 +30,7 @@ export default async function HomePage() {
           </a>
         </div>
         <p className="hero__intro">
-          你好，我是 GUYONG。这里记录我的技术学习、课程笔记与长期的思考，偶尔也放一些小画。
+          你好，我是 Ruoying Wang，也用 GUYONG 这个名字。这里记录我的技术学习、课程笔记与长期的思考，偶尔也放一些小画。研究项目与简历见<a href="https://guyong1449.github.io/">研究主页</a>。
         </p>
       </section>
 

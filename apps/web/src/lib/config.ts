@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: "GUYONG",
-  description: "Guyong 的个人网站：技术笔记、课程学习记录与少量画作。",
+  description: "Ruoying Wang（GUYONG）的个人网站：技术笔记、课程学习记录与少量画作。",
   url:
     process.env.NEXT_PUBLIC_SITE_URL ??
     "https://guyong.site",
