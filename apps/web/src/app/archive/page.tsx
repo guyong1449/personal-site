@@ -62,7 +62,7 @@ export default async function ArchivePage() {
                     <span className="font-family-en" lang="en">
                       {entry.kind === "gallery" ? "GALLERY" : "NOTE"}
                     </span>
-                    {entry.created && <> · <PublicationMonth created={entry.created} className="timeline-date" /></>}
+                    {entry.created && <><span className="timeline-meta__separator" aria-hidden="true"> · </span><PublicationMonth created={entry.created} className="timeline-date" /></>}
                   </span>
                 </Link>
               ))}
