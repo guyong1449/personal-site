@@ -76,6 +76,10 @@ describe("validateForPublish", () => {
       body: "![图片](assets/missing-picture.png)",
     });
     assert.match(errors.join("\n"), /missing-picture\.png/);
+    const sizedErrors = validateForPublish("notes", "test-slug", {
+      ...baseDoc, body: '![图片](assets/missing-sized.png "width=480px")',
+    });
+    assert.match(sizedErrors.join("\n"), /missing-sized\.png/);
   });
 
   it("rejects a gallery document published as a note", () => {

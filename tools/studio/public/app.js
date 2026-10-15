@@ -1,3 +1,5 @@
+import { listMarkdownImages, resizeMarkdownImage } from "/studio/image-sizing.js";
+
 const state = {
   items: [],
   filter: "all",
@@ -190,6 +192,7 @@ async function loadItems() {
   const data = await api("/api/items");
   state.items = data.items;
   renderList();
+  renderPageViewRows();
 }
 
 function updateCurrentPageViews() {
@@ -214,16 +217,7 @@ async function loadPageViews() {
     const updated = stats.updatedAt ? new Date(stats.updatedAt).toLocaleString("zh-CN") : "暂无访问";
     $("page-view-total").textContent = `${stats.total} 次浏览 · ${stats.uniquePaths} 个页面`;
     $("page-views-summary").textContent = `更新：${updated} · 每分钟刷新`;
-    $("page-views-list").replaceChildren(...stats.topPaths.map((item) => {
-      const row = document.createElement("li");
-      const label = document.createElement("span");
-      label.textContent = pageViewLabel(item.path);
-      label.title = item.path;
-      const count = document.createElement("strong");
-      count.textContent = item.count;
-      row.append(label, count);
-      return row;
-    }));
+    renderPageViewRows();
     $("link-click-total").textContent = `相关链接点击 ${stats.totalClicks ?? 0} 次`;
     $("link-clicks-list").replaceChildren(...(stats.linkClicks ?? []).map((item) => {
       const row = document.createElement("li");
@@ -240,6 +234,24 @@ async function loadPageViews() {
     if (!state.pageViews) $("page-view-total").textContent = "访问统计暂不可用";
     $("page-views-summary").textContent = error.message;
   } finally { refresh.disabled = false; }
+}
+
+function renderPageViewRows() {
+  if (!state.pageViews) return;
+  const publishedPaths = new Set(["/", "/notes", "/gallery", "/account", "/archive", "/search",
+    ...state.items.filter((item) => item.status === "published").map((item) => `/${item.kind}/${item.slug}`)]);
+  const visiblePaths = state.pageViews.topPaths.filter((item) => publishedPaths.has(item.path));
+  $("page-view-total").textContent = `${state.pageViews.total} 次浏览 · ${visiblePaths.length} 个页面`;
+  $("page-views-list").replaceChildren(...visiblePaths.map((item) => {
+    const row = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = pageViewLabel(item.path);
+    label.title = item.path;
+    const count = document.createElement("strong");
+    count.textContent = item.count;
+    row.append(label, count);
+    return row;
+  }));
 }
 
 const SCHEDULER_LABELS = {
@@ -452,6 +464,7 @@ function applyDoc(doc) {
   $("f-art-category").value = doc.artCategory ?? "";
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
+  refreshBodyImageOptions();
   markSaved(
     doc.source === "site"
       ? "已发布内容（只读快照）：保存时会自动建立本机草稿"
@@ -738,6 +751,43 @@ function insertImage() {
   const alt = name.replace(/\.[^.]+$/, "");
   insertImageAtCursor(`![${alt}](assets/${name})`);
   setSaveState(`已插入图片：${name}`);
+}
+
+function syncBodyImageSize() {
+  const image = listMarkdownImages($("f-body").value)[Number($("body-image-select").value)];
+  if (!image) return;
+  $("body-image-width").value = image.width;
+  $("body-image-unit").value = image.unit;
+  updateBodyImageLimits();
+}
+
+function updateBodyImageLimits() {
+  const percent = $("body-image-unit").value === "%";
+  $("body-image-width").min = percent ? 1 : 16;
+  $("body-image-width").max = percent ? 100 : 2400;
+}
+
+function refreshBodyImageOptions() {
+  const select = $("body-image-select");
+  const previous = select.value;
+  const images = listMarkdownImages($("f-body").value);
+  select.replaceChildren(...images.map((image, index) => Object.assign(document.createElement("option"), {
+    value: String(index), textContent: `${index + 1}. ${image.alt || image.url}`,
+  })));
+  if (images.length && previous && Number(previous) < images.length) select.value = previous;
+  if (!images.length) select.append(Object.assign(document.createElement("option"), { value: "", textContent: "正文中还没有图片" }));
+  for (const id of ["body-image-select", "body-image-width", "body-image-unit", "btn-resize-image", "btn-reset-image"]) $(id).disabled = !images.length;
+  syncBodyImageSize();
+}
+
+function applyBodyImageSize(reset = false) {
+  try {
+    const body = $("f-body");
+    body.value = resizeMarkdownImage(body.value, Number($("body-image-select").value),
+      reset ? null : $("body-image-width").value, $("body-image-unit").value);
+    body.dispatchEvent(new Event("input", { bubbles: true }));
+    setSaveState("图片尺寸已更新 · 保存草稿后可发布");
+  } catch (error) { setSaveState(error.message, true); }
 }
 
 function wireImportDialog() {
@@ -1034,6 +1084,14 @@ function wire() {
   $("btn-delete").addEventListener("click", deleteCurrent);
   $("btn-upload-asset").addEventListener("click", uploadAsset);
   $("btn-insert-image").addEventListener("click", insertImage);
+  $("body-image-select").addEventListener("change", syncBodyImageSize);
+  $("body-image-unit").addEventListener("change", updateBodyImageLimits);
+  $("body-image-controls").addEventListener("toggle", () => {
+    if ($("body-image-controls").open) refreshBodyImageOptions();
+  });
+  $("btn-resize-image").addEventListener("click", () => applyBodyImageSize());
+  $("btn-reset-image").addEventListener("click", () => applyBodyImageSize(true));
+  $("f-body").addEventListener("input", refreshBodyImageOptions);
   $("f-cover").addEventListener("change", updateCoverPreview);
   $("f-publish-enabled").addEventListener("change", () => {
     const enabled = $("f-publish-enabled").checked;

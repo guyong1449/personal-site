@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { renderMarkdownToHtml } from "../pipeline";
 
 describe("markdown pipeline", () => {
+  it("renders safe image widths and preserves ordinary image captions", async () => {
+    const html = await renderMarkdownToHtml('![截图](assets/screen.png "说明 | width=480px")\n\n![比例](assets/percent.png "width=65%")');
+    expect(html).toContain('src="/assets/screen.png"');
+    expect(html).toContain('title="说明"');
+    expect(html).toContain('style="width:480px"');
+    expect(html).toContain('style="width:65%"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('aria-label="放大图片：截图"');
+    expect(html).not.toContain('title="width=65%"');
+  });
+
+  it("rejects unbounded sizes and arbitrary image CSS", async () => {
+    for (const title of ["width=0%", "width=101%", "width=9999px", "width=100%;position:fixed", "width=12px"]) {
+      const html = await renderMarkdownToHtml(`![截图](assets/screen.png "${title}")`);
+      expect(html).not.toContain("style=");
+    }
+  });
   it("resolves article-local asset images from the public root", async () => {
     const html = await renderMarkdownToHtml("![截图](assets/dkucc-image-706.png)\n\n![远程](https://example.com/image.png)");
     expect(html).toContain('src="/assets/dkucc-image-706.png"');

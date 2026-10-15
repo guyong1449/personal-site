@@ -72,11 +72,12 @@ before(async () => {
       'updated: "2026-08-29"',
       "---",
       "",
-      "演练正文 ![图](assets/e2e.png)",
+      "演练正文 ![图](assets/e2e.png)\n\n![尺寸图](assets/sized.png \"width=65%\")",
       "",
     ].join("\n"),
   );
   write(path.join(REPO_ROOT, ".local-content", "assets", "e2e.png"), "png-bytes");
+  write(path.join(REPO_ROOT, ".local-content", "assets", "sized.png"), "sized-png-bytes");
 });
 
 after(() => {
@@ -99,6 +100,8 @@ describe("publish -> unpublish drill", () => {
     assert.match(siteMd, /content_type: "note"/);
     assert.match(siteMd, /topic\/e2e/);
     assert.ok(fs.existsSync(path.join(REPO_ROOT, "content", "site", "assets", "e2e.png")));
+    assert.equal(fs.readFileSync(path.join(REPO_ROOT, "content", "site", "assets", "sized.png"), "utf8"), "sized-png-bytes");
+    assert.match(siteMd, /width=65%/);
 
     const metadata = JSON.parse(
       fs.readFileSync(path.join(REPO_ROOT, "content", "public", "metadata", "notes.json"), "utf8"),
@@ -122,10 +125,12 @@ describe("publish -> unpublish drill", () => {
       path.join(REPO_ROOT, ".local-content", "notes", `${SLUG}.md`),
       "utf8",
     );
+    fs.rmSync(path.join(REPO_ROOT, ".local-content", "assets", "sized.png"));
     const result = unpublishToDraft("notes", SLUG);
 
     assert.equal(result.ok, true, `unpublish failed: ${result.message}`);
-    assert.equal(result.removedAssets, 1); // e2e.png was exclusive to this document
+    assert.equal(result.removedAssets, 2); // Both images are exclusive to this document.
+    assert.equal(fs.readFileSync(path.join(REPO_ROOT, ".local-content", "assets", "sized.png"), "utf8"), "sized-png-bytes");
     assert.equal(result.preservedExistingDraft, true);
 
     assert.ok(

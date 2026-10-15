@@ -469,6 +469,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 /* Markdown body */
 .prose {
   max-width: 700px; color: var(--prose-text);
+  overflow-wrap: anywhere;
   font-family: inherit;
   font-size: 1rem; line-height: 1.95;
 }
@@ -494,9 +495,19 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 }
 .prose pre code { background: none; padding: 0; }
 .prose img {
-  display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: auto 16 / 9;
+  display: block; width: 100%; max-width: 100%; height: auto;
   object-fit: contain; background: var(--accent-soft); margin: 1.3em 0;
+  cursor: zoom-in;
 }
+.image-viewer { width: calc(100% - 20px); height: calc(100dvh - 20px); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid var(--line-strong); background: var(--surface); color: var(--foreground); }
+.image-viewer[open] { display: flex; flex-direction: column; }
+.image-viewer::backdrop { background: rgba(0, 0, 0, .75); }
+.image-viewer__toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px; border-bottom: 1px solid var(--line); }
+.image-viewer__toolbar button { min-width: 44px; min-height: 44px; padding: 4px 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--foreground); font: inherit; font-size: 13px; cursor: pointer; }
+.image-viewer__toolbar output { font-size: 13px; font-variant-numeric: tabular-nums; }
+.image-viewer__toolbar button:last-child { margin-left: auto; }
+.image-viewer__canvas { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; }
+.image-viewer__canvas img { display: block; max-width: none; height: auto; margin: 0 auto; }
 .prose table { width: 100%; margin: 1.3em 0; border-collapse: collapse; }
 .prose th, .prose td { border: 1px solid var(--line); padding: .5em .75em; text-align: left; }
 .prose th { background: var(--accent-soft); }
@@ -548,7 +559,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
   .mobile-nav__toggle:hover { color: var(--accent-deep); }
   .mobile-nav__panel {
     position: absolute; top: 48px; right: 0; left: 0;
-    border-bottom: 1px solid var(--line); background: var(--header-bg);
+    border-bottom: 1px solid var(--line); background: var(--surface);
     backdrop-filter: blur(8px);
   }
   .mobile-nav__panel nav { padding-block: 6px 12px; }
@@ -564,7 +575,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
     transform: scaleX(0); transform-origin: left;
     transition: transform 240ms ease-out;
   }
-  .mobile-nav__panel nav > a span { display: none; }
+  .mobile-nav__panel nav > a span { display: inline; }
   .mobile-nav__panel nav > a:hover, .mobile-nav__panel nav > a.is-active { color: var(--accent-deep); }
   .mobile-nav__panel nav > a:hover::after { transform: scaleX(1); }
 }

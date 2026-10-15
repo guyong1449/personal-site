@@ -328,6 +328,11 @@ button:disabled { opacity: .5; cursor: default; }
 .statistics-list strong { flex: none; color: var(--foreground); font-variant-numeric: tabular-nums; }
 .statistics-pages { margin-block: 8px; }
 .statistics-pages > summary { cursor: pointer; color: var(--muted); font-size: .76rem; padding-block: 4px; }
+.body-image-size { display: grid; grid-template-columns: 1fr 80px; gap: 8px; }
+#body-image-controls label { display: flex; flex-direction: column; gap: 5px; margin-block: 8px; font-size: .8rem; }
+#body-image-controls select, #body-image-controls input { width: 100%; min-height: 36px; }
+.body-image-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 8px; }
+.body-image-actions button { min-height: 36px; font-size: .8rem; }
 .statistics-owner-link { display: block; margin-block: 10px 5px; font-size: .76rem; color: var(--accent-deep); }
 #link-click-total { margin-top: 12px; }
 #link-clicks-list { max-height: 19vh; }

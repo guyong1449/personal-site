@@ -90,7 +90,7 @@
         <summary>摘要、标签与发布选项</summary>
         <div class="editor-meta">
         <label>
-          <span class="field-label">SLUG <small>网址短名，例如 hello-guyong</small></span>
+          <span class="field-label">SLUG <small>网址短名，例如 my-note</small></span>
           <input id="f-slug" type="text" />
         </label>
         <label>摘要<input id="f-summary" type="text" placeholder="留空则自动提取" /></label>
@@ -128,6 +128,19 @@
 
       </details>
       <div class="editor-panes">
+        <details id="body-image-controls" class="editor-options">
+          <summary>正文图片尺寸</summary>
+          <label>选择正文图片<select id="body-image-select"></select></label>
+          <div class="body-image-size">
+            <label>宽度<input id="body-image-width" type="number" min="1" max="100" value="100" /></label>
+            <label>单位<select id="body-image-unit"><option value="%">%</option><option value="px">px</option></select></label>
+          </div>
+          <div class="body-image-actions">
+            <button id="btn-resize-image" type="button">应用尺寸</button>
+            <button id="btn-reset-image" type="button">恢复默认</button>
+          </div>
+          <p class="dialog-note">仅调整选中图片，保持原始比例；手机上不会超出屏幕，点击图片可放大查看</p>
+        </details>
         <label for="f-body">正文 Markdown</label>
         <textarea id="f-body" spellcheck="false" placeholder="Markdown 正文……"></textarea>
       </div>
@@ -230,6 +243,6 @@
     </form>
   </dialog>
 
-  <script src="/studio/app.js"></script>
+  <script type="module" src="/studio/app.js"></script>
 </body>
 </html>

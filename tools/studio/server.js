@@ -286,7 +286,7 @@ function collectItems() {
 
 function assetReferencesIn(body) {
   const references = new Set();
-  const patterns = [/\((?:assets\/)?([^)\s]+\.[A-Za-z0-9]+)\)/g, /cover:\s*"?([^"\n]+)"?/g];
+  const patterns = [/\((?:assets\/)?([^)\s]+\.[A-Za-z0-9]+)(?:\s+"(?:\\.|[^"\\])*")?\)/g, /cover:\s*"?([^"\n]+)"?/g];
   for (const pattern of patterns) {
     for (const match of String(body ?? "").matchAll(pattern)) {
       if (match[1]) {
@@ -1246,6 +1246,10 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/studio/app.js") {
       serveStatic(res, path.join(publicDir, "app.js"), "text/javascript; charset=utf-8");
+      return;
+    }
+    if (url.pathname === "/studio/image-sizing.js") {
+      serveStatic(res, path.join(publicDir, "image-sizing.js"), "text/javascript; charset=utf-8");
       return;
     }
     if (url.pathname === "/studio/style.css") {

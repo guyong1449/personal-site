@@ -50,7 +50,7 @@ function assetReferences(doc) {
   if (doc.cover) {
     references.add(path.basename(doc.cover));
   }
-  const patterns = [/!\[[^\]]*\]\((?:assets\/)?([^)\s]+)\)/g, /src="(?:assets\/)?([^"]+)"/g];
+  const patterns = [/!\[[^\]]*\]\((?:assets\/)?([^)\s]+)(?:\s+"(?:\\.|[^"\\])*")?\)/g, /src="(?:assets\/)?([^"]+)"/g];
   for (const pattern of patterns) {
     for (const match of String(doc.body ?? "").matchAll(pattern)) {
       if (match[1]) {

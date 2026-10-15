@@ -7,6 +7,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
+import { rehypeImageSizing } from "./image-sizing";
 
 // Rendering contract: raw HTML in Markdown is treated as plain text, never
 // interpreted. The Studio preview follows the same rule, so what an author
@@ -17,6 +18,7 @@ export function createMarkdownProcessor() {
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype)
+    .use(rehypeImageSizing)
     .use(rehypeSlug)
     .use(rehypeHighlight)
     .use(rehypeKatex)
