@@ -8,7 +8,7 @@
   <lastBuildDate>Thu, 15 Oct 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href="https://guyong.site/feed.xml" rel="self" type="application/rss+xml"/>
     <item>
-      <title>墙记｜DKU Duo Push 设备换绑流程</title>
+      <title>DKU Duo Push 设备换绑流程</title>
       <link>https://guyong.site/notes/dku-duo-push-migration</link>
       <guid isPermaLink="true">https://guyong.site/notes/dku-duo-push-migration</guid>
       <description>官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明</description>

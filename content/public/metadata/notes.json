@@ -1,7 +1,7 @@
 [
   {
     "slug": "dku-duo-push-migration",
-    "title": "墙记｜DKU Duo Push 设备换绑流程",
+    "title": "DKU Duo Push 设备换绑流程",
     "summary": "官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明",
     "tags": [
       "area/dku",
