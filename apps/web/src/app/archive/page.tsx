@@ -1,6 +1,7 @@
 import { loadIndex } from "@/lib/content";
 import { displayHeading } from "@/lib/display-heading";
 import Link from "next/link";
+import { PublicationMonth } from "@/components/content/publication-month";
 
 export const dynamic = "force-static";
 
@@ -11,7 +12,7 @@ export const metadata = {
 };
 
 function entryDate(entry: { updated: string | null; created?: string | null }) {
-  return entry.updated || entry.created || "";
+  return entry.created || entry.updated || "";
 }
 
 export default async function ArchivePage() {
@@ -57,11 +58,11 @@ export default async function ArchivePage() {
                     </h2>
                     {entry.summary && <p>{displayHeading(entry.summary)}</p>}
                   </div>
-                  <span className="timeline-meta font-family-en" lang="en">
-                    <span>
+                  <span className="timeline-meta">
+                    <span className="font-family-en" lang="en">
                       {entry.kind === "gallery" ? "GALLERY" : "NOTE"}
                     </span>
-                    {` · ${entryDate(entry).slice(5, 10)}`}
+                    {entry.created && <> · <PublicationMonth created={entry.created} className="timeline-date" /></>}
                   </span>
                 </Link>
               ))}

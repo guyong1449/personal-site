@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ContentListItem } from "@/lib/content";
 import { galleryAssetPath } from "@/lib/gallery";
+import { PublicationMonth } from "./publication-month";
 
 type ContentIndexProps = {
   items: ContentListItem[];
@@ -38,6 +39,7 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
                 {item.pinned && <span className="pin-badge">置顶</span>}
                 {displayHeading(item.title)}
               </h2>
+              <PublicationMonth created={item.created} />
               {item.summary && <p>{displayHeading(item.summary)}</p>}
             </div>
 

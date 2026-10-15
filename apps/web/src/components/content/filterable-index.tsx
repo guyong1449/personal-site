@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import type { ContentListItem } from "@/lib/content";
+import { PublicationMonth } from "./publication-month";
 import {
   filterGalleryItems,
   galleryAssetPath,
@@ -132,6 +133,7 @@ export function FilterableIndex({
                     {item.pinned && <span className="pin-badge">置顶</span>}
                     {item.title}
                   </h2>
+                  <PublicationMonth created={item.created} />
                   {item.summary && <p>{item.summary}</p>}
                 </div>
                 {coverSrc && (

@@ -198,6 +198,7 @@ button, a { touch-action: manipulation; }
 .index-entry__meta { display: none; }
 .index-entry__body { min-width: 0; }
 .index-entry__body h2 { margin: 0; font-size: 1.47rem; font-weight: 700; line-height: 1.45; }
+.index-entry__date { display: block; margin-top: 4px; color: var(--muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
 .index-entry__body > p {
   margin: 3px 0 0; color: var(--muted); font-size: .83rem; line-height: 1.6;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
