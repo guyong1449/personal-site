@@ -1252,6 +1252,10 @@ const server = http.createServer(async (req, res) => {
       serveStatic(res, path.join(publicDir, "image-sizing.js"), "text/javascript; charset=utf-8");
       return;
     }
+    if (url.pathname === "/studio/workspace-layout.js") {
+      serveStatic(res, path.join(publicDir, "workspace-layout.js"), "text/javascript; charset=utf-8");
+      return;
+    }
     if (url.pathname === "/studio/style.css") {
       serveStatic(res, path.join(publicDir, "style.css"), "text/css; charset=utf-8");
       return;

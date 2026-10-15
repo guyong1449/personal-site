@@ -1,4 +1,7 @@
 import { listMarkdownImages, resizeMarkdownImage } from "/studio/image-sizing.js";
+import { initWorkspaceLayout } from "/studio/workspace-layout.js";
+
+let workspace = null;
 
 const state = {
   items: [],
@@ -67,6 +70,7 @@ function setPanel(open) {
   $("studio-panel").hidden = !open;
   document.body.classList.toggle("is-editing", open);
   $("btn-content").setAttribute("aria-expanded", String(open));
+  workspace?.refresh();
   if (open) $("btn-close-panel").focus();
 }
 
@@ -948,6 +952,7 @@ async function loadDeploymentStatus() {
 }
 
 function wire() {
+  workspace = initWorkspaceLayout();
   const more = document.querySelector(".studio-more");
   more.addEventListener("click", (event) => {
     if (event.target.closest("button, a")) more.open = false;
@@ -957,10 +962,13 @@ function wire() {
   });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape") more.open = false; });
   const dockObserver = new ResizeObserver(() => {
-    document.documentElement.style.setProperty("--studio-panel-top", `${document.querySelector(".studio-statistics").getBoundingClientRect().bottom}px`);
+    const top = Math.max(document.querySelector(".studio-statistics").getBoundingClientRect().bottom,
+      document.querySelector(".preview-toolbar").getBoundingClientRect().bottom);
+    document.documentElement.style.setProperty("--studio-panel-top", `${top}px`);
   });
   dockObserver.observe(document.querySelector(".studio-statistics"));
   dockObserver.observe(document.querySelector(".studio-header"));
+  dockObserver.observe(document.querySelector(".preview-toolbar"));
   frame.src = `${previewOrigin}/`;
   $("open-site").href = `${previewOrigin}/`;
   $("btn-content").addEventListener("click", () => setPanel($("studio-panel").hidden));
@@ -983,6 +991,7 @@ function wire() {
       document.body.classList.toggle("preview-mobile", mode === "mobile");
       $("btn-desktop").setAttribute("aria-pressed", String(mode === "desktop"));
       $("btn-mobile").setAttribute("aria-pressed", String(mode === "mobile"));
+      workspace.setPreviewPreset(mode);
     });
   }
   const readyTimer = setTimeout(() => { $("preview-error").hidden = false; }, 45000);

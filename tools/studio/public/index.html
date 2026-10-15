@@ -50,11 +50,38 @@
         <button id="btn-desktop" type="button" aria-pressed="true">桌面</button>
         <button id="btn-mobile" type="button" aria-pressed="false">手机</button>
         <button id="btn-refresh" type="button">刷新</button>
+        <details class="workspace-size-options">
+          <summary>调整尺寸</summary>
+          <div class="workspace-size-menu">
+            <fieldset><legend>预览区域</legend>
+              <label>宽<input id="workspace-preview-width" type="number" min="240" max="2560" />px</label>
+              <label>高<input id="workspace-preview-height" type="number" min="180" max="2160" />px</label>
+            </fieldset>
+            <fieldset><legend>编辑区域</legend>
+              <label>宽<input id="workspace-editor-width" type="number" min="240" />px</label>
+              <label>高<input id="workspace-editor-height" type="number" min="120" />px</label>
+            </fieldset>
+            <div class="workspace-size-actions">
+              <button id="workspace-size-apply" type="button">应用尺寸</button>
+              <button id="workspace-fit" type="button">预览适应窗口</button>
+              <button id="workspace-reset" type="button">重置布局</button>
+              <button id="workspace-size-close" type="button">收起</button>
+            </div>
+            <p>拖动区域之间的分隔线或左上、右下角手柄调整；方向键也可调整，布局自动记住</p>
+            <p id="workspace-size-status" role="status" aria-live="polite"></p>
+          </div>
+        </details>
         <a id="open-site" href="http://127.0.0.1:4317/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
       </div>
       <p id="preview-error" class="preview-error" role="status" hidden>本机网站预览尚未就绪，请通过桌面启动器同时启动网站和编辑器，然后点击刷新</p>
-      <iframe id="site-preview" title="网站实时预览" src="http://127.0.0.1:4317/"></iframe>
+      <div class="preview-scroll">
+        <div id="preview-viewport" class="preview-viewport">
+          <iframe id="site-preview" title="网站实时预览" src="http://127.0.0.1:4317/"></iframe>
+          <button id="preview-resize-corner" class="workspace-corner" type="button" aria-label="调整预览区域宽高" title="拖动调整预览宽高；方向键微调"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4v16H4M20 12l-8 8M20 5 5 20" /></svg></button>
+        </div>
+      </div>
     </section>
+    <div id="workspace-width-handle" class="workspace-splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="调整预览与编辑区域宽度" title="左右拖动调整区域宽度；方向键微调"></div>
     <div class="studio-dock">
       <section class="studio-statistics" aria-label="线上访问统计">
         <div class="statistics-heading"><h2>线上访问统计</h2><button id="page-views-refresh" type="button" aria-label="刷新访问统计">刷新</button></div>
@@ -71,6 +98,10 @@
         <p class="statistics-updated">本机编辑不计数；自用入口会排除此浏览器一年的线上浏览与点击，其他浏览器需各打开一次</p>
       </section>
     <aside id="studio-panel" class="studio-panel" aria-label="内容编辑侧栏" hidden>
+      <div class="editor-resize-bar">
+        <button id="editor-resize-corner" class="workspace-corner" type="button" aria-label="调整编辑区域宽高" title="拖动左上角调整编辑宽高；方向键微调"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4h16M4 12l8-8M4 19 19 4" /></svg></button>
+        <div id="editor-height-handle" class="workspace-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="调整编辑区域高度" title="上下拖动调整编辑区高度；方向键微调"></div>
+      </div>
       <div class="panel-heading"><strong>内容编辑</strong><button id="btn-close-panel" type="button" aria-label="收起编辑侧栏">收起</button></div>
     <details class="studio-side" open>
       <summary>选择内容</summary>
