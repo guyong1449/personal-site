@@ -31,5 +31,6 @@ export async function readProductionPageViews(repoRoot) {
   if (!response.ok) throw new Error(`线上统计暂时不可用（HTTP ${response.status}）`);
   const data = await response.json();
   // Only allow aggregate fields through to the Studio browser.
-  return { total: data.total, uniquePaths: data.uniquePaths, updatedAt: data.updatedAt, topPaths: data.topPaths };
+  return { total: data.total, uniquePaths: data.uniquePaths, updatedAt: data.updatedAt, topPaths: data.topPaths,
+    totalClicks: data.totalClicks, clicksUpdatedAt: data.clicksUpdatedAt, linkClicks: data.linkClicks };
 }

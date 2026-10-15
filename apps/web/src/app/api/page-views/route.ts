@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadIndex } from "@/lib/content";
 import { incrementPageView } from "@/lib/page-views";
+import { excludesAnalytics } from "@/lib/analytics-preferences";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,6 +19,9 @@ async function isPublishedPath(pathname: unknown): Promise<boolean> {
 export async function POST(request: NextRequest) {
   if (request.headers.get("origin") !== request.nextUrl.origin) {
     return NextResponse.json({ ok: false }, { status: 403 });
+  }
+  if (excludesAnalytics(request.headers.get("cookie") || "")) {
+    return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
   }
   try {
     const text = await request.text();

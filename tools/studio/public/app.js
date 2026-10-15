@@ -135,7 +135,11 @@ async function openSiteProfile() {
   editorEl.hidden = true;
   emptyEl.hidden = true;
   $("site-profile-editor").hidden = false;
+  document.querySelector(".studio-side").open = false;
   setPanel(true);
+  $("studio-panel").scrollTop = 0;
+  $("profile-intro").focus({ preventScroll: true });
+  setSaveState("正在编辑网站信息 · 保存后更新本机预览");
 }
 
 function markSaved(message) {
@@ -220,6 +224,17 @@ async function loadPageViews() {
       row.append(label, count);
       return row;
     }));
+    $("link-click-total").textContent = `相关链接点击 ${stats.totalClicks ?? 0} 次`;
+    $("link-clicks-list").replaceChildren(...(stats.linkClicks ?? []).map((item) => {
+      const row = document.createElement("li");
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      label.title = item.url;
+      const count = document.createElement("strong");
+      count.textContent = item.count;
+      row.append(label, count);
+      return row;
+    }));
     updateCurrentPageViews();
   } catch (error) {
     if (!state.pageViews) $("page-view-total").textContent = "访问统计暂不可用";
@@ -282,6 +297,8 @@ async function loadSchedulerStatus(showError = false) {
     renderSchedulerStatus(data);
   } catch (error) {
     if (showError) {
+      $("scheduler-summary").textContent = `读取失败：${error.message}`;
+      $("scheduler-list").replaceChildren();
       setSaveState(`读取定时任务失败：${error.message}`, true);
     }
   }
@@ -347,11 +364,18 @@ function renderAssetCleanup(data) {
 }
 
 async function loadAssetCleanup(showDialog = false) {
+  if (showDialog) {
+    $("asset-cleanup-summary").textContent = "正在检查正式稿与本机草稿的图片引用…";
+    $("asset-cleanup-list").replaceChildren();
+    $("asset-cleanup-confirm").disabled = true;
+    $("asset-cleanup-dialog").showModal();
+  }
   try {
     const data = await api("/api/assets/cleanup");
     renderAssetCleanup(data);
-    if (showDialog) $("asset-cleanup-dialog").showModal();
   } catch (error) {
+    $("asset-cleanup-summary").textContent = `读取失败：${error.message}`;
+    $("asset-cleanup-confirm").disabled = true;
     setSaveState(`读取未引用图片失败：${error.message}`, true);
   }
 }
@@ -853,7 +877,35 @@ async function openVersions() {
   }
 }
 
+async function loadDeploymentStatus() {
+  $("deploy-summary").textContent = "正在查询最新生产部署…";
+  $("deploy-url").hidden = true;
+  $("deploy-refresh").disabled = true;
+  try {
+    const status = await api("/api/deploy-status");
+    const created = status.created ? new Date(status.created).toLocaleString("zh-CN") : "";
+    $("deploy-summary").textContent = `${status.state} · ${created}${status.commit ? ` · ${status.commit.slice(0, 7)}` : ""}`;
+    if (status.url) {
+      const url = new URL(status.url);
+      if (url.protocol === "https:") {
+        $("deploy-url").href = url.href;
+        $("deploy-url").textContent = url.hostname;
+        $("deploy-url").hidden = false;
+      }
+    }
+  } catch (error) { $("deploy-summary").textContent = `查询失败：${error.message}`; }
+  finally { $("deploy-refresh").disabled = false; }
+}
+
 function wire() {
+  const more = document.querySelector(".studio-more");
+  more.addEventListener("click", (event) => {
+    if (event.target.closest("button, a")) more.open = false;
+  });
+  document.addEventListener("click", (event) => {
+    if (!more.contains(event.target)) more.open = false;
+  });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") more.open = false; });
   const dockObserver = new ResizeObserver(() => {
     document.documentElement.style.setProperty("--studio-panel-top", `${document.querySelector(".studio-statistics").getBoundingClientRect().bottom}px`);
   });
@@ -901,6 +953,7 @@ function wire() {
       $("current-path").textContent = state.draftPreview && state.current ? `/${state.current.kind}/${$("f-slug").value}` : path;
       $("preview-mode").textContent = state.draftPreview ? "草稿实时预览 · 尚未发布" : "网站预览";
       $("open-site").href = `${previewOrigin}${state.draftPreview ? "/" : path}`;
+      $("open-production-excluded").href = `https://guyong.site/analytics/exclude?returnTo=${encodeURIComponent(state.draftPreview ? "/" : path)}`;
       const match = path.match(/^\/(notes|gallery)\/([^/]+)$/);
       $("btn-edit-page").disabled = !match && !["/", "/account"].includes(path);
       $("btn-edit-page").textContent = match ? "编辑当前文章" : "编辑当前页面";
@@ -933,21 +986,19 @@ function wire() {
     applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   });
 
-  $("btn-deploy-status").addEventListener("click", async () => {
-    setSaveState("查询最新生产部署…");
-    try {
-      const status = await api("/api/deploy-status");
-      setSaveState(`最新生产部署：${status.state} · ${status.url ?? ""}`);
-    } catch (error) {
-      setSaveState(error.message, true);
-    }
+  $("btn-deploy-status").addEventListener("click", () => {
+    $("deploy-dialog").showModal();
+    loadDeploymentStatus();
   });
+  $("deploy-refresh").addEventListener("click", loadDeploymentStatus);
+  $("deploy-close").addEventListener("click", () => $("deploy-dialog").close());
 
   $("page-views-refresh").addEventListener("click", () => loadPageViews());
 
   $("btn-scheduler-status").addEventListener("click", async () => {
-    await loadSchedulerStatus(true);
+    $("scheduler-summary").textContent = "正在读取定时任务…";
     $("scheduler-dialog").showModal();
+    await loadSchedulerStatus(true);
   });
   $("scheduler-close").addEventListener("click", () => $("scheduler-dialog").close());
   $("scheduler-list").addEventListener("click", (event) => {

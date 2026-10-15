@@ -62,3 +62,28 @@ export async function getPageViewStats(): Promise<PageViewsStore> {
   }
   return store;
 }
+
+export async function incrementLinkClick(id: string, clientAddress: string): Promise<boolean> {
+  const secret = process.env.PAGE_VIEWS_ADMIN_TOKEN;
+  if (!secret) throw new Error("Click authentication is not configured");
+  const minute = Math.floor(Date.now() / 60000);
+  const digest = createHmac("sha256", secret).update(`${minute}:${clientAddress}`).digest("hex");
+  return await redisCommand([
+    "EVAL", INCREMENT_SCRIPT, 2, "guyong:link-clicks:v1", `guyong:link-clicks:limit:${digest}`,
+    `link:${id}`, new Date().toISOString(),
+  ]) === 1;
+}
+
+export async function getLinkClickStats() {
+  const result = await redisCommand(["HGETALL", "guyong:link-clicks:v1"]);
+  if (!Array.isArray(result) || result.length % 2 !== 0) throw new Error("Invalid click response");
+  const store = { total: 0, byLink: {} as Record<string, number>, updatedAt: "" };
+  for (let index = 0; index < result.length; index += 2) {
+    const key = String(result[index]);
+    const value = String(result[index + 1]);
+    if (key === "updatedAt") store.updatedAt = value;
+    else if (key === "total") store.total = Number(value);
+    else if (key.startsWith("link:")) store.byLink[key.slice(5)] = Number(value);
+  }
+  return store;
+}

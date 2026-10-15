@@ -258,6 +258,8 @@ button:disabled { opacity: .5; cursor: default; }
 .studio-more > summary { display: flex; align-items: center; cursor: pointer; padding: 7px 10px; font-size: .78rem; }
 .studio-more__menu { position: absolute; top: 100%; right: 0; z-index: 30; display: grid; gap: 6px; width: 200px; padding: 10px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
 .studio-more__menu button { text-align: left; }
+.studio-header { z-index: 30; }
+.studio-more__menu { max-height: calc(100dvh - 140px); overflow-y: auto; }
 .studio-layout { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) 280px; overflow: hidden; }
 .is-editing .studio-layout { grid-template-columns: minmax(0, 1fr) minmax(340px, 390px); }
 .studio-canvas { display: flex; flex-direction: column; min-width: 0; min-height: 0; align-items: center; background: var(--background); }
@@ -324,6 +326,12 @@ button:disabled { opacity: .5; cursor: default; }
 .statistics-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding: 6px 0; font-size: .72rem; }
 .statistics-list li span { min-width: 0; overflow-wrap: anywhere; color: var(--muted); }
 .statistics-list strong { flex: none; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.statistics-owner-link { display: block; margin-block: 10px 5px; font-size: .76rem; color: var(--accent-deep); }
+#link-click-total { margin-top: 12px; }
+#link-clicks-list { max-height: 19vh; }
+.studio-statistics { max-height: 66vh; overflow-y: auto; }
+.is-editing .studio-statistics { max-height: 32vh; }
+#deploy-url { overflow-wrap: anywhere; color: var(--accent-deep); }
 .studio-header__actions button, .studio-more > summary { min-height: 34px; padding: 5px 9px; font-size: .74rem; }
 .panel-heading button, .editor-actions button, .studio-filters button { min-height: 34px; padding: 5px 9px; font-size: .76rem; }
 .studio-header { min-height: 48px; }
@@ -337,6 +345,8 @@ button:disabled { opacity: .5; cursor: default; }
   .statistics-current { display: inline; margin-right: 8px; }
   .statistics-updated { display: inline; }
   .statistics-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; margin-top: 6px; max-height: 96px; }
+  #link-clicks-list { max-height: 64px; }
+  .studio-statistics, .is-editing .studio-statistics { max-height: 43vh; }
   .statistics-list li { padding-block: 3px; font-size: .7rem; }
   .is-editing .studio-panel { top: var(--studio-panel-top, 210px); bottom: 40px; }
 }
