@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const stats = await getPageViewStats();
     const topPaths = Object.entries(stats.byPath).sort(([, a], [, b]) => b - a)
-      .slice(0, 20).map(([path, count]) => ({ path, count }));
+      .map(([path, count]) => ({ path, count }));
     return NextResponse.json({ total: stats.total, uniquePaths: Object.keys(stats.byPath).length,
       updatedAt: stats.updatedAt, topPaths }, { headers });
   } catch {

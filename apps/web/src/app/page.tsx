@@ -26,7 +26,6 @@ export default async function HomePage() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="hero__research-icon">
                 <path d="m2 9 10-5 10 5-10 5-10-5Z" /><path d="M6 11v6c4 3 8 3 12 0v-6M22 9v7" />
               </svg>
-              <span lang="en" className="font-family-en">Research</span>
             </a>
             <a className="hero__link" href="https://github.com/guyong1449" aria-label="访问 guyong1449 的 GitHub" title="GitHub">
               <svg viewBox="0 0 24 24" aria-hidden="true">

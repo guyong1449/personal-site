@@ -1,14 +1,27 @@
 [
   {
-    "slug": "hello-guyong",
-    "title": "开站记：这个网站是怎么跑起来的",
-    "summary": "第一篇文章，记录这个网站的定位、内容方向，以及从写作到上线的完整链路。",
+    "slug": "dku-duo-push-migration",
+    "title": "墙记｜DKU Duo Push 设备换绑流程",
+    "summary": "官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明",
     "tags": [
-      "topic/meta",
-      "course/CS308"
+      "area/dku",
+      "topic/duo",
+      "type/reference"
     ],
     "cover": null,
-    "created": "2026-08-29",
-    "updated": "2026-08-29"
+    "created": "2026-10-15",
+    "updated": "2026-10-15"
+  },
+  {
+    "slug": "dkucc-guide",
+    "title": "DKUCC 使用指南",
+    "summary": "从 SSH 初始化、LDAP 公钥登录，到 Slurm GPU 作业与 /work 数据保留的使用记录",
+    "tags": [
+      "area/dkucc",
+      "type/reference"
+    ],
+    "cover": null,
+    "created": "2026-10-15",
+    "updated": "2026-10-15"
   }
 ]

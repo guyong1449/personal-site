@@ -26,7 +26,6 @@
     <div class="studio-header__actions">
       <button id="btn-edit-page" type="button" disabled>编辑当前文章</button>
       <button id="btn-content" type="button" aria-expanded="false" aria-controls="studio-panel">内容</button>
-      <button id="btn-page-views" type="button">访问统计</button>
       <details class="studio-more">
         <summary>更多选项</summary>
         <div class="studio-more__menu">
@@ -56,6 +55,14 @@
       <p id="preview-error" class="preview-error" role="status" hidden>本机网站预览尚未就绪，请通过桌面启动器同时启动网站和编辑器，然后点击刷新</p>
       <iframe id="site-preview" title="网站实时预览" src="http://127.0.0.1:4317/"></iframe>
     </section>
+    <div class="studio-dock">
+      <section class="studio-statistics" aria-label="线上访问统计">
+        <div class="statistics-heading"><h2>线上访问统计</h2><button id="page-views-refresh" type="button" aria-label="刷新访问统计">刷新</button></div>
+        <p id="page-view-total" class="statistics-total" aria-live="polite">访问统计待载入</p>
+        <p id="page-view-current" class="statistics-current">当前页 —</p>
+        <p id="page-views-summary" class="statistics-updated"></p>
+        <ul id="page-views-list" class="statistics-list" aria-label="各页面浏览量"></ul>
+      </section>
     <aside id="studio-panel" class="studio-panel" aria-label="内容编辑侧栏" hidden>
       <div class="panel-heading"><strong>内容编辑</strong><button id="btn-close-panel" type="button" aria-label="收起编辑侧栏">收起</button></div>
     <details class="studio-side" open>
@@ -142,8 +149,9 @@
       <p>也可以从上方选择内容，或在“更多选项”中新建草稿</p>
     </section>
     </aside>
+    </div>
   </main>
-  <footer class="studio-status"><span id="save-state" class="save-state" role="status" aria-live="polite">在网站中浏览并选择要编辑的内容</span><span id="page-view-total">访问统计待载入</span></footer>
+  <footer class="studio-status"><span id="save-state" class="save-state" role="status" aria-live="polite">在网站中浏览并选择要编辑的内容</span></footer>
 
   <dialog id="import-dialog">
     <form method="dialog">
@@ -170,16 +178,6 @@
     <ul id="versions-list" class="versions-list"></ul>
     <div class="dialog-actions">
       <button type="button" id="versions-close">关闭</button>
-    </div>
-  </dialog>
-
-  <dialog id="page-views-dialog">
-    <h2>线上访问统计</h2>
-    <p id="page-views-summary" class="dialog-note"></p>
-    <ul id="page-views-list" class="versions-list"></ul>
-    <div class="dialog-actions">
-      <button type="button" id="page-views-refresh">刷新统计</button>
-      <button type="button" id="page-views-close">关闭</button>
     </div>
   </dialog>
 

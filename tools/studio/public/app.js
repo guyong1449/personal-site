@@ -7,6 +7,7 @@ const state = {
   previewPath: "/",
   draftPreview: false,
   siteProfileSaved: null,
+  pageViews: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -187,24 +188,43 @@ async function loadItems() {
   renderList();
 }
 
-async function loadPageViews(showDialog = false) {
-  if (showDialog) $("page-views-dialog").showModal();
-  $("page-views-summary").textContent = "读取线上统计…";
+function updateCurrentPageViews() {
+  if (!state.pageViews) { $("page-view-current").textContent = "当前页 —"; return; }
+  const count = state.pageViews?.topPaths.find((item) => item.path === state.previewPath)?.count;
+  $("page-view-current").textContent = state.draftPreview ? "草稿预览不计入访问量" : `当前页 ${count ?? 0} 次浏览`;
+}
+
+function pageViewLabel(path) {
+  const labels = { "/": "首页", "/notes": "文章", "/gallery": "画作", "/account": "联系方式", "/archive": "归档", "/search": "搜索" };
+  if (labels[path]) return labels[path];
+  const item = state.items.find((item) => `/${item.kind}/${item.slug}` === path && item.status === "published");
+  return item?.title || path;
+}
+
+async function loadPageViews() {
+  const refresh = $("page-views-refresh");
+  refresh.disabled = true;
   try {
     const stats = await api("/api/page-views");
+    state.pageViews = stats;
     const updated = stats.updatedAt ? new Date(stats.updatedAt).toLocaleString("zh-CN") : "暂无访问";
-    $("page-view-total").textContent = `总访问量 ${stats.total} · ${stats.uniquePaths} 个页面`;
-    $("page-views-summary").textContent = `总访问量 ${stats.total} · ${stats.uniquePaths} 个页面 · 更新：${updated}`;
+    $("page-view-total").textContent = `${stats.total} 次浏览 · ${stats.uniquePaths} 个页面`;
+    $("page-views-summary").textContent = `更新：${updated} · 每分钟刷新`;
     $("page-views-list").replaceChildren(...stats.topPaths.map((item) => {
       const row = document.createElement("li");
-      row.textContent = `${item.path}：${item.count}`;
+      const label = document.createElement("span");
+      label.textContent = pageViewLabel(item.path);
+      label.title = item.path;
+      const count = document.createElement("strong");
+      count.textContent = item.count;
+      row.append(label, count);
       return row;
     }));
+    updateCurrentPageViews();
   } catch (error) {
-    $("page-view-total").textContent = "访问统计暂不可用";
+    if (!state.pageViews) $("page-view-total").textContent = "访问统计暂不可用";
     $("page-views-summary").textContent = error.message;
-    $("page-views-list").replaceChildren();
-  }
+  } finally { refresh.disabled = false; }
 }
 
 const SCHEDULER_LABELS = {
@@ -834,6 +854,11 @@ async function openVersions() {
 }
 
 function wire() {
+  const dockObserver = new ResizeObserver(() => {
+    document.documentElement.style.setProperty("--studio-panel-top", `${document.querySelector(".studio-statistics").getBoundingClientRect().bottom}px`);
+  });
+  dockObserver.observe(document.querySelector(".studio-statistics"));
+  dockObserver.observe(document.querySelector(".studio-header"));
   frame.src = `${previewOrigin}/`;
   $("open-site").href = `${previewOrigin}/`;
   $("btn-content").addEventListener("click", () => setPanel($("studio-panel").hidden));
@@ -872,6 +897,7 @@ function wire() {
       if (typeof path !== "string" || !path.startsWith("/")) return;
       state.previewPath = path;
       state.draftPreview = path === "/preview/draft";
+      updateCurrentPageViews();
       $("current-path").textContent = state.draftPreview && state.current ? `/${state.current.kind}/${$("f-slug").value}` : path;
       $("preview-mode").textContent = state.draftPreview ? "草稿实时预览 · 尚未发布" : "网站预览";
       $("open-site").href = `${previewOrigin}${state.draftPreview ? "/" : path}`;
@@ -917,9 +943,7 @@ function wire() {
     }
   });
 
-  $("btn-page-views").addEventListener("click", () => loadPageViews(true));
   $("page-views-refresh").addEventListener("click", () => loadPageViews());
-  $("page-views-close").addEventListener("click", () => $("page-views-dialog").close());
 
   $("btn-scheduler-status").addEventListener("click", async () => {
     await loadSchedulerStatus(true);

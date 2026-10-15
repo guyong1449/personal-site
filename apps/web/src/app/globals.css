@@ -400,6 +400,14 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 .account-row__handle { color: var(--muted); font-size: .86rem; word-break: break-all; }
 .account-row__arrow { color: var(--muted); font-size: .88rem; }
 .account-row:hover .account-row__handle { color: var(--foreground); }
+.account-projects { margin-top: 32px; }
+.account-projects > h2 { margin: 0 0 12px; font-size: 1.12rem; font-weight: 700; }
+.account-projects__list { border-top: 1px solid var(--line); }
+.account-project { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 12px; border-bottom: 1px solid var(--line); }
+.account-project h3 { margin: 0; color: var(--accent-deep); font-size: .95rem; font-weight: 600; }
+.account-project p { margin: 4px 0 0; color: var(--muted); font-size: .86rem; line-height: 1.65; }
+.account-project > span { color: var(--muted); }
+.account-project:hover { background: var(--accent-soft); }
 [data-theme="dark"] .account-row:hover { background: var(--surface); }
 [data-theme="dark"] .account-row:hover .account-row__service { color: var(--foreground); }
 
@@ -597,4 +605,14 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+@media (max-width: 680px) {
+  html { font-size: 14px; }
+  body { font-size: 14px; }
+  .article-header h1 { font-size: clamp(1.8rem, 7vw, 2.15rem); }
+  .archive-header h1 { font-size: 1.85rem; }
+  .index-entry__body h2 { font-size: 1.35rem; }
+  .section-heading h2 { font-size: 1.5rem; }
+  .account-project { padding: 13px 8px; }
 }

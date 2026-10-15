@@ -82,6 +82,7 @@ try {
     ["/studio", 404],
     ["/studio-api/site-profile", 404],
     ["/preview/draft", 404],
+    ["/notes/hello-guyong", 404],
     ["/notes/no-such-entry", 404],
   ];
 

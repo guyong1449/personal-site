@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { renderMarkdownToHtml } from "../pipeline";
 
 describe("markdown pipeline", () => {
+  it("resolves article-local asset images from the public root", async () => {
+    const html = await renderMarkdownToHtml("![截图](assets/dkucc-image-706.png)\n\n![远程](https://example.com/image.png)");
+    expect(html).toContain('src="/assets/dkucc-image-706.png"');
+    expect(html).toContain('src="https://example.com/image.png"');
+  });
   it("never emits raw author HTML", async () => {
     const html = await renderMarkdownToHtml(
       "hello\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\nworld",

@@ -26,5 +26,5 @@ export function createMarkdownProcessor() {
 export async function renderMarkdownToHtml(content: string): Promise<string> {
   const processor = createMarkdownProcessor();
   const result = await processor.process(content);
-  return String(result);
+  return String(result).replace(/(<img\b[^>]*\bsrc=")(?:\.\/)?assets\//g, "$1/assets/");
 }

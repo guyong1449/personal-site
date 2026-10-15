@@ -49,3 +49,13 @@ it("only returns private uncached statistics after authentication", async () => 
   expect(response.headers.get("cache-control")).toBe("private, no-store");
   expect((await response.json()).total).toBe(2);
 });
+
+it("returns all page counters for the persistent Studio panel", async () => {
+  vi.mocked(hasPageViewAdminAccess).mockReturnValue(true);
+  const byPath = Object.fromEntries(Array.from({ length: 25 }, (_, index) => [`/notes/page-${index}`, index + 1]));
+  vi.mocked(getPageViewStats).mockResolvedValue({ total: 325, byPath, updatedAt: "now" });
+  const response = await GET(new NextRequest("https://guyong.site/api/admin/page-views", { headers: { "x-admin-token": "secret" } }));
+  const result = await response.json();
+  expect(result.topPaths).toHaveLength(25);
+  expect(result.topPaths[0]).toEqual({ path: "/notes/page-24", count: 25 });
+});
