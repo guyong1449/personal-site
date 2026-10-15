@@ -27,6 +27,19 @@ const docs: SearchDoc[] = [
 ];
 
 describe("search helpers", () => {
+  it("browses an exact tag without requiring a query", () => {
+    expect(searchDocuments(docs, [], "course/CS308")).toEqual([docs[0]]);
+    expect(searchDocuments(docs, [], "course")).toEqual([]);
+    expect(searchDocuments(docs, [], "missing")).toEqual([]);
+    expect(searchDocuments(docs, [])).toEqual([]);
+  });
+
+  it("combines tag and keyword filters", () => {
+    expect(searchDocuments(docs, ["blue"], "sketch")).toEqual([docs[1]]);
+    expect(searchDocuments(docs, ["blue"], "course/CS308")).toEqual([]);
+    expect(searchDocuments(docs, ["cs308"])).toEqual([docs[0]]);
+  });
+
   it("accepts one CJK character but rejects one latin character", () => {
     expect(tokenizeQuery("图")).toEqual(["图"]);
     expect(tokenizeQuery("a")).toEqual([]);

@@ -1,3 +1,4 @@
+import { displayHeading } from "@/lib/display-heading";
 import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import { NoteComments } from "@/components/note-comments";
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       publishedTime: note.created ?? undefined,
       modifiedTime: note.updated ?? undefined,
       tags: note.tags,
-      images: [{ url: image, alt: `${note.title} 分享卡片` }],
+      images: [{ url: image, alt: `${displayHeading(note.title)} 分享卡片` }],
     },
     twitter: {
       card: "summary_large_image",
@@ -88,7 +89,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
   };
 
   return (
-    <main id="main-content" className="site-shell archive-page article-page">
+    <main id="main-content" className="site-shell archive-page article-page font-family-zh">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeStructuredData(jsonLd) }}
@@ -96,8 +97,8 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
       <article>
         <header className="article-header">
           {note.updated && <p className="article-meta">{note.updated}</p>}
-          <h1>{note.title}</h1>
-          {note.summary && <p className="article-header__summary">{note.summary}</p>}
+          <h1>{displayHeading(note.title)}</h1>
+          {note.summary && <p className="article-header__summary">{displayHeading(note.summary)}</p>}
           {note.tags.length > 0 && (
             <div className="tag-list" aria-label="标签">
               {note.tags.map((tag) => (
@@ -113,7 +114,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
           <div className="article-cover">
             <Image
               src={`/${coverSrc}`}
-              alt={`${note.title} 封面`}
+              alt={`${displayHeading(note.title)} 封面`}
               fill
               sizes="(max-width: 900px) 100vw, 800px"
               priority
@@ -129,7 +130,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
                 <h2>相关文章</h2>
                 {related.map((item) => (
                   <Link key={item.slug} href={`/notes/${item.slug}`} className="related__item">
-                    <strong>{item.title}</strong>
+                    <strong>{displayHeading(item.title)}</strong>
                   </Link>
                 ))}
               </section>
@@ -141,7 +142,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
           {older ? (
             <Link href={`/notes/${older.slug}`} className="post-nav__item">
               <span>← 较早</span>
-              <strong>{older.title}</strong>
+              <strong>{displayHeading(older.title)}</strong>
             </Link>
           ) : (
             <span />
@@ -149,7 +150,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
           {newer ? (
             <Link href={`/notes/${newer.slug}`} className="post-nav__item post-nav__item--right">
               <span>较新 →</span>
-              <strong>{newer.title}</strong>
+              <strong>{displayHeading(newer.title)}</strong>
             </Link>
           ) : (
             <span />
@@ -161,7 +162,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
             <h2>相关文章</h2>
             {related.map((item) => (
               <Link key={item.slug} href={`/notes/${item.slug}`} className="related__item">
-                <strong>{item.title}</strong>
+                <strong>{displayHeading(item.title)}</strong>
                 {item.summary && <span>{item.summary}</span>}
               </Link>
             ))}
@@ -170,7 +171,9 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
 
         <div className="article-footer">
           <NoteComments />
-          <Link href="/notes" className="back-link">← BACK TO NOTES</Link>
+          <Link href="/notes" className="back-link">
+            ← <span className="font-family-en" lang="en">BACK TO NOTES</span>
+          </Link>
         </div>
       </article>
     </main>

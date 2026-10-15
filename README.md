@@ -75,7 +75,7 @@ GitHub Actions 在 push/PR 上运行 `pnpm verify`（含 typecheck、构建后 s
 “Studio 发布 → GitHub → Vercel → 线上 200 → 下线 → 404”仍是待执行验收，需要明确的生产写入授权；
 本仓库不以本机构建或空 Gallery 作为线上证据。
 
-评论（Giscus）为可选功能，在 `apps/web/.env.local` 配置 `NEXT_PUBLIC_GISCUS_REPO` / `NEXT_PUBLIC_GISCUS_REPO_ID` / `NEXT_PUBLIC_GISCUS_CATEGORY` / `NEXT_PUBLIC_GISCUS_CATEGORY_ID` 后自动挂载，未配置时文章不显示评论区。
+评论（Giscus）为可选功能，在 `apps/web/.env.local` 或 Vercel 环境变量配置 `NEXT_PUBLIC_GISCUS_REPO` / `NEXT_PUBLIC_GISCUS_REPO_ID` / `NEXT_PUBLIC_GISCUS_CATEGORY` / `NEXT_PUBLIC_GISCUS_CATEGORY_ID` 后自动挂载。未配置时文章不显示评论区。开发环境下若缺失会显示一条未开启提示（便于排查）。
 
 ## 文档
 

@@ -34,7 +34,9 @@ export function ThemeToggle() {
       className="theme-toggle"
       aria-label={theme === "dark" ? "切换到浅色模式" : "切换到深色模式"}
     >
-      {theme === "dark" ? "LIGHT" : "DARK"}
+      <span className="font-family-en" lang="en">
+        {theme === "dark" ? "LIGHT" : "DARK"}
+      </span>
     </button>
   );
 }

@@ -1,3 +1,4 @@
+import { displayHeading } from "@/lib/display-heading";
 import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import {
@@ -75,7 +76,7 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
   };
 
   return (
-    <main id="main-content" className="site-shell archive-page article-page">
+    <main id="main-content" className="site-shell archive-page article-page font-family-zh">
       <article>
         <script
           type="application/ld+json"
@@ -102,8 +103,8 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
               )}
             </div>
           )}
-          <h1>{item.title}</h1>
-          {item.summary && <p className="article-header__summary">{item.summary}</p>}
+          <h1>{displayHeading(item.title)}</h1>
+          {item.summary && <p className="article-header__summary">{displayHeading(item.summary)}</p>}
           {item.tags.length > 0 && (
             <div className="tag-list" aria-label="标签">
               {item.tags.map((tag) => (
@@ -119,7 +120,7 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
           <div className="article-cover">
             <Image
               src={`/${coverSrc}`}
-              alt={`${item.title} 封面`}
+              alt={`${displayHeading(item.title)} 封面`}
               fill
               sizes="(max-width: 900px) 100vw, 1180px"
               priority
@@ -135,7 +136,7 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
             <div className="gallery-related__list">
               {navigation.sameSeries.map((entry) => (
                 <Link key={entry.slug} href={`/gallery/${entry.slug}`} className="gallery-related__item">
-                  <strong>{entry.title}</strong>
+                  <strong>{displayHeading(entry.title)}</strong>
                   {entry.summary && <span>{entry.summary}</span>}
                 </Link>
               ))}
@@ -149,7 +150,7 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
             <div className="gallery-related__list">
               {navigation.sameCategory.map((entry) => (
                 <Link key={entry.slug} href={`/gallery/${entry.slug}`} className="gallery-related__item">
-                  <strong>{entry.title}</strong>
+                  <strong>{displayHeading(entry.title)}</strong>
                   {entry.summary && <span>{entry.summary}</span>}
                 </Link>
               ))}
@@ -162,20 +163,22 @@ export default async function GalleryDetailPage({ params }: { params: Promise<{ 
             {navigation.previous && (
               <Link href={`/gallery/${navigation.previous.slug}`} className="post-nav__item">
                 <span>← 上一件</span>
-                <strong>{navigation.previous.title}</strong>
+                <strong>{displayHeading(navigation.previous.title)}</strong>
               </Link>
             )}
             {navigation.next && (
               <Link href={`/gallery/${navigation.next.slug}`} className="post-nav__item post-nav__item--right">
                 <span>下一件 →</span>
-                <strong>{navigation.next.title}</strong>
+                <strong>{displayHeading(navigation.next.title)}</strong>
               </Link>
             )}
           </nav>
         )}
 
         <div className="article-footer gallery-detail-footer">
-          <Link href="/gallery" className="back-link">← BACK TO GALLERY</Link>
+          <Link href="/gallery" className="back-link">
+            ← <span className="font-family-en" lang="en">BACK TO GALLERY</span>
+          </Link>
         </div>
       </article>
     </main>

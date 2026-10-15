@@ -12,6 +12,8 @@ async function rewrites() {
   return [
     { source: "/studio", destination: "http://127.0.0.1:4319/studio" },
     { source: "/studio/:path*", destination: "http://127.0.0.1:4319/studio/:path*" },
+    { source: "/studio-api/:path*", destination: "http://127.0.0.1:4319/api/:path*" },
+    { source: "/studio-asset/:path*", destination: "http://127.0.0.1:4319/asset/:path*" },
   ];
 }
 
@@ -23,7 +25,14 @@ const nextConfig = (phase: string): NextConfig => ({
   },
   outputFileTracingRoot: path.join(__dirname, "..", ".."),
   rewrites,
+  async headers() {
+    return [{
+      source: "/giscus/:theme.css",
+      headers: [{ key: "Access-Control-Allow-Origin", value: "https://giscus.app" }],
+    }];
+  },
   outputFileTracingIncludes: {
+    "/api/page-views": ["../../content/public/metadata/notes.json", "../../content/public/metadata/gallery.json"],
     "/notes/[slug]": [
       "../../content/public/metadata/notes.json",
       "../../content/public/notes/**/*",

@@ -1,5 +1,6 @@
 "use client";
 
+import { displayHeading } from "@/lib/display-heading";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
@@ -28,6 +29,7 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const paramQuery = searchParams.get("q") ?? "";
+  const tag = searchParams.get("tag") ?? "";
   const [query, setQuery] = useState(paramQuery);
   const [isPending, startTransition] = useTransition();
 
@@ -39,7 +41,26 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
   // two-character minimum that guards latin terms.
   const terms = useMemo(() => tokenizeQuery(query), [query]);
 
-  const results = useMemo(() => searchDocuments(docs, terms), [docs, terms]);
+  const tags = useMemo(() => {
+    const counts = new Map<string, number>();
+    docs.forEach((doc) => new Set(doc.tags).forEach((value) => {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }));
+    return [...counts.entries()].sort((left, right) => right[1] - left[1]);
+  }, [docs]);
+  const results = useMemo(() => searchDocuments(docs, terms, tag), [docs, terms, tag]);
+
+  function updateTag(nextTag: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (query.trim()) nextParams.set("q", query);
+    else nextParams.delete("q");
+    if (nextTag) nextParams.set("tag", nextTag);
+    else nextParams.delete("tag");
+    const suffix = nextParams.toString();
+    startTransition(() => {
+      router.replace(suffix ? `${pathname}?${suffix}` : pathname, { scroll: false });
+    });
+  }
 
   function updateQuery(nextQuery: string) {
     setQuery(nextQuery);
@@ -75,13 +96,24 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
         )}
       </div>
       <p id="search-status" className="search-count" aria-live="polite">
-        {terms.length === 0 ? `索引内共 ${docs.length} 篇内容` : `${results.length} 个结果`}
+        {terms.length === 0 && !tag ? `索引内共 ${docs.length} 篇内容` : `${results.length} 个结果`}
         {isPending ? " · 正在更新网址" : ""}
       </p>
 
-      {terms.length > 0 && results.length === 0 && (
+      <nav className="tag-filter" aria-label="标签筛选">
+        <button type="button" className={!tag ? "is-active" : undefined} aria-pressed={!tag} onClick={() => updateTag("")}>
+          全部 {docs.length}
+        </button>
+        {tags.map(([value, count]) => (
+          <button key={value} type="button" className={tag === value ? "is-active" : undefined} aria-pressed={tag === value} onClick={() => updateTag(tag === value ? "" : value)}>
+            {value} {count}
+          </button>
+        ))}
+      </nav>
+
+      {(terms.length > 0 || tag) && results.length === 0 && (
         <div className="search-empty" role="status">
-          <p>没有找到匹配内容。可以换一个关键词，或清除搜索重新开始。</p>
+          <p>没有找到匹配内容。可以换一个关键词，或选择“全部”取消标签筛选。</p>
           <button type="button" className="search-clear" onClick={() => updateQuery("")}>
             清除搜索
           </button>
@@ -97,7 +129,7 @@ export function SearchClient({ docs }: { docs: SearchDoc[] }) {
               className="index-entry"
             >
               <div className="index-entry__body">
-                <h2>{highlight(doc.title, terms)}</h2>
+                <h2>{highlight(displayHeading(doc.title), terms)}</h2>
                 {doc.summary && <p>{highlight(doc.summary, terms)}</p>}
                 {(() => {
                   const snippet = snippetFor(doc.text, terms);

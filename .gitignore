@@ -30,4 +30,5 @@ content/public/social/xiaohongshu/*
 
 *.tsbuildinfo
 .local-content/
+apps/web/data/
 apps/web/public/assets/

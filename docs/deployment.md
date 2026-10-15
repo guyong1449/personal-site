@@ -42,6 +42,50 @@ npx vercel --prod
 - `NEXT_PUBLIC_GISCUS_CATEGORY`
 - `NEXT_PUBLIC_GISCUS_CATEGORY_ID`
 
+### Giscus 留言区部署步骤
+
+1. 确认仓库已开启 GitHub Discussions。
+2. 在 Discussions 中创建一个分类（建议名为 `General`）。
+3. 在 GitHub 获取对应 ID 并配置环境变量：
+
+```bash
+NEXT_PUBLIC_GISCUS_REPO=guyong1449/personal-site
+NEXT_PUBLIC_GISCUS_REPO_ID=<repoId>
+NEXT_PUBLIC_GISCUS_CATEGORY=General
+NEXT_PUBLIC_GISCUS_CATEGORY_ID=<categoryId>
+```
+
+查询示例（公开仓库）：
+
+```bash
+curl -H "User-Agent: codex" https://api.github.com/repos/guyong1449/personal-site | jq -r '.id'
+curl -H "User-Agent: codex" https://api.github.com/repos/guyong1449/personal-site/discussions/categories | jq -r '.[].id'
+```
+
+`has_discussions` 必须是 `true`，否则 Discussions 接口会返回 410（当前仓库返回 `false`，请先在 GitHub 上打开 Discussions）。
+Vercel 可直接在 Project Settings → Environment Variables 里设置以上变量。
+
+### 后台访问统计
+
+生产统计使用 Upstash Redis（当前 `guyong-page-views` Free 计划，关闭自动升级和数据淘汰）。
+计数通过 Redis Lua 原子更新，不使用 Vercel 本地文件；数据库不可用时不会回退到文件或返回虚假成功。
+环境变量仅放在服务端：`KV_REST_API_URL`、`KV_REST_API_TOKEN`（集成自动注入），
+以及随机生成的 `PAGE_VIEWS_ADMIN_TOKEN`。也兼容 `UPSTASH_REDIS_REST_URL/TOKEN`。
+不要加 `NEXT_PUBLIC_` 前缀，也不要把 token 放进 URL。
+
+公开页面没有访问量、统计入口或统计读 API；`POST /api/page-views` 仅记录已发布页面，
+成功返回空的 204，不回传计数。限制每个来源每分钟 30 次，Redis 仅短暂保存 HMAC 摘要，
+不保存 IP、查询参数或访客身份。计数是页面浏览量，不是独立访客数，也不保证排除所有机器人。
+`GET /api/page-views` 为 405；`/admin/page-views` 始终为 404；
+`GET /api/admin/page-views` 仅接受 `x-admin-token`，未授权返回 404，响应禁止缓存。
+
+查看方式：打开本地 Studio → **访问统计**。Studio 服务端从
+`.local-content/studio-secrets.json` 的 `pageViewsAdminToken` 读取密钥，或使用
+`PAGE_VIEWS_ADMIN_TOKEN` 进程环境变量，代理读取 `https://guyong.site` 的统计。
+本机可通过 `PAGE_VIEWS_API_URL` 覆盖上游地址；密钥不会发送给 Studio 浏览器。
+该配置文件受 `.gitignore` 和 `.vercelignore` 排除。修改 Studio 代码后需重启本地服务。
+历史 `apps/web/data/page-views.json` 保留本地但不再使用，不上传或迁移零值初始化数据。
+
 ## 部署前检查
 
 ```powershell

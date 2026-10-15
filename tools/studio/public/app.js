@@ -1,10 +1,12 @@
-/* global marked */
 const state = {
   items: [],
   filter: "all",
   current: null, // {kind, slug, status, hasLocalDraft}
   lastSaved: null, // snapshot of form values at last load/save
   publishing: false,
+  previewPath: "/",
+  draftPreview: false,
+  siteProfileSaved: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -20,10 +22,12 @@ function applyTheme(theme) {
   try {
     localStorage.setItem(THEME_KEY, theme);
   } catch {}
+  sendToPreview({ type: "studio:theme", theme });
 }
 
 function api(path, options) {
-  return fetch(path, {
+  const apiPath = location.port === "4319" ? path : `/studio-api${path.slice(4)}`;
+  return fetch(apiPath, {
     headers: { "Content-Type": "application/json" },
     ...options,
   }).then(async (response) => {
@@ -45,42 +49,45 @@ function setSaveState(message, isError = false) {
 }
 
 function previewUrl(name, source = "draft") {
-  return `/asset/${source}/${encodeURIComponent(name)}`;
+  const prefix = location.port === "4319" ? "/asset" : "/studio-asset";
+  return `${prefix}/${source}/${encodeURIComponent(name)}`;
 }
 
-// Same contract as the production pipeline: raw HTML in Markdown is shown
-// as plain text, never interpreted.
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+const previewOrigin = location.port === "4319" ? "http://127.0.0.1:4317" : location.origin;
+const frame = $("site-preview");
+
+function sendToPreview(message) {
+  frame.contentWindow?.postMessage(message, previewOrigin);
 }
 
-marked.use({
-  renderer: {
-    html(token) {
-      return escapeHtml(token.text ?? token.raw ?? "");
-    },
-  },
-});
+function setPanel(open) {
+  $("studio-panel").hidden = !open;
+  document.body.classList.toggle("is-editing", open);
+  $("btn-content").setAttribute("aria-expanded", String(open));
+  if (open) $("btn-close-panel").focus();
+}
 
-function renderPreview(body) {
-  const html = marked.parse(body ?? "");
-  const holder = document.createElement("div");
-  holder.innerHTML = html;
-  for (const img of holder.querySelectorAll("img")) {
-    const src = img.getAttribute("src") ?? "";
-    if (src.startsWith("assets/") || (!src.startsWith("http") && !src.startsWith("/"))) {
-      const name = src.replace(/^assets\//, "");
-      img.src = previewUrl(name);
-      img.addEventListener("error", () => {
-        img.src = previewUrl(name, "site");
-      }, { once: true });
-    }
-  }
-  $("preview").replaceChildren(...holder.childNodes);
+function navigatePreview(path) {
+  state.draftPreview = path === "/preview/draft";
+  state.previewPath = path;
+  frame.src = `${previewOrigin}${path}`;
+  $("preview-mode").textContent = state.draftPreview ? "草稿实时预览 · 尚未发布" : "网站预览";
+}
+
+function sendDraft() {
+  if (!state.current || !state.draftPreview) return;
+  const values = buildSavePayload();
+  sendToPreview({ type: "studio:draft", draft: {
+    ...values, kind: state.current.kind,
+    coverSource: $("f-cover").selectedOptions[0]?.dataset.source ?? "draft",
+    assets: Array.from($("f-cover").options).filter((option) => option.value).map((option) => ({ name: option.value, source: option.dataset.source ?? "draft" })),
+  } });
+}
+
+function renderPreview() {
+  if (!state.current) return;
+  if (!state.draftPreview) navigatePreview("/preview/draft");
+  sendDraft();
 }
 
 function formState() {
@@ -107,6 +114,27 @@ function isDirty() {
     state.lastSaved !== null &&
     JSON.stringify(formState()) !== JSON.stringify(state.lastSaved)
   );
+}
+
+function isProfileDirty() {
+  return state.siteProfileSaved !== null && JSON.stringify({
+    intro: $("profile-intro").value, linkedin: $("profile-linkedin").value,
+  }) !== state.siteProfileSaved;
+}
+
+async function openSiteProfile() {
+  if (isDirty()) await saveDraft({ silent: true });
+  if (!isProfileDirty()) {
+    const { profile } = await api("/api/site-profile");
+    $("profile-intro").value = profile.intro;
+    $("profile-linkedin").value = profile.linkedin;
+    state.siteProfileSaved = JSON.stringify(profile);
+  }
+  state.current = null;
+  editorEl.hidden = true;
+  emptyEl.hidden = true;
+  $("site-profile-editor").hidden = false;
+  setPanel(true);
 }
 
 function markSaved(message) {
@@ -142,7 +170,12 @@ function renderList() {
       summary.className = "item-summary";
       summary.textContent = item.summary || "（无摘要）";
       li.append(kind, title, summary);
-      li.addEventListener("click", () => openItem(item));
+      li.tabIndex = 0;
+      li.setAttribute("role", "button");
+      li.addEventListener("click", () => openItem(item).catch((error) => setSaveState(error.message, true)));
+      li.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); li.click(); }
+      });
       return li;
     }),
   );
@@ -152,6 +185,26 @@ async function loadItems() {
   const data = await api("/api/items");
   state.items = data.items;
   renderList();
+}
+
+async function loadPageViews(showDialog = false) {
+  if (showDialog) $("page-views-dialog").showModal();
+  $("page-views-summary").textContent = "读取线上统计…";
+  try {
+    const stats = await api("/api/page-views");
+    const updated = stats.updatedAt ? new Date(stats.updatedAt).toLocaleString("zh-CN") : "暂无访问";
+    $("page-view-total").textContent = `总访问量 ${stats.total} · ${stats.uniquePaths} 个页面`;
+    $("page-views-summary").textContent = `总访问量 ${stats.total} · ${stats.uniquePaths} 个页面 · 更新：${updated}`;
+    $("page-views-list").replaceChildren(...stats.topPaths.map((item) => {
+      const row = document.createElement("li");
+      row.textContent = `${item.path}：${item.count}`;
+      return row;
+    }));
+  } catch (error) {
+    $("page-view-total").textContent = "访问统计暂不可用";
+    $("page-views-summary").textContent = error.message;
+    $("page-views-list").replaceChildren();
+  }
 }
 
 const SCHEDULER_LABELS = {
@@ -355,7 +408,6 @@ function applyDoc(doc) {
   $("f-art-category").value = doc.artCategory ?? "";
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
-  renderPreview(doc.body ?? "");
   markSaved(
     doc.source === "site"
       ? "已发布内容（只读快照）：保存时会自动建立本机草稿"
@@ -363,7 +415,10 @@ function applyDoc(doc) {
   );
 }
 
-async function openItem(item) {
+async function openItem(item, { navigate = true } = {}) {
+  if (state.publishing) return;
+  if (isDirty()) await saveDraft({ silent: true });
+  $("site-profile-editor").hidden = true;
   state.current = { kind: item.kind, slug: item.slug, ...item };
   emptyEl.hidden = true;
   editorEl.hidden = false;
@@ -374,6 +429,12 @@ async function openItem(item) {
     const doc = await api(`/api/drafts/${item.kind}/${item.slug}`);
     await loadAssetOptions(doc.cover);
     applyDoc(doc);
+    setPanel(true);
+    if (navigate) {
+      if (item.status === "published" && !item.hasLocalDraft) navigatePreview(`/${item.kind}/${item.slug}`);
+      else navigatePreview("/preview/draft");
+    }
+    sendDraft();
     $("btn-unpublish").hidden = item.status !== "published";
   } catch (error) {
     setSaveState(error.message, true);
@@ -431,6 +492,7 @@ async function saveDraft({ silent = false } = {}) {
       markSaved(`已自动保存 · ${new Date().toLocaleTimeString()}`);
     }
     await loadItems();
+    if (state.draftPreview) sendDraft();
   } catch (error) {
     setSaveState(error.message, true);
     throw error;
@@ -772,7 +834,75 @@ async function openVersions() {
 }
 
 function wire() {
+  frame.src = `${previewOrigin}/`;
+  $("open-site").href = `${previewOrigin}/`;
+  $("btn-content").addEventListener("click", () => setPanel($("studio-panel").hidden));
+  $("btn-close-panel").addEventListener("click", () => setPanel(false));
+  $("btn-edit-page").addEventListener("click", () => {
+    if (["/", "/account"].includes(state.previewPath)) {
+      openSiteProfile().catch((error) => setSaveState(error.message, true));
+      return;
+    }
+    const match = state.previewPath.match(/^\/(notes|gallery)\/([^/]+)$/);
+    const item = match && state.items.find((item) => item.kind === match[1] && item.slug === match[2]);
+    if (item) openItem(item, { navigate: false }).catch((error) => setSaveState(error.message, true));
+  });
+  $("btn-refresh").addEventListener("click", () => {
+    $("preview-error").hidden = true;
+    frame.src = `${previewOrigin}${state.previewPath}`;
+  });
+  for (const mode of ["desktop", "mobile"]) {
+    $(`btn-${mode}`).addEventListener("click", () => {
+      document.body.classList.toggle("preview-mobile", mode === "mobile");
+      $("btn-desktop").setAttribute("aria-pressed", String(mode === "desktop"));
+      $("btn-mobile").setAttribute("aria-pressed", String(mode === "mobile"));
+    });
+  }
+  const readyTimer = setTimeout(() => { $("preview-error").hidden = false; }, 45000);
+  frame.addEventListener("load", () => {
+    sendToPreview({ type: "studio:theme", theme: document.documentElement.dataset.theme });
+    sendDraft();
+  });
+  window.addEventListener("message", (event) => {
+    if (event.source !== frame.contentWindow || event.origin !== previewOrigin) return;
+    if (event.data?.type === "studio:route") {
+      clearTimeout(readyTimer);
+      $("preview-error").hidden = true;
+      const path = event.data.pathname;
+      if (typeof path !== "string" || !path.startsWith("/")) return;
+      state.previewPath = path;
+      state.draftPreview = path === "/preview/draft";
+      $("current-path").textContent = state.draftPreview && state.current ? `/${state.current.kind}/${$("f-slug").value}` : path;
+      $("preview-mode").textContent = state.draftPreview ? "草稿实时预览 · 尚未发布" : "网站预览";
+      $("open-site").href = `${previewOrigin}${state.draftPreview ? "/" : path}`;
+      const match = path.match(/^\/(notes|gallery)\/([^/]+)$/);
+      $("btn-edit-page").disabled = !match && !["/", "/account"].includes(path);
+      $("btn-edit-page").textContent = match ? "编辑当前文章" : "编辑当前页面";
+      const item = match && state.items.find((item) => item.kind === match[1] && item.slug === match[2]);
+      if (item && !$("studio-panel").hidden && (!state.current || item.slug !== state.current.slug || item.kind !== state.current.kind)) {
+        openItem(item, { navigate: false }).catch((error) => setSaveState(error.message, true));
+      }
+    } else if (event.data?.type === "studio:draft-ready") {
+      sendDraft();
+    } else if (event.data?.type === "studio:theme" && ["light", "dark"].includes(event.data.theme)) {
+      if (document.documentElement.dataset.theme !== event.data.theme) applyTheme(event.data.theme);
+    }
+  });
   applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+  $("btn-site-profile").addEventListener("click", () => openSiteProfile().catch((error) => setSaveState(error.message, true)));
+  $("btn-save-profile").addEventListener("click", async () => {
+    const button = $("btn-save-profile");
+    button.disabled = true;
+    try {
+      const { profile } = await api("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro: $("profile-intro").value, linkedin: $("profile-linkedin").value }) });
+      $("profile-intro").value = profile.intro;
+      $("profile-linkedin").value = profile.linkedin;
+      state.siteProfileSaved = JSON.stringify(profile);
+      setSaveState("网站信息已保存 · 本机预览已更新");
+      navigatePreview(state.previewPath === "/account" ? "/account" : "/");
+    } catch (error) { setSaveState(error.message, true); }
+    finally { button.disabled = false; }
+  });
   $("btn-theme").addEventListener("click", () => {
     applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   });
@@ -786,6 +916,10 @@ function wire() {
       setSaveState(error.message, true);
     }
   });
+
+  $("btn-page-views").addEventListener("click", () => loadPageViews(true));
+  $("page-views-refresh").addEventListener("click", () => loadPageViews());
+  $("page-views-close").addEventListener("click", () => $("page-views-dialog").close());
 
   $("btn-scheduler-status").addEventListener("click", async () => {
     await loadSchedulerStatus(true);
@@ -837,13 +971,14 @@ function wire() {
   });
 
   let previewTimer = null;
-  $("f-body").addEventListener("input", () => {
+  editorEl.addEventListener("input", () => {
     clearTimeout(previewTimer);
-    previewTimer = setTimeout(() => renderPreview($("f-body").value), 200);
+    setSaveState("有未保存的更改 · 预览已更新");
+    previewTimer = setTimeout(renderPreview, 250);
   });
 
   window.addEventListener("beforeunload", (event) => {
-    if (isDirty()) {
+    if (isDirty() || isProfileDirty()) {
       event.preventDefault();
       event.returnValue = "";
     }
@@ -855,6 +990,7 @@ function wire() {
     }
   }, 30000);
   setInterval(() => loadSchedulerStatus(), 30000);
+  setInterval(() => loadPageViews(), 60000);
 
   wireImportDialog();
 }
@@ -862,3 +998,4 @@ function wire() {
 wire();
 loadItems().catch((error) => setSaveState(error.message, true));
 loadSchedulerStatus();
+loadPageViews();

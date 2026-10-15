@@ -14,9 +14,11 @@ export default async function GalleryPage() {
   const gallery = await loadIndex("gallery");
 
   return (
-    <main id="main-content" className="site-shell archive-page">
+    <main id="main-content" className="site-shell archive-page font-family-zh">
       <header className="archive-header">
-        <h1>GALLERY</h1>
+        <h1>
+          <span className="font-family-en" lang="en">GALLERY</span>
+        </h1>
       </header>
       <section aria-label="作品索引">
         <Suspense fallback={null}>

@@ -1,0 +1,13 @@
+.env*
+**/.env*
+.local-content/
+.specstory/
+.cursor/
+.claude/
+.agents/
+skills-lock.json
+.pnpm-store/
+**/.next-dev/
+**/*.tsbuildinfo
+**/*.log
+apps/web/data/

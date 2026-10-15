@@ -1,3 +1,4 @@
+import { displayHeading } from "@/lib/display-heading";
 import Image from "next/image";
 import Link from "next/link";
 import type { ContentListItem } from "@/lib/content";
@@ -35,16 +36,16 @@ export function ContentIndex({ items, emptyMessage, limit }: ContentIndexProps) 
             <div className="index-entry__body">
               <h2>
                 {item.pinned && <span className="pin-badge">置顶</span>}
-                {item.title}
+                {displayHeading(item.title)}
               </h2>
-              {item.summary && <p>{item.summary}</p>}
+              {item.summary && <p>{displayHeading(item.summary)}</p>}
             </div>
 
             {coverSrc && (
               <div className="index-entry__cover">
                 <Image
                   src={`/${coverSrc}`}
-                  alt={`${item.title} 封面`}
+                  alt={`${displayHeading(item.title)} 封面`}
                   fill
                   sizes="(max-width: 680px) 220px, 88px"
                 />

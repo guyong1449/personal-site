@@ -1,0 +1,8 @@
+@import url("https://giscus.app/themes/dark.css");
+
+/* Hide discussion, comment and reply emoji reactions inside the Giscus iframe. */
+.gsc-reactions,
+.gsc-reactions-menu,
+.gsc-direct-reaction-buttons {
+  display: none !important;
+}

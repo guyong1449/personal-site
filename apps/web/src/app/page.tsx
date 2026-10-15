@@ -1,6 +1,7 @@
 import { loadIndex } from "@/lib/content";
 import { ContentIndex } from "@/components/content/content-index";
 import Link from "next/link";
+import siteProfile from "@/lib/site-profile.json";
 
 export const metadata = {
   alternates: { canonical: "/" },
@@ -12,10 +13,9 @@ export default async function HomePage() {
   const notes = await loadIndex("notes");
 
   return (
-    <main id="main-content">
+    <main id="main-content" className="font-family-zh">
       <section className="site-shell hero">
-        <div className="hero__title-row">
-          <h1>GUYONG</h1>
+        <h1 className="sr-only">Ruoying Wang 的个人网站</h1>
           <div className="hero__links">
             <a className="hero__link" href="mailto:rw335@duke.edu" aria-label="给 Ruoying Wang 发邮件" title="Email">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -23,14 +23,19 @@ export default async function HomePage() {
               </svg>
             </a>
             <a className="hero__link" href="https://guyong1449.github.io/" aria-label="访问 Ruoying Wang 的研究主页" title="Research homepage">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="hero__research-icon">
+                <path d="m2 9 10-5 10 5-10 5-10-5Z" /><path d="M6 11v6c4 3 8 3 12 0v-6M22 9v7" />
+              </svg>
+              <span lang="en" className="font-family-en">Research</span>
+            </a>
+            <a className="hero__link" href="https://github.com/guyong1449" aria-label="访问 guyong1449 的 GitHub" title="GitHub">
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c.9 0 2.2 2.2 2.6 7H9.4C9.8 6.2 11.1 4 12 4ZM4.1 11a8 8 0 0 1 4.5-6.4A18.6 18.6 0 0 0 7.4 11H4.1Zm0 2h3.3c.1 2.5.5 4.6 1.2 6.4A8 8 0 0 1 4.1 13ZM12 20c-.9 0-2.2-2.2-2.6-7h5.2c-.4 4.8-1.7 7-2.6 7Zm3.4-.6c.7-1.8 1.1-3.9 1.2-6.4h3.3a8 8 0 0 1-4.5 6.4Zm1.2-8.4c-.1-2.5-.5-4.6-1.2-6.4A8 8 0 0 1 19.9 11h-3.3Z" />
+                <path d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.76-.24.76-.54v-2.1c-3.12.68-3.78-1.33-3.78-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.94.1-.73.4-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.54 0-1.22.43-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.14-1.45 3.08-1.15 3.08-1.15.61 1.54.23 2.68.11 2.96.72.78 1.15 1.78 1.15 3 0 4.3-2.62 5.25-5.12 5.53.4.35.76 1.03.76 2.08v3.1c0 .3.2.65.77.54A11.2 11.2 0 0 0 12 .8Z" />
               </svg>
             </a>
           </div>
-        </div>
         <p className="hero__intro">
-          你好，我是 Ruoying Wang（id：guyong）。这里记录我的技术学习、课程笔记与长期的思考，偶尔也放一些小画。研究项目与简历见<a href="https://guyong1449.github.io/">研究主页</a>。
+          {siteProfile.intro}<a href="https://guyong1449.github.io/">研究主页</a>
         </p>
       </section>
 

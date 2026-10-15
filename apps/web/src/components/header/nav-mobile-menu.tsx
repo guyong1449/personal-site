@@ -98,7 +98,9 @@ export function NavMobileMenu() {
                   className={isActive ? "is-active" : undefined}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  {item.title}
+                  <span className="font-family-en" lang="en">
+                    {item.title}
+                  </span>
                 </Link>
               );
             })}

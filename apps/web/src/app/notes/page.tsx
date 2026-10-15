@@ -14,9 +14,11 @@ export default async function NotesPage() {
   const notes = await loadIndex("notes");
 
   return (
-    <main id="main-content" className="site-shell archive-page">
+    <main id="main-content" className="site-shell archive-page font-family-zh">
       <header className="archive-header archive-header--notes">
-        <h1>NOTES</h1>
+        <h1>
+          <span className="font-family-en" lang="en">NOTES</span>
+        </h1>
       </header>
       <section aria-label="笔记索引">
         <Suspense fallback={null}>

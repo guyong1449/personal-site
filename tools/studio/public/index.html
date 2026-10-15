@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>GUYONG STUDIO / LOCAL</title>
+  <title>GUYONG / 编辑模式</title>
   <script>
     document.documentElement.dataset.theme = "light";
     try {
@@ -22,35 +22,59 @@
 </head>
 <body>
   <header class="studio-header">
-    <div class="studio-brand">
-      <span class="studio-brand__mark"></span>
-      <strong>GUYONG STUDIO</strong>
-      <a class="studio-brand__note" href="http://127.0.0.1:4319/studio">http://127.0.0.1:4319/studio</a>
-    </div>
+    <div class="studio-brand"><span class="studio-brand__mark" aria-hidden="true"></span><strong>编辑模式</strong></div>
     <div class="studio-header__actions">
-      <button id="btn-deploy-status" type="button">部署状态</button>
-      <button id="btn-scheduler-status" type="button">定时任务</button>
-      <button id="btn-cleanup-assets" type="button">清理未引用图片</button>
-      <button id="btn-import" type="button">导入 Markdown</button>
-      <button id="btn-new-note" type="button">新建 Note</button>
-      <button id="btn-new-gallery" type="button">新建 Gallery</button>
+      <button id="btn-edit-page" type="button" disabled>编辑当前文章</button>
+      <button id="btn-content" type="button" aria-expanded="false" aria-controls="studio-panel">内容</button>
+      <button id="btn-page-views" type="button">访问统计</button>
+      <details class="studio-more">
+        <summary>更多选项</summary>
+        <div class="studio-more__menu">
+          <button id="btn-new-note" type="button">新建 Note</button>
+          <button id="btn-new-gallery" type="button">新建 Gallery</button>
+          <button id="btn-import" type="button">导入 Markdown</button>
+          <button id="btn-site-profile" type="button">网站信息 / LinkedIn</button>
+          <button id="btn-deploy-status" type="button">部署状态</button>
+          <button id="btn-scheduler-status" type="button">定时任务</button>
+          <button id="btn-cleanup-assets" type="button">清理未引用图片</button>
+        </div>
+      </details>
       <button id="btn-theme" class="theme-toggle" type="button" aria-label="切换深浅色主题">DARK</button>
     </div>
   </header>
 
   <main class="studio-layout">
-    <aside class="studio-side">
+    <section class="studio-canvas" aria-label="网站实时预览">
+      <div class="preview-toolbar">
+        <span id="current-path">/</span>
+        <span id="preview-mode">网站预览</span>
+        <button id="btn-desktop" type="button" aria-pressed="true">桌面</button>
+        <button id="btn-mobile" type="button" aria-pressed="false">手机</button>
+        <button id="btn-refresh" type="button">刷新</button>
+        <a id="open-site" href="http://127.0.0.1:4317/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div>
+      <p id="preview-error" class="preview-error" role="status" hidden>本机网站预览尚未就绪，请通过桌面启动器同时启动网站和编辑器，然后点击刷新</p>
+      <iframe id="site-preview" title="网站实时预览" src="http://127.0.0.1:4317/"></iframe>
+    </section>
+    <aside id="studio-panel" class="studio-panel" aria-label="内容编辑侧栏" hidden>
+      <div class="panel-heading"><strong>内容编辑</strong><button id="btn-close-panel" type="button" aria-label="收起编辑侧栏">收起</button></div>
+    <details class="studio-side" open>
+      <summary>选择内容</summary>
       <nav class="studio-filters" aria-label="筛选">
         <button class="filter is-active" data-kind="all" type="button">全部</button>
         <button class="filter" data-kind="notes" type="button">NOTE</button>
         <button class="filter" data-kind="gallery" type="button">GALLERY</button>
       </nav>
       <ul id="item-list" class="studio-list"></ul>
-    </aside>
+    </details>
 
     <section class="studio-editor" id="editor" hidden>
       <div class="editor-meta">
         <label>标题<input id="f-title" type="text" /></label>
+      </div>
+      <details class="editor-options">
+        <summary>摘要、标签与发布选项</summary>
+        <div class="editor-meta">
         <label>
           <span class="field-label">SLUG <small>网址短名，例如 hello-guyong</small></span>
           <input id="f-slug" type="text" />
@@ -88,13 +112,13 @@
         </div>
       </div>
 
+      </details>
       <div class="editor-panes">
+        <label for="f-body">正文 Markdown</label>
         <textarea id="f-body" spellcheck="false" placeholder="Markdown 正文……"></textarea>
-        <article id="preview" class="studio-preview"></article>
       </div>
 
       <div class="editor-actions">
-        <span id="save-state" class="save-state"></span>
         <button id="btn-save" type="button" class="primary">保存草稿</button>
         <button id="btn-versions" type="button">历史版本</button>
         <button id="btn-publish" type="button">发布</button>
@@ -103,11 +127,23 @@
       </div>
     </section>
 
-    <section class="studio-empty" id="empty-hint">
-      <p>QUEUE / 000</p>
-      <p>从左侧选择内容，或新建 / 导入一篇草稿。</p>
+    <section id="site-profile-editor" class="studio-editor" hidden>
+      <h2>网站信息</h2>
+      <label for="profile-intro">首页介绍（后接研究主页链接）</label>
+      <textarea id="profile-intro" rows="7" maxlength="4000"></textarea>
+      <label for="profile-linkedin">LinkedIn 个人主页</label>
+      <input id="profile-linkedin" type="url" placeholder="https://www.linkedin.com/in/用户名/" />
+      <p class="dialog-note">保存后更新本机网站预览，线上需发布网站改动</p>
+      <button id="btn-save-profile" type="button" class="primary">保存网站信息</button>
     </section>
+
+    <section class="studio-empty" id="empty-hint">
+      <p>在网站中打开文章，再点击“编辑当前文章”</p>
+      <p>也可以从上方选择内容，或在“更多选项”中新建草稿</p>
+    </section>
+    </aside>
   </main>
+  <footer class="studio-status"><span id="save-state" class="save-state" role="status" aria-live="polite">在网站中浏览并选择要编辑的内容</span><span id="page-view-total">访问统计待载入</span></footer>
 
   <dialog id="import-dialog">
     <form method="dialog">
@@ -134,6 +170,16 @@
     <ul id="versions-list" class="versions-list"></ul>
     <div class="dialog-actions">
       <button type="button" id="versions-close">关闭</button>
+    </div>
+  </dialog>
+
+  <dialog id="page-views-dialog">
+    <h2>线上访问统计</h2>
+    <p id="page-views-summary" class="dialog-note"></p>
+    <ul id="page-views-list" class="versions-list"></ul>
+    <div class="dialog-actions">
+      <button type="button" id="page-views-refresh">刷新统计</button>
+      <button type="button" id="page-views-close">关闭</button>
     </div>
   </dialog>
 
@@ -169,7 +215,6 @@
     </form>
   </dialog>
 
-  <script src="/studio/vendor/marked.js"></script>
   <script src="/studio/app.js"></script>
 </body>
 </html>

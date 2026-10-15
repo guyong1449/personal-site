@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main id="main-content" className="site-shell not-found-page">
+    <main id="main-content" className="site-shell not-found-page font-family-zh">
       <section className="not-found-card">
         <h1>页面未找到</h1>
         <p className="not-found-copy">

@@ -17,12 +17,13 @@ export function tokenizeQuery(query: string) {
     .filter((term) => term.length >= 2 || /[\u4e00-\u9fff]/.test(term));
 }
 
-export function searchDocuments(docs: SearchDoc[], terms: string[]) {
+export function searchDocuments(docs: SearchDoc[], terms: string[], tag = "") {
+  const filtered = tag ? docs.filter((doc) => doc.tags.includes(tag)) : docs;
   if (terms.length === 0) {
-    return [];
+    return tag ? filtered : [];
   }
 
-  return docs
+  return filtered
     .map((doc) => {
       const haystack = [doc.title, doc.summary, doc.tags.join(" "), doc.text]
         .join(" ")

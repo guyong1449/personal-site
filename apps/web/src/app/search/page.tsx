@@ -15,9 +15,11 @@ export default async function SearchPage() {
   const docs = await loadSearchIndex();
 
   return (
-    <main id="main-content" className="site-shell archive-page">
+    <main id="main-content" className="site-shell archive-page font-family-zh">
       <header className="archive-header">
-        <h1>SEARCH</h1>
+        <h1>
+          <span className="font-family-en" lang="en">SEARCH</span>
+        </h1>
       </header>
       <section aria-label="搜索" className="search-section">
         <Suspense fallback={<p className="search-count">正在准备搜索……</p>}>

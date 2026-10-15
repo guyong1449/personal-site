@@ -16,6 +16,8 @@ import {
 } from "./lib.js";
 import { isBusy, publishDraft } from "./publish.js";
 import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
+import { isLocalStatsRequest, readProductionPageViews } from "./page-views.js";
+import { readSiteProfile, saveSiteProfile } from "./site-profile.js";
 import {
   getSchedulerHealth,
   readSchedulerStatus,
@@ -940,6 +942,26 @@ function deleteDraft(kind, slug, body, res) {
 async function handleApi(req, res, url) {
   const { pathname } = url;
   const method = req.method ?? "GET";
+
+  if (pathname === "/api/site-profile" && ["GET", "PUT"].includes(method)) {
+    if (!isLocalStatsRequest(req)) { sendError(res, 403, "仅允许本机编辑网站信息"); return; }
+    const profile = method === "PUT" ? await saveSiteProfile(repoRoot, await readJsonBody(req)) : await readSiteProfile(repoRoot);
+    sendJson(res, 200, { profile });
+    return;
+  }
+
+  if (method === "GET" && pathname === "/api/page-views") {
+    if (!isLocalStatsRequest(req)) {
+      sendError(res, 403, "访问统计仅允许本机 Studio 读取");
+      return;
+    }
+    try {
+      sendJson(res, 200, await readProductionPageViews(repoRoot));
+    } catch (error) {
+      sendError(res, 503, error.message);
+    }
+    return;
+  }
 
   if (method !== "GET" && !isLocalOrigin(req)) {
     sendError(res, 403, "跨域写入被拒绝：仅允许本机来源");

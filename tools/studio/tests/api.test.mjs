@@ -118,6 +118,25 @@ after(async () => {
 });
 
 describe("Studio API", () => {
+  it("updates only local site profile fields and rejects unsafe or cross-site edits", async () => {
+    const initial = { intro: "首页介绍", linkedin: "" };
+    const file = write("apps/web/src/lib/site-profile.json", JSON.stringify(initial));
+    const loaded = await request("/api/site-profile");
+    assert.deepEqual(loaded.payload.profile, initial);
+    const profile = { intro: " 新介绍 ", linkedin: "https://www.linkedin.com/in/example/" };
+    const saved = await request("/api/site-profile", { method: "PUT", body: JSON.stringify(profile) });
+    assert.equal(saved.status, 200);
+    assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).intro, "新介绍");
+    const snapshot = fs.readFileSync(file, "utf8");
+    for (const linkedin of ["javascript:alert(1)", "https://linkedin.com.evil.test/in/example/", "https://www.linkedin.com/feed/", "https://www.linkedin.com/in/example/?token=secret"]) {
+      const rejected = await request("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro: "介绍", linkedin }) });
+      assert.equal(rejected.status, 400);
+      assert.equal(fs.readFileSync(file, "utf8"), snapshot);
+    }
+    const foreign = await request("/api/site-profile", { method: "PUT", headers: { Origin: "https://foreign.example" }, body: JSON.stringify(profile) });
+    assert.equal(foreign.status, 403);
+    assert.equal(fs.readFileSync(file, "utf8"), snapshot);
+  });
   it("accepts real images only, enforces byte/pixel limits, and safely renames duplicates", async () => {
     const fake = await request("/api/assets?name=fake.png", {
       method: "POST",

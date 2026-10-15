@@ -9,7 +9,9 @@ import "./globals.css";
 import { siteConfig } from "@/lib/config";
 import { Header } from "@/components/header";
 import { SiteFooter } from "@/components/site-footer";
+import { PageViewReporter } from "@/components/page-view-reporter";
 import { GoToTop } from "@/components/go-to-top";
+import { StudioBridge } from "@/components/studio-bridge";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -39,13 +41,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang={siteConfig.locale} data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang={siteConfig.locale} data-theme="light" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         <a href="#main-content" className="skip-link">跳到正文</a>
         <Header />
+        <PageViewReporter />
+        {process.env.NODE_ENV === "development" && <StudioBridge />}
         {children}
         <SiteFooter />
         <GoToTop />

@@ -1,5 +1,5 @@
 import { loadIndex } from "@/lib/content";
-import { siteConfig } from "@/lib/config";
+import { displayHeading } from "@/lib/display-heading";
 import Link from "next/link";
 
 export const dynamic = "force-static";
@@ -31,9 +31,11 @@ export default async function ArchivePage() {
   }
 
   return (
-    <main id="main-content" className="site-shell archive-page">
+    <main id="main-content" className="site-shell archive-page font-family-zh">
       <header className="archive-header">
-        <h1>ARCHIVE</h1>
+        <h1>
+          <span className="font-family-en" lang="en">ARCHIVE</span>
+        </h1>
       </header>
 
       {entries.length === 0 ? (
@@ -44,19 +46,22 @@ export default async function ArchivePage() {
       ) : (
         Array.from(byYear.entries()).map(([year, yearEntries]) => (
           <section key={year} className="timeline-year" aria-label={`${year} 年归档`}>
-            <h2>{year}</h2>
+            <h2 className="font-family-en" lang="en">{year}</h2>
             <div className="content-index">
               {yearEntries.map((entry) => (
                 <Link key={`${entry.kind}-${entry.slug}`} href={entry.href} className="index-entry">
                   <div className="index-entry__body">
                     <h2>
                       {entry.pinned && <span className="pin-badge">置顶</span>}
-                      {entry.title}
+                      {displayHeading(entry.title)}
                     </h2>
-                    {entry.summary && <p>{entry.summary}</p>}
+                    {entry.summary && <p>{displayHeading(entry.summary)}</p>}
                   </div>
-                  <span className="timeline-meta">
-                    {entry.kind === "gallery" ? "GALLERY" : "NOTE"} · {entryDate(entry).slice(5, 10)}
+                  <span className="timeline-meta font-family-en" lang="en">
+                    <span>
+                      {entry.kind === "gallery" ? "GALLERY" : "NOTE"}
+                    </span>
+                    {` · ${entryDate(entry).slice(5, 10)}`}
                   </span>
                 </Link>
               ))}
@@ -64,11 +69,12 @@ export default async function ArchivePage() {
           </section>
         ))
       )}
-
       <footer className="archive-footnote">
-        由 {siteConfig.name} 的公开存档生成 ·{" "}
-        <Link href="/search" className="text-link">搜索全文 ↗</Link>
+        <Link href="/search" className="text-link">
+          搜索全文 ↗
+        </Link>
       </footer>
+
     </main>
   );
 }
