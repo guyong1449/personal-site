@@ -12,6 +12,11 @@ updated: "2026-10-15"
 
 ## 问题反馈
 
+项目：https://github.com/guyong1449/DKUCC-skill
+
+可联系本人微信：wry18851063808 加DKUCC问题反馈群，里面只有一位 IT 老师，所以请大家是使用时候注意点啊 TT
+
+
 本群仅限于 DKUCC 相关问题，非 DKUCC 相关问题，比如网络，DKU vpn，DKU 其他账号等问题，请走 service-desk@dukekunshan.edu.cn 提交工单。
 
 
