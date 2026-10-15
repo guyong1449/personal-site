@@ -306,7 +306,7 @@ function runChecks() {
     { cwd: webRoot, timeoutMs: 600000 },
   );
   if (!build.ok) {
-    return { ok: false, stage: "checks", message: `生产构建失败：\n${build.stdout || build.stderr}` };
+    return { ok: false, stage: "checks", message: `生产构建失败：\n${build.stdout}\n${build.stderr}` };
   }
 
   return { ok: true };
