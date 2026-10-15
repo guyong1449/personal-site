@@ -32,7 +32,7 @@
           <button id="btn-new-note" type="button">新建 Note</button>
           <button id="btn-new-gallery" type="button">新建 Gallery</button>
           <button id="btn-import" type="button">导入 Markdown</button>
-          <button id="btn-site-profile" type="button">网站信息 / LinkedIn</button>
+          <button id="btn-site-profile" type="button">首页介绍</button>
           <button id="btn-deploy-status" type="button">部署状态</button>
           <button id="btn-scheduler-status" type="button">定时任务</button>
           <button id="btn-cleanup-assets" type="button">清理未引用图片</button>
@@ -83,8 +83,10 @@
     </section>
     <div id="workspace-width-handle" class="workspace-splitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="调整预览与编辑区域宽度" title="左右拖动调整区域宽度；方向键微调"></div>
     <div class="studio-dock">
-      <section class="studio-statistics" aria-label="线上访问统计">
-        <div class="statistics-heading"><h2>线上访问统计</h2><button id="page-views-refresh" type="button" aria-label="刷新访问统计">刷新</button></div>
+      <details class="studio-statistics" aria-label="线上访问统计">
+        <summary>线上访问统计</summary>
+        <div class="statistics-content">
+        <div class="statistics-heading"><button id="page-views-refresh" type="button" aria-label="刷新访问统计">刷新</button></div>
         <p id="page-view-total" class="statistics-total" aria-live="polite">访问统计待载入</p>
         <p id="page-view-current" class="statistics-current">当前页 —</p>
         <p id="link-click-total" class="statistics-current">相关链接点击 —</p>
@@ -93,10 +95,14 @@
           <summary>各页面浏览量</summary>
           <ul id="page-views-list" class="statistics-list" aria-label="各页面浏览量"></ul>
         </details>
-        <ul id="link-clicks-list" class="statistics-list" aria-label="各相关链接点击次数"></ul>
+        <details class="statistics-links">
+          <summary>各链接点击次数</summary>
+          <ul id="link-clicks-list" class="statistics-list" aria-label="各相关链接点击次数"></ul>
+        </details>
         <a id="open-production-excluded" class="statistics-owner-link" href="https://guyong.site/analytics/exclude" target="_blank" rel="noopener noreferrer">线上自用预览 ↗（不计数）</a>
         <p class="statistics-updated">本机编辑不计数；自用入口会排除此浏览器一年的线上浏览与点击，其他浏览器需各打开一次</p>
-      </section>
+        </div>
+      </details>
     <aside id="studio-panel" class="studio-panel" aria-label="内容编辑侧栏" hidden>
       <div class="editor-resize-bar">
         <button id="editor-resize-corner" class="workspace-corner" type="button" aria-label="调整编辑区域宽高" title="拖动左上角调整编辑宽高；方向键微调"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V4h16M4 12l8-8M4 19 19 4" /></svg></button>
@@ -186,13 +192,9 @@
     </section>
 
     <section id="site-profile-editor" class="studio-editor" hidden>
-      <h2>网站信息</h2>
+      <h2>首页介绍</h2>
       <label for="profile-intro">首页介绍（后接研究主页链接）</label>
       <textarea id="profile-intro" rows="7" maxlength="4000"></textarea>
-      <label for="profile-linkedin">LinkedIn 个人主页</label>
-      <input id="profile-linkedin" type="url" placeholder="https://www.linkedin.com/in/用户名/" />
-      <p class="dialog-note">保存后更新本机网站预览，线上需发布网站改动</p>
-      <button id="btn-save-profile" type="button" class="primary">保存网站信息</button>
     </section>
 
     <section class="studio-empty" id="empty-hint">

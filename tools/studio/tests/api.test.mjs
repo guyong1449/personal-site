@@ -127,6 +127,11 @@ describe("Studio API", () => {
     const saved = await request("/api/site-profile", { method: "PUT", body: JSON.stringify(profile) });
     assert.equal(saved.status, 200);
     assert.equal(JSON.parse(fs.readFileSync(file, "utf8")).intro, "新介绍");
+    const introductionOnly = await request("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro: "只更新首页介绍" }) });
+    assert.equal(introductionOnly.status, 200);
+    assert.deepEqual(JSON.parse(fs.readFileSync(file, "utf8")), {
+      intro: "只更新首页介绍", linkedin: "https://www.linkedin.com/in/example/",
+    });
     const snapshot = fs.readFileSync(file, "utf8");
     for (const linkedin of ["javascript:alert(1)", "https://linkedin.com.evil.test/in/example/", "https://www.linkedin.com/feed/", "https://www.linkedin.com/in/example/?token=secret"]) {
       const rejected = await request("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro: "介绍", linkedin }) });

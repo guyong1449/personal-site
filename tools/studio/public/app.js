@@ -2,6 +2,8 @@ import { listMarkdownImages, resizeMarkdownImage } from "/studio/image-sizing.js
 import { initWorkspaceLayout } from "/studio/workspace-layout.js";
 
 let workspace = null;
+let profileSaveTimer = null;
+let profileSaveInFlight = null;
 
 const state = {
   items: [],
@@ -124,9 +126,24 @@ function isDirty() {
 }
 
 function isProfileDirty() {
-  return state.siteProfileSaved !== null && JSON.stringify({
-    intro: $("profile-intro").value, linkedin: $("profile-linkedin").value,
-  }) !== state.siteProfileSaved;
+  return state.siteProfileSaved !== null && $("profile-intro").value !== JSON.parse(state.siteProfileSaved).intro;
+}
+
+async function saveProfile() {
+  if (!isProfileDirty()) return;
+  if (profileSaveInFlight) { await profileSaveInFlight; return saveProfile(); }
+  const intro = $("profile-intro").value;
+  setSaveState("正在保存首页介绍…");
+  profileSaveInFlight = (async () => {
+    // Send only the edited introduction; retain the current stored LinkedIn URL.
+    const { profile } = await api("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro }) });
+    state.siteProfileSaved = JSON.stringify(profile);
+    if ($("profile-intro").value === intro) $("profile-intro").value = profile.intro;
+    setSaveState("首页介绍已自动保存 · 本机预览已更新");
+    if (!$("site-profile-editor").hidden) navigatePreview(state.previewPath === "/account" ? "/account" : "/");
+  })();
+  try { await profileSaveInFlight; }
+  finally { profileSaveInFlight = null; }
 }
 
 async function openSiteProfile() {
@@ -134,7 +151,6 @@ async function openSiteProfile() {
   if (!isProfileDirty()) {
     const { profile } = await api("/api/site-profile");
     $("profile-intro").value = profile.intro;
-    $("profile-linkedin").value = profile.linkedin;
     state.siteProfileSaved = JSON.stringify(profile);
   }
   state.current = null;
@@ -145,7 +161,7 @@ async function openSiteProfile() {
   setPanel(true);
   $("studio-panel").scrollTop = 0;
   $("profile-intro").focus({ preventScroll: true });
-  setSaveState("正在编辑网站信息 · 保存后更新本机预览");
+  setSaveState("正在编辑首页介绍 · 修改后自动保存到本机预览");
 }
 
 function markSaved(message) {
@@ -478,6 +494,7 @@ function applyDoc(doc) {
 
 async function openItem(item, { navigate = true } = {}) {
   if (state.publishing) return;
+  if (isProfileDirty()) await saveProfile();
   if (isDirty()) await saveDraft({ silent: true });
   $("site-profile-editor").hidden = true;
   state.current = { kind: item.kind, slug: item.slug, ...item };
@@ -1028,19 +1045,12 @@ function wire() {
   });
   applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
   $("btn-site-profile").addEventListener("click", () => openSiteProfile().catch((error) => setSaveState(error.message, true)));
-  $("btn-save-profile").addEventListener("click", async () => {
-    const button = $("btn-save-profile");
-    button.disabled = true;
-    try {
-      const { profile } = await api("/api/site-profile", { method: "PUT", body: JSON.stringify({ intro: $("profile-intro").value, linkedin: $("profile-linkedin").value }) });
-      $("profile-intro").value = profile.intro;
-      $("profile-linkedin").value = profile.linkedin;
-      state.siteProfileSaved = JSON.stringify(profile);
-      setSaveState("网站信息已保存 · 本机预览已更新");
-      navigatePreview(state.previewPath === "/account" ? "/account" : "/");
-    } catch (error) { setSaveState(error.message, true); }
-    finally { button.disabled = false; }
+  $("profile-intro").addEventListener("input", () => {
+    clearTimeout(profileSaveTimer);
+    setSaveState("首页介绍有未保存的更改");
+    profileSaveTimer = setTimeout(() => saveProfile().catch((error) => setSaveState(error.message, true)), 600);
   });
+  $("profile-intro").addEventListener("blur", () => saveProfile().catch((error) => setSaveState(error.message, true)));
   $("btn-theme").addEventListener("click", () => {
     applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
   });
@@ -1127,6 +1137,7 @@ function wire() {
   });
 
   setInterval(() => {
+    if (isProfileDirty()) saveProfile().catch((error) => setSaveState(error.message, true));
     if (isDirty() && !state.publishing) {
       saveDraft({ silent: true }).catch(() => {});
     }

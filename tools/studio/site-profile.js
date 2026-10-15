@@ -25,7 +25,9 @@ export async function readSiteProfile(repoRoot) {
 }
 
 export async function saveSiteProfile(repoRoot, profile) {
-  const validated = validateSiteProfile(profile);
+  const candidate = profile && profile.linkedin === undefined
+    ? { ...profile, linkedin: (await readSiteProfile(repoRoot)).linkedin } : profile;
+  const validated = validateSiteProfile(candidate);
   await fs.writeFile(profilePath(repoRoot), `${JSON.stringify(validated, null, 2)}\n`, "utf8");
   return validated;
 }
