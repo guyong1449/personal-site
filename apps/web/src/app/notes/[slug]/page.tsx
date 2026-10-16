@@ -1,4 +1,5 @@
 import { displayHeading } from "@/lib/display-heading";
+import { displayMonth } from "@/lib/display-date";
 import { loadEntry, loadIndex } from "@/lib/content";
 import { MarkdownBody } from "@/components/markdown";
 import { NoteComments } from "@/components/note-comments";
@@ -96,7 +97,7 @@ export default async function NoteDetailPage({ params }: { params: Promise<{ slu
       />
       <article>
         <header className="article-header">
-          {note.updated && <p className="article-meta">{note.updated}</p>}
+          {note.updated && <p className="article-meta">{displayMonth(note.updated)}</p>}
           <h1>{displayHeading(note.title)}</h1>
           {note.summary && <p className="article-header__summary">{displayHeading(note.summary)}</p>}
           {note.tags.length > 0 && (

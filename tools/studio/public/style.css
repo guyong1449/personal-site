@@ -419,3 +419,20 @@ body.workspace-resizing iframe { pointer-events: none; }
 .statistics-links { margin-block: 8px; }
 .statistics-links > summary { cursor: pointer; padding-block: 4px; font-size: .76rem; color: var(--muted); }
 .studio-dock > .studio-statistics:not([open]) { flex: none; min-height: 0; max-height: none; overflow: visible; }
+
+.article-tag-editor { min-width: 0; margin: 14px 0; padding: 10px 0; border: 0; border-block: 1px solid var(--line); }
+.article-tag-editor legend { font-size: .85rem; }
+.tag-choices { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-block: 10px; }
+.tag-choice { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; max-width: 100%; overflow-wrap: anywhere; cursor: pointer; }
+.tag-choice input[type="checkbox"] { appearance: auto; width: 16px; min-height: 16px; height: 16px; padding: 0; flex: none; accent-color: var(--accent-deep); }
+.tag-create-row, .tag-library-row { display: flex; gap: 8px; align-items: center; margin-block: 8px; }
+.tag-create-row input, .tag-library-row input { flex: 1; min-width: 0; }
+.tag-create-row button, .tag-library-row button { flex: none; }
+#tag-manager-dialog { width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 20px; overflow-y: auto; }
+#tag-manager-dialog section { margin-block: 20px; }
+#tag-manager-dialog h3 { font-size: .95rem; }
+#tag-manager-dialog .dialog-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#tag-library { max-height: 240px; overflow-y: auto; }
+.tag-publish-row { display: flex; justify-content: flex-end; border-top: 1px solid var(--line); padding-top: 14px; }
+#tag-manager-status.is-error { color: var(--danger); }
+#tag-picker-status:empty { display: none; }

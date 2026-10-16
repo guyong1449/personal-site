@@ -7,6 +7,7 @@ export type SearchDoc = {
   title: string;
   summary: string;
   tags: string[];
+  topics?: string[];
   text: string;
 };
 

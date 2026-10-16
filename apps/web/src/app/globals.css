@@ -257,6 +257,26 @@ button, a { touch-action: manipulation; }
 .tag-filter button.is-active { color: var(--tag-text-emphasis); }
 .tag-filter button.is-active::before { border-color: var(--tag-border); background: var(--tag-bg-emphasis); }
 
+.content-filters { margin-bottom: 18px; }
+.content-filter-panel { border-bottom: 1px solid var(--line); }
+.content-filter-panel > summary {
+  display: flex; align-items: center; gap: 10px; min-height: 44px;
+  list-style: none; cursor: pointer; font-size: .8rem; color: var(--foreground);
+}
+.content-filter-panel > summary::-webkit-details-marker { display: none; }
+.content-filter-panel > summary::before { content: "›"; font-size: 1.1rem; }
+.content-filter-panel[open] > summary::before { transform: rotate(90deg); }
+.content-filter-options { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-bottom: 10px; }
+.content-filter-option {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px;
+  max-width: 100%; font-size: .78rem; cursor: pointer;
+}
+.content-filter-option > span { overflow-wrap: anywhere; }
+.content-filter-option input { flex: 0 0 auto; width: 16px; height: 16px; accent-color: var(--accent-deep); }
+.content-filter-option.is-active { color: var(--accent-deep); }
+.content-filter-selection { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 44px; font-size: .74rem; color: var(--muted); }
+.content-filter-selection button { min-height: 44px; border: 0; padding: 4px 0; background: transparent; color: var(--accent-deep); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+
 /* Prev / next post navigation */
 .post-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 34px; }
 .post-nav__item {
@@ -345,6 +365,7 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
 .search-snippet { color: var(--muted); font-size: .78rem; line-height: 1.6; }
 
 /* Archive timeline */
+.archive-page .index-entry--note .index-entry__body h2 { letter-spacing: .04em; }
 .timeline-year { margin-top: 30px; }
 .timeline-year h2 {
   margin: 0 0 10px; color: var(--muted);

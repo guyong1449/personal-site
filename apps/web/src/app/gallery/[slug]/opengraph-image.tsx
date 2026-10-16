@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { displayMonth } from "@/lib/display-date";
 import { loadEntry } from "@/lib/content";
 
 export const size = { width: 1200, height: 630 };
@@ -14,7 +15,7 @@ export default async function OpengraphImage({
 }) {
   const { slug } = await params;
   const item = await loadEntry("gallery", slug);
-  const date = item?.updated ?? item?.created ?? "";
+  const date = displayMonth(item?.updated ?? item?.created) ?? "";
 
   return new ImageResponse(
     (

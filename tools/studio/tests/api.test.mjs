@@ -118,6 +118,21 @@ after(async () => {
 });
 
 describe("Studio API", () => {
+  it("manages tags through local APIs and rejects cross-origin writes", async () => {
+    for (const kind of ["notes", "gallery", "search"]) write(`content/public/metadata/${kind}.json`, "[]\n");
+    const listed = await request("/api/tags");
+    assert.equal(listed.status, 200);
+    const foreign = await request("/api/tags", { method: "POST", headers: { Origin: "https://foreign.example" }, body: JSON.stringify({ action: "create", name: "CS", revision: listed.payload.revision }) });
+    assert.equal(foreign.status, 403);
+    const added = await request("/api/tags", { method: "POST", body: JSON.stringify({ action: "create", name: "Math", revision: listed.payload.revision }) });
+    assert.equal(added.status, 200, added.payload.error);
+    assert.ok(added.payload.tags.includes("Math"));
+    const stale = await request("/api/tags", { method: "POST", body: JSON.stringify({ action: "create", name: "CS", revision: listed.payload.revision }) });
+    assert.equal(stale.status, 409);
+    const module = await fetch(`${baseUrl}/studio/tag-manager.js`);
+    assert.equal(module.status, 200);
+    assert.match(module.headers.get("content-type"), /javascript/);
+  });
   it("updates only local site profile fields and rejects unsafe or cross-site edits", async () => {
     const initial = { intro: "首页介绍", linkedin: "" };
     const file = write("apps/web/src/lib/site-profile.json", JSON.stringify(initial));
@@ -225,11 +240,12 @@ describe("Studio API", () => {
       body: JSON.stringify({
         kind: "notes",
         filename: "imported.md",
-        content: noteMarkdown({ title: "导入测试", slug: "imported-note" }),
+        content: noteMarkdown({ title: "导入测试", slug: "imported-note", extra: 'topics: ["课程", "CS"]' }),
       }),
     });
     assert.equal(success.status, 200);
     assert.equal(success.payload.slug, "imported-note");
+    assert.deepEqual((await request("/api/drafts/notes/imported-note")).payload.topics, ["课程", "CS"]);
     assert.equal(
       fs.existsSync(path.join(repoRoot, ".local-content", "notes", "imported-note.md")),
       true,
@@ -329,6 +345,7 @@ describe("Studio API", () => {
         slug: "published-preserve",
         extra: [
           'summary: "正式摘要"',
+          'topics: ["课程", "CS"]',
           "tags:",
           '  - "topic/test"',
           'cover: "cover.webp"',
@@ -355,6 +372,19 @@ describe("Studio API", () => {
     assert.match(draft, /publish_at: "2026-09-01T10:30"/);
     assert.match(draft, /cover: "cover\.webp"/);
     assert.match(draft, /从正式稿建立的本机草稿/);
+    assert.match(draft, /topics:\n  - "课程"\n  - "CS"/);
+    const changed = await request("/api/drafts/notes/published-preserve", {
+      method: "PUT", body: JSON.stringify({ topics: ["科研", "科研", " CS "] }),
+    });
+    assert.equal(changed.status, 200);
+    const read = await request("/api/drafts/notes/published-preserve");
+    assert.deepEqual(read.payload.topics, ["科研", "CS"]);
+    assert.deepEqual(read.payload.tags, ["topic/test"]);
+    const cleared = await request("/api/drafts/notes/published-preserve", {
+      method: "PUT", body: JSON.stringify({ topics: [] }),
+    });
+    assert.equal(cleared.status, 200);
+    assert.deepEqual((await request("/api/drafts/notes/published-preserve")).payload.topics, []);
   });
 
   it("creates a draft from a published gallery without losing gallery metadata", async () => {

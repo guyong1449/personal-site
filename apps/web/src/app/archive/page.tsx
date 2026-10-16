@@ -50,7 +50,7 @@ export default async function ArchivePage() {
             <h2 className="font-family-en" lang="en">{year}</h2>
             <div className="content-index">
               {yearEntries.map((entry) => (
-                <Link key={`${entry.kind}-${entry.slug}`} href={entry.href} className="index-entry">
+                <Link key={`${entry.kind}-${entry.slug}`} href={entry.href} className={`index-entry${entry.kind === "notes" ? " index-entry--note" : ""}`}>
                   <div className="index-entry__body">
                     <h2>
                       {entry.pinned && <span className="pin-badge">置顶</span>}

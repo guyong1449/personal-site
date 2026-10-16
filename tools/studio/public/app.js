@@ -1,5 +1,8 @@
 import { listMarkdownImages, resizeMarkdownImage } from "/studio/image-sizing.js";
 import { initWorkspaceLayout } from "/studio/workspace-layout.js";
+import { initTagManager } from "/studio/tag-manager.js";
+
+let tagManager;
 
 let workspace = null;
 let profileSaveTimer = null;
@@ -105,6 +108,7 @@ function formState() {
     slug: $("f-slug").value,
     summary: $("f-summary").value,
     tags: $("f-tags").value,
+    topics: $("f-topics").value,
     cover: $("f-cover").value,
     created: $("f-created").value,
     updated: $("f-updated").value,
@@ -475,6 +479,8 @@ function applyDoc(doc) {
   $("f-slug").value = doc.slug ?? "";
   $("f-summary").value = doc.summary ?? "";
   $("f-tags").value = (doc.tags ?? []).join(", ");
+  tagManager?.refreshPicker().catch((error) => setSaveState(error.message, true));
+  $("f-topics").value = (doc.topics ?? []).join(", ");
   $("f-created").value = doc.created ?? "";
   $("f-updated").value = doc.updated ?? "";
   $("f-pinned").checked = doc.pinned === true;
@@ -537,6 +543,7 @@ function buildSavePayload() {
       .value.split(",")
       .map((tag) => tag.trim())
       .filter(Boolean),
+    topics: [...new Set($("f-topics").value.split(/[,，]/).map((topic) => topic.trim()).filter(Boolean))],
     cover: $("f-cover").value || null,
     created: $("f-created").value,
     updated: $("f-updated").value,
@@ -1148,6 +1155,15 @@ function wire() {
   wireImportDialog();
 }
 
+tagManager = initTagManager({
+  api,
+  beforeOpen: async () => { if (isDirty()) await saveDraft({ silent: true }); },
+  onChanged: async () => {
+    await loadItems();
+    if (state.current) applyDoc(await api(`/api/drafts/${state.current.kind}/${state.current.slug}`));
+    navigatePreview(state.previewPath);
+  },
+});
 wire();
 loadItems().catch((error) => setSaveState(error.message, true));
 loadSchedulerStatus();

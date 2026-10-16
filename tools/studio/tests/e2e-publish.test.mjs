@@ -65,6 +65,7 @@ before(async () => {
       'content_type: "note"',
       'status: "draft"',
       'summary: "演练摘要"',
+      'topics: ["课程", "CS"]',
       "tags:",
       '  - "topic/e2e"',
       'cover: "e2e.png"',
@@ -99,6 +100,7 @@ describe("publish -> unpublish drill", () => {
     );
     assert.match(siteMd, /content_type: "note"/);
     assert.match(siteMd, /topic\/e2e/);
+    assert.match(siteMd, /topics:\n  - "课程"\n  - "CS"/);
     assert.ok(fs.existsSync(path.join(REPO_ROOT, "content", "site", "assets", "e2e.png")));
     assert.equal(fs.readFileSync(path.join(REPO_ROOT, "content", "site", "assets", "sized.png"), "utf8"), "sized-png-bytes");
     assert.match(siteMd, /width=65%/);

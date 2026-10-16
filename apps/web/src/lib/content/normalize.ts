@@ -18,6 +18,7 @@ export function normalizeListItem(kind: ContentKind, raw: RawMetadata): ContentL
     title: asString(raw.title) ?? "",
     summary: asString(raw.summary) ?? "",
     tags: asStringArray(raw.tags),
+    topics: asStringArray(raw.topics),
     cover: asString(raw.cover),
     created: asString(raw.created),
     updated: asString(raw.updated),

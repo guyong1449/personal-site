@@ -1,5 +1,7 @@
 "use client";
 
+import { displayMonth } from "@/lib/display-date";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { studioParentOrigin } from "@/lib/studio-parent";
@@ -53,7 +55,7 @@ export function DraftPreview() {
     <main id="main-content" className="site-shell archive-page article-page font-family-zh">
       {!draft ? <p role="status">正在载入草稿预览</p> : <article>
         <header className="article-header">
-          {draft.updated && <p className="article-meta">{draft.updated}</p>}
+          {draft.updated && <p className="article-meta">{displayMonth(draft.updated)}</p>}
           <h1>{displayHeading(draft.title || "未命名草稿")}</h1>
           {draft.summary && <p className="article-header__summary">{displayHeading(draft.summary)}</p>}
           {draft.tags.length > 0 && <div className="tag-list" aria-label="标签">

@@ -1,4 +1,5 @@
 import type { SearchDoc } from "@/lib/content";
+import { contentFilterKeys, matchesContentFilters } from "@/lib/content-filters";
 
 export type HighlightPart = {
   text: string;
@@ -17,15 +18,17 @@ export function tokenizeQuery(query: string) {
     .filter((term) => term.length >= 2 || /[\u4e00-\u9fff]/.test(term));
 }
 
-export function searchDocuments(docs: SearchDoc[], terms: string[], tag = "") {
-  const filtered = tag ? docs.filter((doc) => doc.tags.includes(tag)) : docs;
+export function searchDocuments(docs: SearchDoc[], terms: string[], filters: URLSearchParams | string = "") {
+  const params = typeof filters === "string" ? new URLSearchParams(filters ? [["tag", filters]] : []) : filters;
+  const hasFilters = contentFilterKeys.some((key) => params.getAll(key).some(Boolean));
+  const filtered = docs.filter((doc) => matchesContentFilters(doc, params));
   if (terms.length === 0) {
-    return tag ? filtered : [];
+    return hasFilters ? filtered : [];
   }
 
   return filtered
     .map((doc) => {
-      const haystack = [doc.title, doc.summary, doc.tags.join(" "), doc.text]
+      const haystack = [doc.title, doc.summary, doc.tags.join(" "), (doc.topics ?? []).join(" "), doc.text]
         .join(" ")
         .toLowerCase();
       const hits = terms.filter((term) => haystack.includes(term)).length;

@@ -83,6 +83,7 @@ describe("serializeFrontmatter", () => {
       slug: "note-a",
       summary: "摘要",
       tags: ["course/CS308", "topic/algorithm"],
+      topics: ["课程", "CS"],
       cover: null,
       created: "2026-08-01",
       updated: "2026-08-28",
@@ -95,6 +96,7 @@ describe("serializeFrontmatter", () => {
 
     assert.equal(reparsed.frontmatter.title, "笔记 A");
     assert.deepEqual(reparsed.frontmatter.tags, ["course/CS308", "topic/algorithm"]);
+    assert.deepEqual(reparsed.frontmatter.topics, ["课程", "CS"]);
     assert.equal(reparsed.frontmatter.content_type, "note");
     assert.equal(reparsed.body, "正文");
   });
@@ -144,6 +146,25 @@ describe("kinds", () => {
 });
 
 describe("content contract and asset audit", () => {
+  it("exports independent themes to list and full-text metadata", () => {
+    const root = fixture();
+    try {
+      write(path.join(root, "content/site/notes/themed.md"), noteFrontmatter("themed", ['topics: ["课程", "CS"]']) + "正文\n");
+      const result = runBuilder(root);
+      assert.equal(result.status, 0, result.stderr);
+      for (const kind of ["notes", "search"]) {
+        const rows = JSON.parse(fs.readFileSync(path.join(root, `content/public/metadata/${kind}.json`), "utf8"));
+        assert.deepEqual(rows[0].topics, ["课程", "CS"]);
+        assert.deepEqual(rows[0].tags, ["topic/test"]);
+      }
+      for (const topics of ['"CS"', '["CS", " CS "]', '[3]']) {
+        write(path.join(root, "content/site/notes/themed.md"), noteFrontmatter("themed", [`topics: ${topics}`]) + "正文\n");
+        assert.notEqual(runBuilder(root).status, 0);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
   it("rejects invalid content before writing generated snapshots", () => {
     const root = fixture();
     try {

@@ -118,6 +118,17 @@ function validateDateFields(frontmatter, fileRef, errors) {
   }
 }
 
+function validateTopics(topics, fileRef, errors) {
+  if (topics === undefined) return [];
+  if (!Array.isArray(topics) || topics.some((topic) => typeof topic !== "string" || !topic.trim())) {
+    errors.push(`${fileRef}: topics must be an array of non-empty strings`);
+    return [];
+  }
+  const values = topics.map((topic) => topic.trim());
+  if (new Set(values).size !== values.length) errors.push(`${fileRef}: duplicate topics`);
+  return values;
+}
+
 function validateEntryAssets(entry, assetRoot, errors) {
   if (Object.prototype.hasOwnProperty.call(entry.frontmatter, "cover")) {
     if (typeof entry.frontmatter.cover !== "string" || !normalizeAssetReference(entry.cover)) {
@@ -220,6 +231,7 @@ function readEntries(kind, errors) {
 
     const entryErrors = [];
     const tags = validateTags(frontmatter.tags, fileRef, entryErrors);
+    const topics = validateTopics(frontmatter.topics, fileRef, entryErrors);
     validateDateFields(frontmatter, fileRef, entryErrors);
     if (entryErrors.length > 0) {
       errors.push(...entryErrors);
@@ -234,6 +246,7 @@ function readEntries(kind, errors) {
       title,
       summary: asString(frontmatter.summary) ?? "",
       tags,
+      topics,
       cover: asString(frontmatter.cover),
       created: asString(frontmatter.created),
       updated: asString(frontmatter.updated),
@@ -288,6 +301,9 @@ function serializeFrontmatter(entry, kindId) {
   if (entry.tags.length > 0) {
     lines.push("tags:", ...entry.tags.map((tag) => `  - ${JSON.stringify(tag)}`));
   }
+  if (entry.topics?.length > 0) {
+    lines.push("topics:", ...entry.topics.map((topic) => `  - ${JSON.stringify(topic)}`));
+  }
   if (entry.cover) lines.push(`cover: ${JSON.stringify(entry.cover)}`);
   if (entry.created) lines.push(`created: ${JSON.stringify(entry.created)}`);
   if (entry.updated) lines.push(`updated: ${JSON.stringify(entry.updated)}`);
@@ -308,6 +324,7 @@ function metadataRow(entry, kindId) {
     title: entry.title,
     summary: entry.summary,
     tags: entry.tags,
+    ...(entry.topics?.length > 0 ? { topics: entry.topics } : {}),
     cover: entry.cover,
     created: entry.created,
     updated: entry.updated,
@@ -421,6 +438,7 @@ function buildSearchIndex(entriesByKind) {
         title: entry.title,
         summary: entry.summary,
         tags: entry.tags,
+        ...(entry.topics?.length > 0 ? { topics: entry.topics } : {}),
         text: stripMarkdown(entry.body),
       });
     }

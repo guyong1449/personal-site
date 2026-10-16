@@ -19,6 +19,7 @@ import { isBusy as isUnpublishBusy, unpublishToDraft } from "./unpublish.js";
 import { isLocalStatsRequest, readProductionPageViews } from "./page-views.js";
 import { readSiteProfile, saveSiteProfile } from "./site-profile.js";
 import { readDeploymentStatus } from "./deploy-status.js";
+import { readTagManager, changeTags, publishTagChanges } from "./tag-manager.js";
 import {
   getSchedulerHealth,
   readSchedulerStatus,
@@ -158,6 +159,7 @@ function readDocument(file) {
       ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
       : [],
     cover: typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null,
+    topics: Array.isArray(parsed.frontmatter.topics) ? parsed.frontmatter.topics.filter((topic) => typeof topic === "string") : [],
     pinned: parsed.frontmatter.pinned === true,
     publishAt:
       typeof parsed.frontmatter.publish_at === "string" ? parsed.frontmatter.publish_at : null,
@@ -694,6 +696,9 @@ async function importDraft(kind, body, res) {
   const tags = Array.isArray(parsed.frontmatter.tags)
     ? parsed.frontmatter.tags.filter((tag) => typeof tag === "string")
     : [];
+  const topics = Array.isArray(parsed.frontmatter.topics)
+    ? parsed.frontmatter.topics.filter((topic) => typeof topic === "string")
+    : [];
   const cover = typeof parsed.frontmatter.cover === "string" ? parsed.frontmatter.cover : null;
 
   ensureDir(kindDir(kind, "draft"));
@@ -705,6 +710,7 @@ async function importDraft(kind, body, res) {
       status: "draft",
       summary,
       tags,
+      topics,
       cover,
       created:
         typeof parsed.frontmatter.created === "string" ? parsed.frontmatter.created : today,
@@ -759,6 +765,7 @@ async function saveDraft(kind, slug, body, res) {
           status: "draft",
           summary: siteDoc.summary,
           tags: siteDoc.tags,
+          topics: siteDoc.topics,
           cover: siteDoc.cover,
           created: siteDoc.created ?? nowIsoDate(),
           updated: nowIsoDate(),
@@ -814,6 +821,9 @@ async function saveDraft(kind, slug, body, res) {
   const tags = Array.isArray(body.tags)
     ? body.tags.filter((tag) => typeof tag === "string" && tag.trim()).map((tag) => tag.trim())
     : doc.tags;
+  const topics = Array.isArray(body.topics)
+    ? [...new Set(body.topics.filter((topic) => typeof topic === "string" && topic.trim()).map((topic) => topic.trim()))]
+    : doc.topics;
   let cover = doc.cover;
   if (Object.prototype.hasOwnProperty.call(body, "cover")) {
     cover = typeof body.cover === "string" && body.cover.trim() ? body.cover.trim() : null;
@@ -845,6 +855,7 @@ async function saveDraft(kind, slug, body, res) {
       status: "draft",
       summary,
       tags,
+      topics,
       cover,
       created,
       updated,
@@ -984,6 +995,16 @@ async function handleApi(req, res, url) {
 
   if (method === "GET" && pathname === "/api/items") {
     sendJson(res, 200, { items: collectItems() });
+    return;
+  }
+
+  if (pathname === "/api/tags" && ["GET", "POST"].includes(method)) {
+    sendJson(res, 200, method === "GET" ? readTagManager(repoRoot) : changeTags(repoRoot, await readJsonBody(req)));
+    return;
+  }
+  if (pathname === "/api/tags/publish" && method === "POST") {
+    const result = publishTagChanges(repoRoot, (await readJsonBody(req)).revision);
+    sendJson(res, result.ok ? 200 : 422, result);
     return;
   }
 
@@ -1246,6 +1267,10 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === "/studio/app.js") {
       serveStatic(res, path.join(publicDir, "app.js"), "text/javascript; charset=utf-8");
+      return;
+    }
+    if (url.pathname === "/studio/tag-manager.js") {
+      serveStatic(res, path.join(publicDir, "tag-manager.js"), "text/javascript; charset=utf-8");
       return;
     }
     if (url.pathname === "/studio/image-sizing.js") {

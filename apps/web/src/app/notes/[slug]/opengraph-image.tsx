@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { displayMonth } from "@/lib/display-date";
 import { loadEntry } from "@/lib/content";
 
 export const size = { width: 1200, height: 630 };
@@ -11,7 +12,7 @@ export const alt = "GUYONG note";
 export default async function OpengraphImage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const note = await loadEntry("notes", slug);
-  const date = note?.updated ?? note?.created ?? "";
+  const date = displayMonth(note?.updated ?? note?.created) ?? "";
   const tags = (note?.tags ?? []).filter((tag) => /^[\x20-\x7e]+$/.test(tag));
 
   return new ImageResponse(

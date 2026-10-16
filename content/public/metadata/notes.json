@@ -4,9 +4,8 @@
     "title": "DKU Duo Push 设备换绑流程",
     "summary": "官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明",
     "tags": [
-      "area/dku",
-      "topic/duo",
-      "type/reference"
+      "DKU",
+      "DUO"
     ],
     "cover": null,
     "created": "2026-10-15",
@@ -17,8 +16,7 @@
     "title": "DKUCC 使用指南",
     "summary": "从 SSH 初始化、LDAP 公钥登录，到 Slurm GPU 作业与 /work 数据保留的使用记录",
     "tags": [
-      "area/dkucc",
-      "type/reference"
+      "DKUCC"
     ],
     "cover": null,
     "created": "2026-10-15",

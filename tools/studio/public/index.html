@@ -26,6 +26,7 @@
     <div class="studio-header__actions">
       <button id="btn-edit-page" type="button" disabled>编辑当前文章</button>
       <button id="btn-content" type="button" aria-expanded="false" aria-controls="studio-panel">内容</button>
+      <button id="btn-tags" type="button">标签管理</button>
       <details class="studio-more">
         <summary>更多选项</summary>
         <div class="studio-more__menu">
@@ -123,6 +124,13 @@
       <div class="editor-meta">
         <label>标题<input id="f-title" type="text" /></label>
       </div>
+      <fieldset class="article-tag-editor">
+        <legend>标签</legend>
+        <input id="f-tags" type="hidden" />
+        <div id="f-tag-picker" class="tag-choices"></div>
+        <div class="tag-create-row"><input id="f-tag-new" type="text" aria-label="新建文章标签" placeholder="新标签" /><button id="f-tag-add" type="button">添加并选中</button></div>
+        <p id="tag-picker-status" role="status"></p>
+      </fieldset>
       <details class="editor-options">
         <summary>摘要、标签与发布选项</summary>
         <div class="editor-meta">
@@ -131,7 +139,7 @@
           <input id="f-slug" type="text" />
         </label>
         <label>摘要<input id="f-summary" type="text" placeholder="留空则自动提取" /></label>
-        <label>标签<input id="f-tags" type="text" placeholder="course/CS308, topic/algorithm" /></label>
+        <label>主题<input id="f-topics" type="text" placeholder="课程, 生活, 科研, DKU" /></label>
         <label>创建日期<input id="f-created" type="date" /></label>
         <label>更新日期<input id="f-updated" type="date" /></label>
         <label class="check-label"><input id="f-pinned" type="checkbox" /> 置顶（列表与首页优先）</label>
@@ -276,6 +284,21 @@
     </form>
   </dialog>
 
+  <dialog id="tag-manager-dialog" aria-labelledby="tag-manager-heading">
+    <div class="dialog-heading"><h2 id="tag-manager-heading">标签管理</h2><button id="tag-manager-close" type="button">关闭</button></div>
+    <section><h3>标签库</h3>
+      <div class="tag-create-row"><input id="tag-new-name" type="text" aria-label="新标签名称" placeholder="新标签名称" /><button id="tag-create" type="button">新建标签</button></div>
+      <input id="tag-library-search" type="search" aria-label="查找标签" placeholder="查找标签" />
+      <div id="tag-library"></div>
+    </section>
+    <section><h3>每篇文章的标签</h3>
+      <label>选择文章<select id="tag-document"></select></label>
+      <div id="tag-document-options" class="tag-choices"></div>
+      <button id="tag-document-save" type="button">保存文章标签</button>
+    </section>
+    <p id="tag-manager-status" role="status" aria-live="polite"></p>
+    <div class="tag-publish-row"><button id="tag-manager-publish" type="button" class="primary">发布标签更改</button></div>
+  </dialog>
   <script type="module" src="/studio/app.js"></script>
 </body>
 </html>

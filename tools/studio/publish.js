@@ -87,6 +87,7 @@ function generatedPaths(kind, slug) {
 function operationPaths(kind, slug, assetNames) {
   return [
     `content/site/${kind}/${slug}.md`,
+    ...(fs.existsSync(path.join(getPaths().siteRoot, "taxonomy.json")) ? ["content/site/taxonomy.json"] : []),
     ...assetNames.map((name) => `content/site/assets/${name}`),
     ...generatedPaths(kind, slug),
   ];
@@ -174,6 +175,12 @@ export function validateForPublish(kind, slug, doc, fsModule = fs) {
     }
   }
 
+  if (doc.topics !== undefined && (!Array.isArray(doc.topics)
+    || doc.topics.some((topic) => typeof topic !== "string" || !topic.trim())
+    || new Set(doc.topics.map((topic) => typeof topic === "string" ? topic.trim() : topic)).size !== doc.topics.length)) {
+    errors.push("主题必须是无重复的非空字符串数组");
+  }
+
   const draftAssets = path.join(localRoot, "assets");
   const siteAssets = path.join(siteRoot, "assets");
   const exists = (name) =>
@@ -222,7 +229,7 @@ function findAssetConflicts(names) {
   return conflicts;
 }
 
-function regeneratePublicSnapshot() {
+export function regeneratePublicSnapshot() {
   const { repoRoot, webRoot } = getPaths();
   // The builder script always loads from the real repository; only the
   // content directories move via STUDIO_REPO_ROOT.
@@ -265,7 +272,7 @@ function regeneratePublicSnapshot() {
   return { ok: true };
 }
 
-function runChecks() {
+export function runChecks() {
   const injected = injectedFailure("checks");
   if (injected) {
     return injected;
@@ -312,7 +319,7 @@ function runChecks() {
   return { ok: true };
 }
 
-function rollbackCommit(commit) {
+export function rollbackCommit(commit) {
   if (!commit) {
     return;
   }
@@ -323,6 +330,10 @@ function rollbackCommit(commit) {
 }
 
 function publishToGit(kind, slug, assetNames) {
+  return publishPathsToGit(operationPaths(kind, slug, assetNames), `content: publish ${slug}`);
+}
+
+export function publishPathsToGit(pathSpecs, message) {
   if (process.env.STUDIO_PUBLISH_DRY_RUN === "1") {
     return {
       ok: true,
@@ -363,7 +374,6 @@ function publishToGit(kind, slug, assetNames) {
   }
 
   const { repoRoot } = getPaths();
-  const pathSpecs = operationPaths(kind, slug, assetNames);
   for (const pathSpec of pathSpecs) {
     const add = run("git", ["add", "--", pathSpec]);
     if (!add.ok) {
@@ -395,7 +405,7 @@ function publishToGit(kind, slug, assetNames) {
   }
 
   const parentHash = run("git", ["rev-parse", "HEAD"]).stdout.trim();
-  const commit = run("git", ["commit", "-m", `content: publish ${slug}`]);
+  const commit = run("git", ["commit", "-m", message]);
   if (!commit.ok) {
     run("git", ["reset"]);
     return { ok: false, stage: "git", message: `提交失败：\n${commit.stderr || commit.stdout}` };
@@ -469,6 +479,7 @@ export function publishDraft(kind, slug) {
       slug: doc.frontmatter.slug,
       contentType: doc.frontmatter.content_type,
       tags: Array.isArray(doc.frontmatter.tags) ? doc.frontmatter.tags : [],
+      topics: doc.frontmatter.topics,
       cover: typeof doc.frontmatter.cover === "string" ? doc.frontmatter.cover : null,
       pinned: doc.frontmatter.pinned === true,
       body: doc.body,
@@ -518,6 +529,7 @@ export function publishDraft(kind, slug) {
           content_type: kind === "gallery" ? "gallery" : "note",
           summary,
           tags: normalized.tags,
+          topics: normalized.topics,
           cover: normalized.cover,
           created: typeof doc.frontmatter.created === "string" ? doc.frontmatter.created : undefined,
           updated: new Date().toISOString().slice(0, 10),

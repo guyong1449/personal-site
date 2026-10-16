@@ -4,8 +4,7 @@ slug: "dkucc-guide"
 content_type: "note"
 summary: "从 SSH 初始化、LDAP 公钥登录，到 Slurm GPU 作业与 /work 数据保留的使用记录"
 tags:
-  - "area/dkucc"
-  - "type/reference"
+  - "DKUCC"
 created: "2026-10-15"
 updated: "2026-10-15"
 ---

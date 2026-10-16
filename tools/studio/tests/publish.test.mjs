@@ -12,6 +12,12 @@ const baseDoc = {
 };
 
 describe("validateForPublish", () => {
+  it("validates optional themes independently of tags", () => {
+    assert.deepEqual(validateForPublish("notes", "test-slug", { ...baseDoc, topics: ["课程", "CS"] }), []);
+    for (const topics of ["CS", [""], ["CS", " CS "], [3]]) {
+      assert.match(validateForPublish("notes", "test-slug", { ...baseDoc, topics }).join("\n"), /主题/);
+    }
+  });
   it("accepts a well-formed note", () => {
     assert.deepEqual(validateForPublish("notes", "test-slug", baseDoc), []);
   });

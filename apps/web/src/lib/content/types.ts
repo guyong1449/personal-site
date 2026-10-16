@@ -8,6 +8,7 @@ export type ContentListItem = {
   title: string;
   summary: string;
   tags: string[];
+  topics?: string[];
   cover: string | null;
   created: string | null;
   updated: string | null;

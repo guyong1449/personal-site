@@ -27,6 +27,18 @@ const docs: SearchDoc[] = [
 ];
 
 describe("search helpers", () => {
+  it("combines independent themes, multiple tags and full-text search", () => {
+    const entries: SearchDoc[] = [
+      { ...docs[0], topics: ["课程", "CS"], tags: ["course/CS308", "topic/algorithm"] },
+      { ...docs[1], topics: ["生活"], tags: ["topic/algorithm"] },
+    ];
+    const filters = new URLSearchParams("topic=CS&tag=course%2FCS308&tag=topic%2Falgorithm");
+    expect(searchDocuments(entries, [], filters)).toEqual([entries[0]]);
+    expect(searchDocuments(entries, ["graph"], filters)).toEqual([entries[0]]);
+    expect(searchDocuments(entries, ["blue"], filters)).toEqual([]);
+    expect(searchDocuments(entries, [], new URLSearchParams("topic=生活&topic=CS"))).toEqual(entries);
+    expect(searchDocuments(entries, ["cs"])).toEqual([entries[0]]);
+  });
   it("browses an exact tag without requiring a query", () => {
     expect(searchDocuments(docs, [], "course/CS308")).toEqual([docs[0]]);
     expect(searchDocuments(docs, [], "course")).toEqual([]);

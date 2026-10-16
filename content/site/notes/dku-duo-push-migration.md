@@ -4,9 +4,8 @@ slug: "dku-duo-push-migration"
 content_type: "note"
 summary: "官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明"
 tags:
-  - "area/dku"
-  - "topic/duo"
-  - "type/reference"
+  - "DKU"
+  - "DUO"
 created: "2026-10-15"
 updated: "2026-10-15"
 ---

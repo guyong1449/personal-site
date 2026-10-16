@@ -2,18 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
 import type { ContentListItem } from "@/lib/content";
 import { PublicationMonth } from "./publication-month";
-import {
-  filterGalleryItems,
-  galleryAssetPath,
-  type GalleryFilter,
-  type GalleryFilterKey,
-} from "@/lib/gallery";
-
-type FilterOption = { value: string; count: number };
+import { galleryAssetPath } from "@/lib/gallery";
+import { matchesContentFilters } from "@/lib/content-filters";
+import { ContentFilters } from "./content-filters";
+import { useContentFilterParams } from "./use-content-filter-params";
 
 export function FilterableIndex({
   items,
@@ -24,93 +18,12 @@ export function FilterableIndex({
   emptyMessage: string;
   galleryFilters?: boolean;
 }) {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-  const paramTag = searchParams.get("tag");
-  const paramCategory = galleryFilters ? searchParams.get("category") : null;
-  const paramSeries = galleryFilters ? searchParams.get("series") : null;
-
-  const activeFilters = useMemo<GalleryFilter[]>(
-    () => [
-      paramTag ? { key: "tag", value: paramTag } : null,
-      paramCategory ? { key: "category", value: paramCategory } : null,
-      paramSeries ? { key: "series", value: paramSeries } : null,
-    ].filter((filter): filter is GalleryFilter => filter !== null),
-    [paramCategory, paramSeries, paramTag],
-  );
-
-  const countValues = (values: (string | null)[]) => {
-    const counter = new Map<string, number>();
-    for (const value of values) {
-      if (value) counter.set(value, (counter.get(value) ?? 0) + 1);
-    }
-    return [...counter.entries()].sort((left, right) => right[1] - left[1]);
-  };
-
-  const tags = useMemo<FilterOption[]>(
-    () => countValues(items.flatMap((item) => item.tags)).map(([value, count]) => ({ value, count })),
-    [items],
-  );
-  const categories = useMemo<FilterOption[]>(
-    () => countValues(items.map((item) => item.artCategory)).map(([value, count]) => ({ value, count })),
-    [items],
-  );
-  const series = useMemo<FilterOption[]>(
-    () => countValues(items.map((item) => item.series)).map(([value, count]) => ({ value, count })),
-    [items],
-  );
-
-  const visible = useMemo(() => filterGalleryItems(items, activeFilters), [activeFilters, items]);
-
-  const setFilter = (key: GalleryFilterKey, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (params.get(key) === value) {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
-
-  const clearFilters = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    ["tag", "category", "series"].forEach((key) => params.delete(key));
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  };
-
-  const renderFilterButtons = (key: GalleryFilterKey, options: FilterOption[], prefix = "") =>
-    options.map(({ value, count }) => (
-      <button
-        key={`${key}-${value}`}
-        type="button"
-        className={activeFilters.some((filter) => filter.key === key && filter.value === value) ? "is-active" : undefined}
-        aria-pressed={activeFilters.some((filter) => filter.key === key && filter.value === value)}
-        onClick={() => setFilter(key, value)}
-      >
-        {prefix}{value} {count}
-      </button>
-    ));
+  const { params, updateParams } = useContentFilterParams();
+  const visible = items.filter((item) => matchesContentFilters(item, params));
 
   return (
     <div>
-      {(tags.length > 0 || (galleryFilters && (categories.length > 0 || series.length > 0))) && (
-        <nav className="tag-filter" aria-label={galleryFilters ? "作品筛选" : "标签筛选"}>
-          <button
-            type="button"
-            className={activeFilters.length === 0 ? "is-active" : undefined}
-            aria-pressed={activeFilters.length === 0}
-            onClick={clearFilters}
-          >
-            全部 {items.length}
-          </button>
-          {renderFilterButtons("tag", tags)}
-          {galleryFilters && renderFilterButtons("category", categories, "分类 · ")}
-          {galleryFilters && renderFilterButtons("series", series, "系列 · ")}
-        </nav>
-      )}
+      <ContentFilters items={items} params={params} onChange={updateParams} galleryFilters={galleryFilters} />
 
       {visible.length === 0 ? (
         <div className="empty-index">
