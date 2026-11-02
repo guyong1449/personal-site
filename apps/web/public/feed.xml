@@ -5,8 +5,32 @@
     <link>https://guyong.site</link>
     <description>Guyong 的个人网站：技术笔记、课程学习记录与少量画作。</description>
     <language>zh-CN</language>
-  <lastBuildDate>Thu, 15 Oct 2026 00:00:00 GMT</lastBuildDate>
+  <lastBuildDate>Mon, 02 Nov 2026 00:00:00 GMT</lastBuildDate>
     <atom:link href="https://guyong.site/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>堆排序(Heap Sort)详解</title>
+      <link>https://guyong.site/notes/heap-sort-notes</link>
+      <guid isPermaLink="true">https://guyong.site/notes/heap-sort-notes</guid>
+      <description>堆的下沉/上浮操作、建堆过程与堆排序完整流程,含复杂度分析与实现要点;算法课程笔记整理版。</description>
+      <pubDate>Mon, 02 Nov 2026 00:00:00 GMT</pubDate>
+      <category>notes</category>
+    </item>
+    <item>
+      <title>红黑树(Red-Black Tree)详解</title>
+      <link>https://guyong.site/notes/red-black-tree-notes</link>
+      <guid isPermaLink="true">https://guyong.site/notes/red-black-tree-notes</guid>
+      <description>自平衡二叉查找树的五条核心性质、插入与删除的旋转/变色逻辑,以及与普通 BST 的复杂度对比;算法课程笔记整理版。</description>
+      <pubDate>Mon, 02 Nov 2026 00:00:00 GMT</pubDate>
+      <category>notes</category>
+    </item>
+    <item>
+      <title>神经网络基础</title>
+      <link>https://guyong.site/notes/neural-network-basics</link>
+      <guid isPermaLink="true">https://guyong.site/notes/neural-network-basics</guid>
+      <description>从感知机到多层网络的表达能力、ReLU 非线性与训练要点,深度学习课程笔记。</description>
+      <pubDate>Mon, 02 Nov 2026 00:00:00 GMT</pubDate>
+      <category>notes</category>
+    </item>
     <item>
       <title>DKU Duo Push 设备换绑流程</title>
       <link>https://guyong.site/notes/dku-duo-push-migration</link>

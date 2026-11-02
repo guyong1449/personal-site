@@ -1,5 +1,43 @@
 [
   {
+    "slug": "heap-sort-notes",
+    "title": "堆排序(Heap Sort)详解",
+    "summary": "堆的下沉/上浮操作、建堆过程与堆排序完整流程,含复杂度分析与实现要点;算法课程笔记整理版。",
+    "tags": [
+      "course/CS308",
+      "algorithms",
+      "data-structures"
+    ],
+    "cover": null,
+    "created": "2026-07-08",
+    "updated": "2026-11-02"
+  },
+  {
+    "slug": "red-black-tree-notes",
+    "title": "红黑树(Red-Black Tree)详解",
+    "summary": "自平衡二叉查找树的五条核心性质、插入与删除的旋转/变色逻辑,以及与普通 BST 的复杂度对比;算法课程笔记整理版。",
+    "tags": [
+      "course/CS308",
+      "algorithms",
+      "data-structures"
+    ],
+    "cover": null,
+    "created": "2026-07-08",
+    "updated": "2026-11-02"
+  },
+  {
+    "slug": "neural-network-basics",
+    "title": "神经网络基础",
+    "summary": "从感知机到多层网络的表达能力、ReLU 非线性与训练要点,深度学习课程笔记。",
+    "tags": [
+      "deep-learning",
+      "neural-networks"
+    ],
+    "cover": null,
+    "created": "2026-07-08",
+    "updated": "2026-11-02"
+  },
+  {
     "slug": "dku-duo-push-migration",
     "title": "DKU Duo Push 设备换绑流程",
     "summary": "官方网页换绑、无法登录时的 recovery email 流程，以及 Duo Restore 和安卓设备的安装说明",
