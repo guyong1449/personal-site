@@ -8,11 +8,11 @@ export function MarkdownContent({ html, toc, showToc = true, sidebarExtra }: {
 }) {
   const hasSidebar = (showToc && toc.length > 0) || Boolean(sidebarExtra);
   return (
-    <div className="flex gap-16">
+    <div className="article-content">
       <ArticleProse html={html} />
       {hasSidebar && (
-        <aside className="article-sidebar hidden w-52 shrink-0 lg:block">
-          <div className="sticky top-24 max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <aside className="article-sidebar">
+          <div className="article-sidebar__inner">
             {showToc && toc.length > 0 && <Toc items={toc} />}
             {sidebarExtra}
           </div>
