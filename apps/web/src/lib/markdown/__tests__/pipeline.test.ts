@@ -32,6 +32,49 @@ describe("markdown pipeline", () => {
     expect(html).toContain('src="/assets/dkucc-image-706.png"');
     expect(html).toContain('src="https://example.com/image.png"');
   });
+  it("embeds allowlisted music and video provider links", async () => {
+    const output = (await renderMarkdownToHtml([
+      "https://music.163.com/song?id=36387916&userid=1",
+      "",
+      "https://www.bilibili.com/video/BV1GJ411x7h7",
+      "",
+      "https://youtu.be/dQw4w9WgXcQ",
+      "",
+      "[歌单](https://music.163.com/playlist?id=7353837379)",
+    ].join("\n"))).replace(/&#x26;/g, "&");
+    expect(output).toContain('src="https://music.163.com/outchain/player?type=2&id=36387916&auto=1&height=66"');
+    expect(output).toContain('src="https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&autoplay=0"');
+    expect(output).toContain('src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"');
+    expect(output).toContain('type=0&id=7353837379');
+    expect(output.match(/<iframe/g)).toHaveLength(4);
+  });
+  it("leaves mixed-paragraph and non-provider links untouched", async () => {
+    const html = await renderMarkdownToHtml("看这个 https://music.163.com/song?id=1\n\n[例站](https://example.com)\n\nhttps://example.com/page");
+    expect(html).not.toContain("<iframe");
+    expect(html).toContain('href="https://music.163.com/song?id=1"');
+    expect(html).toContain('href="https://example.com"');
+  });
+  it("converts media-file images into audio and video players", async () => {
+    const html = await renderMarkdownToHtml('![录音](assets/talk.mp3)\n\n![视频](assets/clip.mp4)\n\n![远程](https://cdn.example.com/a.webm)\n\n![拒绝](assets/hack.mp4 "width=101%")');
+    expect(html).toContain('<audio src="/assets/talk.mp3"');
+    expect(html).toContain('<video src="/assets/clip.mp4"');
+    expect(html).toContain('src="https://cdn.example.com/a.webm"');
+    expect(html).not.toContain('style="width:101%"');
+  });
+  it("sizes and aligns embeds through the title suffix", async () => {
+    const html = await renderMarkdownToHtml('[视频](https://www.bilibili.com/video/BV1GJ411x7h7 "介绍 | width=60%")\n\n![居中](assets/a.png "width=60% | align=center")\n\n![右](assets/b.png "align=right")');
+    expect(html).toContain('style="width:60%"');
+    expect(html).toContain('title="介绍"');
+    expect(html).toContain('style="width:60%;margin:1.3em auto"');
+    expect(html).toContain('style="margin:1.3em 0 1.3em auto"');
+  });
+  it("groups adjacent images in one paragraph into a shared row", async () => {
+    const html = await renderMarkdownToHtml("![一](assets/a.png)\n\n![二](assets/b.png) ![三](assets/c.png)");
+    expect(html.match(/class="img-row"/g)).toHaveLength(1);
+    const row = html.slice(html.indexOf('class="img-row"'));
+    expect(row).toContain("b.png");
+    expect(row).toContain("c.png");
+  });
   it("never emits raw author HTML", async () => {
     const html = await renderMarkdownToHtml(
       "hello\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\nworld",

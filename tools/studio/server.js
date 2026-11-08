@@ -50,6 +50,16 @@ const IMAGE_EXTENSIONS = {
   png: ".png",
   webp: ".webp",
 };
+const AUDIO_EXTENSIONS = {
+  ".mp3": "audio/mpeg",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/mp4",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".oga": "audio/ogg",
+  ".flac": "audio/flac",
+};
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
@@ -592,6 +602,16 @@ function serveAsset(res, baseDir, fileName) {
     ".jpg": "image/jpeg",
     ".png": "image/png",
     ".webp": "image/webp",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/mp4",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".oga": "audio/ogg",
+    ".flac": "audio/flac",
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
   };
   const contentType = contentTypes[path.extname(file).toLowerCase()] ?? "application/octet-stream";
   res.writeHead(200, {
@@ -1080,55 +1100,61 @@ async function handleApi(req, res, url) {
     }
     const dir = path.join(localRoot, "assets");
     ensureDir(dir);
-    const buffer = await readBody(req);
+    // Audio passes through untouched within a larger budget; images go through
+    // sharp below with validation and WebP compression.
+    const isAudio = Object.prototype.hasOwnProperty.call(AUDIO_EXTENSIONS, path.extname(name).toLowerCase());
+    const buffer = await readBody(req, isAudio ? MAX_AUDIO_BYTES : MAX_UPLOAD_BYTES);
     if (buffer.length === 0) {
       sendError(res, 400, "资产内容为空");
       return;
     }
 
-    let metadata;
-    try {
-      metadata = await sharp(buffer).metadata();
-    } catch {
-      sendError(res, 415, "上传内容不是有效的支持格式图片（JPEG、PNG、WebP、GIF 或 AVIF）");
-      return;
-    }
-
-    const format =
-      metadata.format === "heif" &&
-      (metadata.mediaType === "image/avif" || metadata.compression === "av1")
-        ? "avif"
-        : metadata.format;
-    if (!Object.prototype.hasOwnProperty.call(IMAGE_EXTENSIONS, format)) {
-      sendError(res, 415, "仅支持 JPEG、PNG、WebP、GIF 或 AVIF 图片");
-      return;
-    }
-    if (!Number.isFinite(metadata.width) || !Number.isFinite(metadata.height)) {
-      sendError(res, 422, "无法读取图片尺寸");
-      return;
-    }
-    const pixels = metadata.width * metadata.height;
-    if (pixels > MAX_IMAGE_PIXELS) {
-      sendError(res, 413, `图片像素超过上限（最多 ${MAX_IMAGE_PIXELS / 1_000_000}MP）`);
-      return;
-    }
-
-    // JPEG/PNG keep the existing WebP compression path. Other supported
-    // formats retain their real format and receive a canonical extension.
     let finalBuffer = buffer;
-    let finalName = `${path.parse(name).name || "image"}${IMAGE_EXTENSIONS[format]}`;
+    let finalName = name;
     let converted = false;
-    if (format === "jpeg" || format === "png") {
+    if (!isAudio) {
+      let metadata;
       try {
-        finalBuffer = await sharp(buffer)
-          .resize({ width: 1600, withoutEnlargement: true })
-          .webp({ quality: 82 })
-          .toBuffer();
-        finalName = `${path.parse(name).name || "image"}.webp`;
-        converted = true;
+        metadata = await sharp(buffer).metadata();
       } catch {
-        sendError(res, 422, "图片转换失败，请重新选择图片");
+        sendError(res, 415, "上传内容不是有效的支持格式：图片（JPEG、PNG、WebP、GIF、AVIF）或音频（MP3、M4A、WAV、OGG、FLAC）");
         return;
+      }
+
+      const format =
+        metadata.format === "heif" &&
+        (metadata.mediaType === "image/avif" || metadata.compression === "av1")
+          ? "avif"
+          : metadata.format;
+      if (!Object.prototype.hasOwnProperty.call(IMAGE_EXTENSIONS, format)) {
+        sendError(res, 415, "仅支持 JPEG、PNG、WebP、GIF、AVIF 图片或 MP3、M4A、WAV、OGG、FLAC 音频");
+        return;
+      }
+      if (!Number.isFinite(metadata.width) || !Number.isFinite(metadata.height)) {
+        sendError(res, 422, "无法读取图片尺寸");
+        return;
+      }
+      const pixels = metadata.width * metadata.height;
+      if (pixels > MAX_IMAGE_PIXELS) {
+        sendError(res, 413, `图片像素超过上限（最多 ${MAX_IMAGE_PIXELS / 1_000_000}MP）`);
+        return;
+      }
+
+      // JPEG/PNG keep the existing WebP compression path. Other supported
+      // formats retain their real format and receive a canonical extension.
+      finalName = `${path.parse(name).name || "image"}${IMAGE_EXTENSIONS[format]}`;
+      if (format === "jpeg" || format === "png") {
+        try {
+          finalBuffer = await sharp(buffer)
+            .resize({ width: 1600, withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toBuffer();
+          finalName = `${path.parse(name).name || "image"}.webp`;
+          converted = true;
+        } catch {
+          sendError(res, 422, "图片转换失败，请重新选择图片");
+          return;
+        }
       }
     }
 

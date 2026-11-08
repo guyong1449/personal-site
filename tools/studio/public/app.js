@@ -18,6 +18,7 @@ const state = {
   draftPreview: false,
   siteProfileSaved: null,
   pageViews: null,
+  assets: [], // [{name, source}] across draft and site roots
 };
 
 const $ = (id) => document.getElementById(id);
@@ -26,6 +27,8 @@ const editorEl = $("editor");
 const emptyEl = $("empty-hint");
 const PUBLISH_STAGES = ["校验内容…", "写入正式目录…", "重建公开快照…", "运行测试与构建…", "提交并推送…"];
 const THEME_KEY = "guyong-theme-v2";
+const IMAGE_FILE_PATTERN = /\.(jpe?g|png|webp|gif|avif)$/i;
+const AUDIO_FILE_PATTERN = /\.(mp3|m4a|aac|wav|ogg|oga|flac)$/i;
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -93,7 +96,7 @@ function sendDraft() {
     ...values, kind: state.current.kind,
     imageStarts: listMarkdownImages(values.body).map((image) => image.start),
     coverSource: $("f-cover").selectedOptions[0]?.dataset.source ?? "draft",
-    assets: Array.from($("f-cover").options).filter((option) => option.value).map((option) => ({ name: option.value, source: option.dataset.source ?? "draft" })),
+    assets: state.assets.map((asset) => ({ name: asset.name, source: asset.source })),
   } });
 }
 
@@ -445,10 +448,12 @@ async function deleteSelectedAssets() {
 
 async function loadAssetOptions(selected) {
   const data = await api("/api/assets");
+  state.assets = data.assets;
   const select = $("f-cover");
   select.replaceChildren(
     Object.assign(document.createElement("option"), { value: "", textContent: "（无）" }),
-    ...data.assets.map((asset) => {
+    // Audio files live in the same asset pool but never serve as a cover.
+    ...data.assets.filter((asset) => IMAGE_FILE_PATTERN.test(asset.name)).map((asset) => {
       const option = document.createElement("option");
       option.value = asset.name;
       option.dataset.source = asset.source;
@@ -456,7 +461,7 @@ async function loadAssetOptions(selected) {
       return option;
     }),
   );
-  if (selected) {
+  if (selected && IMAGE_FILE_PATTERN.test(selected)) {
     select.value = selected;
   }
   updateCoverPreview();
@@ -720,6 +725,26 @@ async function deleteCurrent() {
   }
 }
 
+async function uploadAssetFile(file) {
+  const isAudio = AUDIO_FILE_PATTERN.test(file.name);
+  if (!isAudio && !IMAGE_FILE_PATTERN.test(file.name)) {
+    throw new Error("请选择 JPG、PNG、WebP、GIF 或 AVIF 图片，或 MP3、M4A、WAV、OGG、FLAC 音频");
+  }
+  const limit = isAudio ? 20 : 8;
+  if (file.size > limit * 1024 * 1024) {
+    throw new Error(`文件超过 ${limit}MB，请压缩后再上传`);
+  }
+  const response = await fetch(`/api/assets?name=${encodeURIComponent(file.name)}`, {
+    method: "POST",
+    body: await file.arrayBuffer(),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.error ?? "上传失败");
+  }
+  return result;
+}
+
 function uploadAsset() {
   const input = $("asset-file");
   input.value = "";
@@ -727,26 +752,18 @@ function uploadAsset() {
   input.onchange = async () => {
     const file = input.files?.[0];
     if (!file) return;
-    if (!/\.(jpe?g|png|webp|gif|avif)$/i.test(file.name)) {
-      setSaveState("请选择 JPG、PNG、WebP、GIF 或 AVIF 图片", true);
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      setSaveState("图片超过 8MB，请压缩后再上传", true);
-      return;
-    }
     try {
-      const response = await fetch(`/api/assets?name=${encodeURIComponent(file.name)}`, {
-        method: "POST",
-        body: await file.arrayBuffer(),
-      });
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        setSaveState(error.error ?? "图片上传失败", true);
+      const result = await uploadAssetFile(file);
+      await loadAssetOptions(result.name);
+      if (AUDIO_FILE_PATTERN.test(file.name)) {
+        if (state.current) {
+          insertImageAtCursor(`![${file.name.replace(/\.[^.]+$/, "")}](assets/${result.name})`);
+          setSaveState(`音频已上传并插入正文：${result.name}`);
+        } else {
+          setSaveState(`音频已上传：${result.name}`);
+        }
         return;
       }
-      const result = await response.json();
-      await loadAssetOptions(result.name);
       setSaveState(
         result.renamed
           ? `图片与已有文件重名，已自动命名为 ${result.name}`
@@ -755,9 +772,27 @@ function uploadAsset() {
             : `图片已上传并设为封面：${result.name}`,
       );
     } catch (error) {
-      setSaveState(`图片上传失败：${error.message}`, true);
+      setSaveState(`上传失败：${error.message}`, true);
     }
   };
+}
+
+// Pasted screenshots upload into the draft asset pool and insert inline.
+async function pasteBodyImages(files) {
+  for (const file of files) {
+    const stamp = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    const fallback = `paste-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.png`;
+    const named = file.name ? file : new File([file], fallback, { type: file.type });
+    try {
+      const result = await uploadAssetFile(named);
+      await loadAssetOptions(result.name);
+      insertImageAtCursor(`![${named.name.replace(/\.[^.]+$/, "")}](assets/${result.name})`);
+      setSaveState(`已粘贴图片：${result.name}`);
+    } catch (error) {
+      setSaveState(`粘贴图片失败：${error.message}`, true);
+    }
+  }
 }
 
 function insertImageAtCursor(markdown) {
@@ -787,6 +822,7 @@ function syncBodyImageSize() {
   if (!image) return;
   $("body-image-width").value = image.width;
   $("body-image-unit").value = image.unit;
+  $("body-image-align").value = image.align || "";
   updateBodyImageLimits();
 }
 
@@ -805,7 +841,7 @@ function refreshBodyImageOptions() {
   })));
   if (images.length && previous && Number(previous) < images.length) select.value = previous;
   if (!images.length) select.append(Object.assign(document.createElement("option"), { value: "", textContent: "正文中还没有图片" }));
-  for (const id of ["body-image-select", "body-image-width", "body-image-unit", "btn-resize-image", "btn-reset-image"]) $(id).disabled = !images.length;
+  for (const id of ["body-image-select", "body-image-width", "body-image-unit", "body-image-align", "btn-resize-image", "btn-reset-image"]) $(id).disabled = !images.length;
   syncBodyImageSize();
 }
 
@@ -813,7 +849,8 @@ function applyBodyImageSize(reset = false) {
   try {
     const body = $("f-body");
     body.value = resizeMarkdownImage(body.value, Number($("body-image-select").value),
-      reset ? null : $("body-image-width").value, $("body-image-unit").value);
+      reset ? null : $("body-image-width").value, $("body-image-unit").value,
+      reset ? null : $("body-image-align").value);
     body.dispatchEvent(new Event("input", { bubbles: true }));
     setSaveState("图片尺寸已更新 · 保存草稿后可发布");
   } catch (error) { setSaveState(error.message, true); }
@@ -1127,6 +1164,13 @@ function wire() {
   });
   $("body-image-width").addEventListener("input", () => {
     if ($("body-image-width").value && $("body-image-width").checkValidity()) applyBodyImageSize();
+  });
+  $("body-image-align").addEventListener("change", () => applyBodyImageSize());
+  $("f-body").addEventListener("paste", (event) => {
+    const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"));
+    if (files.length === 0) return;
+    event.preventDefault();
+    void pasteBodyImages(files);
   });
   $("body-image-controls").addEventListener("toggle", () => {
     if ($("body-image-controls").open) refreshBodyImageOptions();

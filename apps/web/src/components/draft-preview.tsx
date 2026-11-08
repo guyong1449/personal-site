@@ -37,15 +37,15 @@ export function DraftPreview() {
     }).then(async (response) => {
       if (!response.ok) throw new Error("正文预览暂时不可用");
       const result = await response.json();
-      // Resolve local images in the same preview without copying or publishing assets.
+      // Resolve local images and media in the same preview without copying or publishing assets.
       const holder = document.createElement("div");
       holder.innerHTML = result.html;
-      for (const image of holder.querySelectorAll("img")) {
-        const src = image.getAttribute("src") ?? "";
+      for (const media of holder.querySelectorAll("img, video, audio, source")) {
+        const src = media.getAttribute("src") ?? "";
         if (/^(?:\/?assets\/|[^/:]+$)/.test(src)) {
           const name = decodeURIComponent(src.replace(/^\/?assets\//, ""));
           const source = draft.assets.find((asset) => asset.name === name)?.source ?? "site";
-          image.src = `/studio-asset/${source}/${encodeURIComponent(name)}`;
+          media.setAttribute("src", `/studio-asset/${source}/${encodeURIComponent(name)}`);
         }
       }
       setRendered({ ...result, html: holder.innerHTML, body: draft.body, starts: draft.imageStarts ?? [] }); setError("");

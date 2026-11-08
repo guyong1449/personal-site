@@ -8,6 +8,7 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
 import { rehypeImageSizing } from "./image-sizing";
+import { rehypeMediaEmbed } from "./embeds";
 
 // Rendering contract: raw HTML in Markdown is treated as plain text, never
 // interpreted. The Studio preview follows the same rule, so what an author
@@ -18,6 +19,7 @@ export function createMarkdownProcessor(studio = false) {
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype)
+    .use(rehypeMediaEmbed)
     .use(rehypeImageSizing, { studio })
     .use(rehypeSlug)
     .use(rehypeHighlight)
@@ -28,5 +30,5 @@ export function createMarkdownProcessor(studio = false) {
 export async function renderMarkdownToHtml(content: string, studio = false): Promise<string> {
   const processor = createMarkdownProcessor(studio);
   const result = await processor.process(content);
-  return String(result).replace(/(<img\b[^>]*\bsrc=")(?:\.\/)?assets\//g, "$1/assets/");
+  return String(result).replace(/(<(?:img|video|audio|source)\b[^>]*\bsrc=")(?:\.\/)?assets\//g, "$1/assets/");
 }

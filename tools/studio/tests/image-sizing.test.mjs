@@ -25,3 +25,30 @@ test("rejects invalid sizes and missing images", () => {
   }
   assert.throws(() => resizeMarkdownImage("", 0, 100, "%"), /请先选择正文图片/);
 });
+
+test("parses and rewrites align settings alongside width", () => {
+  const combined = '![图](assets/a.png "说明 | width=60% | align=center")';
+  const [image] = listMarkdownImages(combined);
+  assert.equal(image.width, 60);
+  assert.equal(image.unit, "%");
+  assert.equal(image.align, "center");
+  assert.equal(listMarkdownImages('![图](assets/a.png "align=right")')[0].align, "right");
+  assert.equal(listMarkdownImages('![图](assets/a.png)')[0].align, "");
+
+  assert.equal(
+    resizeMarkdownImage(combined, 0, undefined, "%", "left"),
+    '![图](assets/a.png "说明 | width=60% | align=left")',
+  );
+  assert.equal(
+    resizeMarkdownImage(combined, 0, null, "%", null),
+    '![图](assets/a.png "说明")',
+  );
+  assert.equal(
+    resizeMarkdownImage('![图](assets/a.png)', 0, 80, "%", "center"),
+    '![图](assets/a.png "width=80% | align=center")',
+  );
+  assert.equal(
+    resizeMarkdownImage('![图](assets/a.png "align=center")', 0, undefined, "%", undefined),
+    '![图](assets/a.png "align=center")',
+  );
+});

@@ -164,7 +164,7 @@ describe("Studio API", () => {
       body: Buffer.from("not a PNG"),
     });
     assert.equal(fake.status, 415);
-    assert.match(fake.payload.error, /有效的支持格式图片/);
+    assert.match(fake.payload.error, /有效的支持格式/);
     assert.equal(fs.existsSync(path.join(repoRoot, ".local-content", "assets", "fake.png")), false);
 
     const uploaded = await request("/api/assets?name=photo.jpg", {
@@ -206,6 +206,42 @@ describe("Studio API", () => {
     });
     assert.equal(pixelLimit.status, 413);
     assert.match(pixelLimit.payload.error, /像素超过上限/);
+  });
+
+  it("stores audio uploads verbatim with rename and byte limits", async () => {
+    const uploaded = await request("/api/assets?name=voice.mp3", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("id3 minimal audio bytes"),
+    });
+    assert.equal(uploaded.status, 200, uploaded.payload.error);
+    assert.equal(uploaded.payload.name, "voice.mp3");
+    assert.equal(uploaded.payload.converted, false);
+    assert.equal(fs.readFileSync(path.join(repoRoot, ".local-content", "assets", "voice.mp3"), "utf8"), "id3 minimal audio bytes");
+
+    const duplicate = await request("/api/assets?name=voice.mp3", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("second recording"),
+    });
+    assert.equal(duplicate.status, 200, duplicate.payload.error);
+    assert.equal(duplicate.payload.name, "voice-2.mp3");
+
+    const oversized = await request("/api/assets?name=long.wav", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.alloc(20 * 1024 * 1024 + 1),
+    });
+    assert.equal(oversized.status, 413);
+    assert.match(oversized.payload.error, /20MB/);
+
+    const unsupported = await request("/api/assets?name=track.xyz", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("not audio or image"),
+    });
+    assert.equal(unsupported.status, 415);
+    assert.match(unsupported.payload.error, /音频/);
   });
 
   it("reports unresolved relative Markdown images while skipping external URLs", async () => {
