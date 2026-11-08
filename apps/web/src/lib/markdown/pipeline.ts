@@ -12,21 +12,21 @@ import { rehypeImageSizing } from "./image-sizing";
 // Rendering contract: raw HTML in Markdown is treated as plain text, never
 // interpreted. The Studio preview follows the same rule, so what an author
 // sees while editing is exactly what ships.
-export function createMarkdownProcessor() {
+export function createMarkdownProcessor(studio = false) {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkMath)
     .use(remarkRehype)
-    .use(rehypeImageSizing)
+    .use(rehypeImageSizing, { studio })
     .use(rehypeSlug)
     .use(rehypeHighlight)
     .use(rehypeKatex)
     .use(rehypeStringify);
 }
 
-export async function renderMarkdownToHtml(content: string): Promise<string> {
-  const processor = createMarkdownProcessor();
+export async function renderMarkdownToHtml(content: string, studio = false): Promise<string> {
+  const processor = createMarkdownProcessor(studio);
   const result = await processor.process(content);
   return String(result).replace(/(<img\b[^>]*\bsrc=")(?:\.\/)?assets\//g, "$1/assets/");
 }

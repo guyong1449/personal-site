@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { renderMarkdownToHtml } from "../pipeline";
 
 describe("markdown pipeline", () => {
+  it("identifies draft images by source offset without exposing editor metadata in published HTML", async () => {
+    const body = '`![代码](code.png)`\n\n![第一张](assets/one.png)\n\n![第二张](assets/two.png "width=40%")';
+    const html = await renderMarkdownToHtml(body, true);
+    expect(html).toContain(`data-studio-start="${body.indexOf("![第一张]")}"`);
+    expect(html).toContain(`data-studio-start="${body.indexOf("![第二张]")}"`);
+    expect(html.match(/data-studio-start=/g)).toHaveLength(2);
+    expect(await renderMarkdownToHtml(body)).not.toContain("data-studio-start");
+  });
   it("renders safe image widths and preserves ordinary image captions", async () => {
     const html = await renderMarkdownToHtml('![截图](assets/screen.png "说明 | width=480px")\n\n![比例](assets/percent.png "width=65%")');
     expect(html).toContain('src="/assets/screen.png"');

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const { body } = JSON.parse(raw);
     if (typeof body !== "string") return new NextResponse(null, { status: 400 });
-    const html = demoteMarkdownHeadings(await renderMarkdownToHtml(body));
+    const html = demoteMarkdownHeadings(await renderMarkdownToHtml(body, true));
     return NextResponse.json({ html, toc: extractTocFromHtml(html) }, { headers: { "Cache-Control": "no-store" } });
   } catch { return new NextResponse(null, { status: 400 }); }
 }

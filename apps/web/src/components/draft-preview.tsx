@@ -8,12 +8,13 @@ import { studioParentOrigin } from "@/lib/studio-parent";
 import { displayHeading } from "@/lib/display-heading";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import type { TocItem } from "@/lib/toc";
+import { DraftImageResizer } from "./draft-image-resizer";
 
-type Draft = { title: string; summary: string; updated: string; tags: string[]; cover: string; body: string; kind: string; coverSource: string; assets: { name: string; source: string }[] };
+type Draft = { title: string; summary: string; updated: string; tags: string[]; cover: string; body: string; imageStarts: number[]; kind: string; coverSource: string; assets: { name: string; source: string }[] };
 
 export function DraftPreview() {
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [rendered, setRendered] = useState<{ html: string; toc: TocItem[] }>({ html: "", toc: [] });
+  const [rendered, setRendered] = useState<{ html: string; toc: TocItem[]; body: string; starts: number[] }>({ html: "", toc: [], body: "", starts: [] });
   const [error, setError] = useState("");
   useEffect(() => {
     const origin = studioParentOrigin();
@@ -47,7 +48,7 @@ export function DraftPreview() {
           image.src = `/studio-asset/${source}/${encodeURIComponent(name)}`;
         }
       }
-      setRendered({ ...result, html: holder.innerHTML }); setError("");
+      setRendered({ ...result, html: holder.innerHTML, body: draft.body, starts: draft.imageStarts ?? [] }); setError("");
     }).catch((failure) => { if (failure.name !== "AbortError") setError(failure.message); });
     return () => controller.abort();
   }, [draft]);
@@ -68,7 +69,9 @@ export function DraftPreview() {
           <img src={`/studio-asset/${draft.coverSource}/${encodeURIComponent(draft.cover)}`} alt={`${draft.title} 封面`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>}
         {error && <p role="alert">{error}</p>}
-        <MarkdownContent html={rendered.html} toc={rendered.toc} />
+        <DraftImageResizer body={rendered.body} starts={rendered.starts}>
+          <MarkdownContent html={rendered.html} toc={rendered.toc} />
+        </DraftImageResizer>
       </article>}
     </main>
   );

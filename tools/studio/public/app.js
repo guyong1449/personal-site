@@ -91,6 +91,7 @@ function sendDraft() {
   const values = buildSavePayload();
   sendToPreview({ type: "studio:draft", draft: {
     ...values, kind: state.current.kind,
+    imageStarts: listMarkdownImages(values.body).map((image) => image.start),
     coverSource: $("f-cover").selectedOptions[0]?.dataset.source ?? "draft",
     assets: Array.from($("f-cover").options).filter((option) => option.value).map((option) => ({ name: option.value, source: option.dataset.source ?? "draft" })),
   } });
@@ -1046,6 +1047,15 @@ function wire() {
       }
     } else if (event.data?.type === "studio:draft-ready") {
       sendDraft();
+    } else if (event.data?.type === "studio:image-resize" && state.current && state.draftPreview) {
+      const { body, start, width } = event.data;
+      if (body !== $("f-body").value || !Number.isInteger(start) || !Number.isInteger(width) || width < 1 || width > 100) return;
+      const index = listMarkdownImages(body).findIndex((image) => image.start === start);
+      if (index < 0) return;
+      $("body-image-select").value = String(index);
+      $("body-image-width").value = width;
+      $("body-image-unit").value = "%";
+      applyBodyImageSize();
     } else if (event.data?.type === "studio:theme" && ["light", "dark"].includes(event.data.theme)) {
       if (document.documentElement.dataset.theme !== event.data.theme) applyTheme(event.data.theme);
     }
@@ -1111,7 +1121,13 @@ function wire() {
   $("btn-upload-asset").addEventListener("click", uploadAsset);
   $("btn-insert-image").addEventListener("click", insertImage);
   $("body-image-select").addEventListener("change", syncBodyImageSize);
-  $("body-image-unit").addEventListener("change", updateBodyImageLimits);
+  $("body-image-unit").addEventListener("change", () => {
+    updateBodyImageLimits();
+    if ($("body-image-width").checkValidity()) applyBodyImageSize();
+  });
+  $("body-image-width").addEventListener("input", () => {
+    if ($("body-image-width").value && $("body-image-width").checkValidity()) applyBodyImageSize();
+  });
   $("body-image-controls").addEventListener("toggle", () => {
     if ($("body-image-controls").open) refreshBodyImageOptions();
   });

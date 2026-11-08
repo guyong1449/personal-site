@@ -1,11 +1,14 @@
-type HtmlNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HtmlNode[] };
+type HtmlNode = { type: string; tagName?: string; properties?: Record<string, unknown>; children?: HtmlNode[]; position?: { start: { offset?: number } } };
 
 // A constrained title suffix supports sizing without allowing author-supplied HTML/CSS.
 // Examples: "width=480px", "caption | width=60%".
-export function rehypeImageSizing() {
+export function rehypeImageSizing(options: { studio?: boolean } = {}) {
   return (tree: HtmlNode) => {
     const walk = (node: HtmlNode, insideLink = false) => {
       if (node.type === "element" && node.tagName === "img" && node.properties) {
+        if (options.studio && node.position?.start.offset !== undefined) {
+          node.properties["data-studio-start"] = node.position.start.offset;
+        }
         if (!insideLink) {
           node.properties.tabIndex = 0;
           node.properties.role = "button";

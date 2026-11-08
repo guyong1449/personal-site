@@ -684,3 +684,9 @@ mark { background: var(--accent-warm-soft); color: inherit; padding: 0 2px; }
   .section-heading h2 { font-size: 1.5rem; }
   .account-project { padding: 13px 8px; }
 }
+.draft-image-editor { position: relative; }
+.draft-image-hint { font-size: .875rem; color: var(--muted, #64748b); margin-bottom: 1rem; }
+.draft-image-selection { position: absolute; outline: 2px solid #0f9488; pointer-events: none; }
+.draft-image-size { position: absolute; top: 0; left: 0; padding: 2px 8px; background: #0f766e; color: white; font-size: 14px; }
+.draft-image-handle { position: absolute; right: -12px; bottom: -12px; width: 44px; height: 44px; pointer-events: auto; touch-action: none; cursor: nwse-resize; border: 2px solid #0f766e; background: #ecfdf5; color: #134e4a; font-size: 24px; }
+.draft-image-handle:focus-visible { outline: 3px solid #0f766e; outline-offset: 3px; }
