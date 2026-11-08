@@ -34,9 +34,17 @@ function httpUrl(href: string): URL | null {
   }
 }
 
+const SITE_HOSTS = new Set(["guyong.site", "www.guyong.site", "localhost", "127.0.0.1"]);
+
+// Off-site article links open in a new tab so reading flow stays on the site.
+function decorateExternalLink(node: HastNode): HastNode {
+  const url = httpUrl(String(node.properties?.href ?? ""));
+  if (!url || SITE_HOSTS.has(url.hostname)) return node;
+  return { ...node, properties: { ...node.properties, target: "_blank", rel: "noopener noreferrer" } };
+}
+
 // Only allowlisted providers turn into iframes; every other link stays a link.
-function resolveProviderEmbed(href: string): ProviderEmbed | null {
-  const url = httpUrl(href);
+function resolveProviderEmbed(href: string): ProviderEmbed | null {  const url = httpUrl(href);
   if (!url) return null;
   const host = url.hostname.replace(/^www\./, "");
 
@@ -154,17 +162,18 @@ function groupImageRows(children: HastNode[]): HastNode[] {
 export function rehypeMediaEmbed() {
   const map = (node: HastNode, insideLink: boolean): HastNode => {
     if (node.type === "text" || node.type === "comment" || node.type === "doctype") return node;
-    const linked = insideLink || node.tagName === "a";
 
-    if (node.tagName === "img" && !linked) {
+    if (node.tagName === "img" && !insideLink) {
       const kind = resolveMediaFile(String(node.properties?.src ?? ""));
       if (kind) return buildMediaElement(node, kind);
       return node;
     }
 
-    const children = (node.children ?? []).map((child) => map(child, linked));
+    const self = node.tagName === "a" && !insideLink ? decorateExternalLink(node) : node;
+    const linked = insideLink || self.tagName === "a";
+    const children = (self.children ?? []).map((child) => map(child, linked));
 
-    if (node.tagName === "p") {
+    if (self.tagName === "p") {
       const meaningful = children.filter((child) => !isBlankText(child));
       if (meaningful.length === 1 && meaningful[0].type === "element" && meaningful[0].tagName === "a") {
         const embed = resolveProviderEmbed(String(meaningful[0].properties?.href ?? ""));
@@ -172,10 +181,10 @@ export function rehypeMediaEmbed() {
           return buildProviderEmbed(embed, parseImageSettings(String(meaningful[0].properties?.title ?? "")));
         }
       }
-      return { ...node, children: groupImageRows(children) };
+      return { ...self, children: groupImageRows(children) };
     }
 
-    return { ...node, children };
+    return { ...self, children };
   };
   return (tree: HtmlNode) => {
     const mapped = map(tree, false);

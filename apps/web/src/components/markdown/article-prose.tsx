@@ -41,8 +41,43 @@ export function ArticleProse({ html }: { html: string }) {
     setSelected({ src: image.currentSrc || image.src, alt: image.alt, width: image.naturalWidth, height: image.naturalHeight });
   };
 
+  const prose = useRef<HTMLElement>(null);
+
+  // Decorate rendered code blocks with a copy affordance; re-runs when the
+  // rendered html changes (draft preview updates, route navigation).
+  useEffect(() => {
+    const root = prose.current;
+    if (!root) return;
+    const buttons: HTMLButtonElement[] = [];
+    for (const pre of root.querySelectorAll("pre")) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "copy-code";
+      button.textContent = "复制";
+      button.setAttribute("aria-label", "复制代码");
+      button.addEventListener("click", () => {
+        const code = pre.querySelector("code") ?? pre;
+        const done = () => {
+          button.textContent = "已复制";
+          button.classList.add("is-done");
+          setTimeout(() => {
+            button.textContent = "复制";
+            button.classList.remove("is-done");
+          }, 1600);
+        };
+        navigator.clipboard.writeText(code.innerText).then(done, () => {
+          button.textContent = "复制失败";
+          setTimeout(() => { button.textContent = "复制"; }, 1600);
+        });
+      });
+      pre.appendChild(button);
+      buttons.push(button);
+    }
+    return () => { for (const button of buttons) button.remove(); };
+  }, [html]);
+
   return <>
-    <article className="prose prose-lg max-w-none min-w-0 flex-1"
+    <article ref={prose} className="prose prose-lg max-w-none min-w-0 flex-1"
       onClick={openImage} onKeyDown={openImage} dangerouslySetInnerHTML={{ __html: html }} />
     <dialog ref={dialog} className="image-viewer" aria-label={selected?.alt ? `图片：${selected.alt}` : "查看原图"}
       onCancel={(event) => { event.preventDefault(); setSelected(null); }}>

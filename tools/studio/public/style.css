@@ -169,7 +169,16 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: .75; }
 .cover-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .editor-panes { display: grid; min-height: 420px; flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-#f-body { min-height: 420px; resize: vertical; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; line-height: 1.7; }
+.editor-panes > label { grid-column: 1 / -1; }
+#f-body { min-height: 420px; resize: vertical; grid-column: 1 / -1; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; line-height: 1.7; }
+.markdown-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; grid-column: 1 / -1; }
+.markdown-toolbar button {
+  min-width: 34px; min-height: 30px; padding: 2px 9px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--foreground); font: inherit; font-size: .78rem; cursor: pointer;
+}
+.markdown-toolbar button:hover { border-color: var(--accent-deep); color: var(--accent-deep); }
+.markdown-toolbar #body-stats { margin-left: auto; color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums; }
 .studio-preview { max-height: 70vh; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 15px 17px; background: var(--surface); color: var(--prose-text); line-height: 1.9; }
 .studio-preview img { max-width: 100%; height: auto; }
 .studio-preview h1, .studio-preview h2, .studio-preview h3 { color: var(--foreground); line-height: 1.35; }
@@ -328,7 +337,7 @@ button:disabled { opacity: .5; cursor: default; }
 .statistics-list strong { flex: none; color: var(--foreground); font-variant-numeric: tabular-nums; }
 .statistics-pages { margin-block: 8px; }
 .statistics-pages > summary { cursor: pointer; color: var(--muted); font-size: .76rem; padding-block: 4px; }
-.body-image-size { display: grid; grid-template-columns: 1fr 80px; gap: 8px; }
+.body-image-size { display: grid; grid-template-columns: 1fr 70px 90px; gap: 8px; }
 #body-image-controls label { display: flex; flex-direction: column; gap: 5px; margin-block: 8px; font-size: .8rem; }
 #body-image-controls select, #body-image-controls input { width: 100%; min-height: 36px; }
 .body-image-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 8px; }

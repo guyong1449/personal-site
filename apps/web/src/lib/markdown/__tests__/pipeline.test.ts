@@ -75,6 +75,13 @@ describe("markdown pipeline", () => {
     expect(row).toContain("b.png");
     expect(row).toContain("c.png");
   });
+  it("opens off-site article links in a new tab while keeping site links inline", async () => {
+    const html = await renderMarkdownToHtml("[外站](https://example.com/a)\n\n[站内](/notes)\n\n[本站](https://guyong.site/notes/x)");
+    expect(html).toContain('href="https://example.com/a" target="_blank" rel="noopener noreferrer"');
+    expect(html).toContain('<a href="/notes">站内</a>');
+    expect(html).toContain('href="https://guyong.site/notes/x"');
+    expect(html).not.toContain('href="https://guyong.site/notes/x" target="_blank"');
+  });
   it("never emits raw author HTML", async () => {
     const html = await renderMarkdownToHtml(
       "hello\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\nworld",

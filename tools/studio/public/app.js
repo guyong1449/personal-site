@@ -1,4 +1,5 @@
 import { listMarkdownImages, resizeMarkdownImage } from "/studio/image-sizing.js";
+import { wrapSelection, prefixLines, numberLines, codeBlock, linkSelection, insertSnippet, TABLE_SNIPPET } from "/studio/markdown-edit.js";
 import { initWorkspaceLayout } from "/studio/workspace-layout.js";
 import { initTagManager } from "/studio/tag-manager.js";
 
@@ -480,6 +481,13 @@ function updateCoverPreview() {
   img.hidden = false;
 }
 
+function updateBodyStats() {
+  const chars = $("f-body").value.replace(/\s/g, "").length;
+  $("body-stats").textContent = chars
+    ? `${chars} 字 · 约 ${Math.max(1, Math.round(chars / 400))} 分钟阅读`
+    : "0 字";
+}
+
 function applyDoc(doc) {
   $("f-title").value = doc.title ?? "";
   $("f-slug").value = doc.slug ?? "";
@@ -497,6 +505,7 @@ function applyDoc(doc) {
   $("f-series").value = doc.series ?? "";
   $("f-body").value = doc.body ?? "";
   refreshBodyImageOptions();
+  updateBodyStats();
   markSaved(
     doc.source === "site"
       ? "已发布内容（只读快照）：保存时会自动建立本机草稿"
@@ -777,20 +786,22 @@ function uploadAsset() {
   };
 }
 
-// Pasted screenshots upload into the draft asset pool and insert inline.
-async function pasteBodyImages(files) {
+// Pasted screenshots and dropped media files upload into the draft asset
+// pool and insert inline at the cursor.
+async function uploadAndInsertFiles(files, label) {
   for (const file of files) {
     const stamp = new Date();
     const pad = (value) => String(value).padStart(2, "0");
-    const fallback = `paste-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.png`;
+    const extension = file.type.startsWith("audio/") ? "mp3" : "png";
+    const fallback = `paste-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}${pad(stamp.getSeconds())}.${extension}`;
     const named = file.name ? file : new File([file], fallback, { type: file.type });
     try {
       const result = await uploadAssetFile(named);
       await loadAssetOptions(result.name);
       insertImageAtCursor(`![${named.name.replace(/\.[^.]+$/, "")}](assets/${result.name})`);
-      setSaveState(`已粘贴图片：${result.name}`);
+      setSaveState(`${label}：${result.name}`);
     } catch (error) {
-      setSaveState(`粘贴图片失败：${error.message}`, true);
+      setSaveState(`${label}失败：${error.message}`, true);
     }
   }
 }
@@ -805,6 +816,32 @@ function insertImageAtCursor(markdown) {
   body.dispatchEvent(new Event("input"));
   renderPreview(body.value);
 }
+
+// Shared selection transforms for the toolbar and keyboard shortcuts.
+function editSelection(transform) {
+  const body = $("f-body");
+  const start = body.selectionStart ?? body.value.length;
+  const end = body.selectionEnd ?? body.value.length;
+  const result = transform(body.value, start, end);
+  body.value = result.value;
+  body.focus();
+  body.setSelectionRange(result.start, result.end);
+  body.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+const TOOLBAR_ACTIONS = {
+  heading: (text, start, end) => prefixLines(text, start, end, "## "),
+  bold: (text, start, end) => wrapSelection(text, start, end, "**"),
+  italic: (text, start, end) => wrapSelection(text, start, end, "*"),
+  code: (text, start, end) => wrapSelection(text, start, end, "`"),
+  codeblock: codeBlock,
+  quote: (text, start, end) => prefixLines(text, start, end, "> "),
+  list: (text, start, end) => prefixLines(text, start, end, "- "),
+  olist: numberLines,
+  link: linkSelection,
+  table: (text, start, end) => insertSnippet(text, start, end, TABLE_SNIPPET),
+  hr: (text, start, end) => insertSnippet(text, start, end, "\n---\n"),
+};
 
 function insertImage() {
   const name = $("f-cover").value;
@@ -1166,11 +1203,44 @@ function wire() {
     if ($("body-image-width").value && $("body-image-width").checkValidity()) applyBodyImageSize();
   });
   $("body-image-align").addEventListener("change", () => applyBodyImageSize());
+  for (const button of document.querySelectorAll(".markdown-toolbar button[data-action]")) {
+    button.addEventListener("click", () => editSelection(TOOLBAR_ACTIONS[button.dataset.action]));
+  }
+  $("f-body").addEventListener("keydown", (event) => {
+    if (event.key === "Tab" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      editSelection((text, start, end) => insertSnippet(text, start, end, "  "));
+      return;
+    }
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || !event.key) return;
+    const action = { b: "bold", i: "italic", k: "link" }[event.key.toLowerCase()];
+    if (action) {
+      event.preventDefault();
+      editSelection(TOOLBAR_ACTIONS[action]);
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey
+        && event.key.toLowerCase() === "s" && state.current) {
+      event.preventDefault();
+      saveDraft().catch(() => {});
+    }
+  });
   $("f-body").addEventListener("paste", (event) => {
     const files = Array.from(event.clipboardData?.files ?? []).filter((file) => file.type.startsWith("image/"));
     if (files.length === 0) return;
     event.preventDefault();
-    void pasteBodyImages(files);
+    void uploadAndInsertFiles(files, "已粘贴图片");
+  });
+  $("f-body").addEventListener("dragover", (event) => {
+    if (Array.from(event.dataTransfer?.types ?? []).includes("Files")) event.preventDefault();
+  });
+  $("f-body").addEventListener("drop", (event) => {
+    const files = Array.from(event.dataTransfer?.files ?? []).filter((file) =>
+      file.type.startsWith("image/") || AUDIO_FILE_PATTERN.test(file.name));
+    if (files.length === 0) return;
+    event.preventDefault();
+    void uploadAndInsertFiles(files, "已插入文件");
   });
   $("body-image-controls").addEventListener("toggle", () => {
     if ($("body-image-controls").open) refreshBodyImageOptions();
@@ -1193,6 +1263,7 @@ function wire() {
   editorEl.addEventListener("input", () => {
     clearTimeout(previewTimer);
     setSaveState("有未保存的更改 · 预览已更新");
+    updateBodyStats();
     previewTimer = setTimeout(renderPreview, 250);
   });
 

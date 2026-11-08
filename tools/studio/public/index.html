@@ -195,7 +195,21 @@
           <p class="dialog-note">独立成行的 B 站 / YouTube / 网易云音乐链接自动嵌入播放器；正文里可直接粘贴截图上传。</p>
         </details>
         <label for="f-body">正文 Markdown</label>
-        <textarea id="f-body" spellcheck="false" placeholder="Markdown 正文……"></textarea>
+        <div class="markdown-toolbar" role="toolbar" aria-label="Markdown 格式工具栏">
+          <button type="button" data-action="heading" title="二级标题">H2</button>
+          <button type="button" data-action="bold" title="加粗 (Ctrl+B)"><strong>B</strong></button>
+          <button type="button" data-action="italic" title="斜体 (Ctrl+I)"><em>I</em></button>
+          <button type="button" data-action="code" title="行内代码">&lt;&gt;</button>
+          <button type="button" data-action="codeblock" title="代码块">&lt;/&gt;</button>
+          <button type="button" data-action="quote" title="引用">❝</button>
+          <button type="button" data-action="list" title="无序列表">• 列表</button>
+          <button type="button" data-action="olist" title="有序列表">1. 列表</button>
+          <button type="button" data-action="link" title="链接 (Ctrl+K)">🔗 链接</button>
+          <button type="button" data-action="table" title="插入表格">表格</button>
+          <button type="button" data-action="hr" title="插入分割线">—</button>
+          <output id="body-stats" aria-live="off">0 字</output>
+        </div>
+        <textarea id="f-body" spellcheck="false" placeholder="Markdown 正文……（可直接粘贴截图或拖入图片/音频）"></textarea>
       </div>
 
       <div class="editor-actions">
